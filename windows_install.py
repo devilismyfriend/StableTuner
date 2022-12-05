@@ -80,7 +80,7 @@ dreambooth_skip_install = os.environ.get('DREAMBOOTH_SKIP_INSTALL', False)
 
 if not dreambooth_skip_install:
     check_versions()
-    name = "StableTune"    
+    name = "StableTuner"    
     run(f'"{sys.executable}" -m pip install -r "{req_file}"', f"Checking {name} requirements...",
         f"Couldn't install {name} requirements.")
 
