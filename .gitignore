@@ -1,0 +1,8 @@
+
+cudnn_windows/cudnn64_8.dll
+cudnn_windows/cudnn_adv_infer64_8.dll
+cudnn_windows/cudnn_adv_train64_8.dll
+cudnn_windows/cudnn_cnn_infer64_8.dll
+cudnn_windows/cudnn_cnn_train64_8.dll
+cudnn_windows/cudnn_ops_infer64_8.dll
+cudnn_windows/cudnn_ops_train64_8.dll

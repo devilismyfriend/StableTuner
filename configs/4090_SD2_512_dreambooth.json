@@ -1,0 +1,49 @@
+{
+    "concepts": [
+        {
+            "instance_prompt": "token",
+            "class_prompt": "class token",
+            "instance_data_dir": "data path",
+            "class_data_dir": "class data path",
+            "do_not_balance": 0
+        }
+    ],
+    "sample_prompts": [],
+    "add_controlled_seed_to_sample": [
+        "3434554"
+    ],
+    "model_path": "stabilityai/stable-diffusion-2-base",
+    "vae_path": "stabilityai/sd-vae-ft-mse",
+    "output_path": "models/art_test",
+    "send_telegram_updates": 0,
+    "telegram_token": "",
+    "telegram_chat_id": "",
+    "resolution": "512",
+    "batch_size": "16",
+    "train_epocs": "30",
+    "mixed_precision": "fp16",
+    "use_8bit_adam": 1,
+    "use_gradient_checkpointing": 1,
+    "accumulation_steps": "1",
+    "learning_rate": "5e-6",
+    "warmup_steps": "0",
+    "learning_rate_scheduler": "constant",
+    "use_latent_cache": 1,
+    "save_latent_cache": 1,
+    "regenerate_latent_cache": 0,
+    "train_text_encoder": 1,
+    "with_prior_loss_preservation": 1,
+    "prior_loss_preservation_weight": "1.0",
+    "use_image_names_as_captions": 1,
+    "auto_balance_concept_datasets": 1,
+    "add_class_images_to_dataset": 0,
+    "number_of_class_images": "200",
+    "save_every_n_epochs": "5",
+    "number_of_samples_to_generate": "1",
+    "sample_height": "512",
+    "sample_width": "512",
+    "sample_random_aspect_ratio": 0,
+    "save_on_training_start": 0,
+    "aspect_ratio_bucketing": 1,
+    "seed": "12354"
+}
