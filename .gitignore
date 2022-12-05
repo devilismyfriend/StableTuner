@@ -9,3 +9,8 @@ cudnn_windows/cudnn_ops_train64_8.dll
 cudnn_windows.rar
 cudnn_windows.zip
 scripts/converters.py
+stabletune_last_run.json
+StableTuner_concept_list.json
+stabletune_concept_list.json
+StableTuner_last_run.json
+train.bat

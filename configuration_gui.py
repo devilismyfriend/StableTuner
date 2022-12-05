@@ -75,7 +75,7 @@ class App(tk.Frame):
         self.dark_mode_button_pressed_var = "#BB91B6"
         self.dark_mode_button_var = "#8ea0e1"
         self.dark_mode_text_var = "#c6c7c8"
-        self.master.title("StableTuner")
+        self.master.title("StableTune")
         #resizable window
         self.master.resizable(True, True)
         #master canvas
@@ -192,11 +192,11 @@ class App(tk.Frame):
         height = self.notebook.winfo_reqheight()
         self.master.geometry(f"{width}x{height}")
         self.master.update()
-        #check if there is a StableTuner_last_run.json file
+        #check if there is a stabletune_last_run.json file
         #if there is, load the settings from it
-        if os.path.exists("StableTuner_last_run.json"):
+        if os.path.exists("stabletune_last_run.json"):
             try:
-                self.load_config(file_name="StableTuner_last_run.json")
+                self.load_config(file_name="stabletune_last_run.json")
             except:
                 print("Error loading config file")
         else:
@@ -261,7 +261,7 @@ class App(tk.Frame):
         self.save_config_button = tk.Button(self.general_tab, text="Save Config", command=self.save_config,fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         self.save_config_button.configure(border=4, relief='flat')
         self.save_config_button.grid(row=0, column=1, sticky="ne")
-        self.model_settings_label = tk.Label(self.general_tab, text="StableTuner Settings",  font=("Arial", 12, "bold"), fg=self.dark_mode_title_var, bg=self.dark_mode_var)
+        self.model_settings_label = tk.Label(self.general_tab, text="StableTune Settings",  font=("Arial", 12, "bold"), fg=self.dark_mode_title_var, bg=self.dark_mode_var)
         self.model_settings_label.grid(row=0, column=0, sticky="nsew")
 
         self.quick_select_label = tk.Label(self.general_tab, text="Quick Select Model",  font=("Arial", 10, "bold"),fg=self.dark_mode_title_var, bg=self.dark_mode_var)
@@ -1268,7 +1268,10 @@ class App(tk.Frame):
                 newDict = {}
                 conceptDict = concepts[i]
                 for key in conceptDict:
-                    val = conceptDict[key].get()
+                    if isinstance(conceptDict[key], str) or isinstance(conceptDict[key], int) or isinstance(conceptDict[key], float) or isinstance(conceptDict[key], bool):
+                        val = conceptDict[key]
+                    else:
+                        val = conceptDict[key].get()
                     newDict[key] = val
                 self.formatted_concepts.append(newDict)
             concepts = None
@@ -1392,6 +1395,9 @@ class App(tk.Frame):
         self.master.update()
     def update_concepts(self):
         #update the concepts list
+        #if the first index is a dict
+        if isinstance(self.concepts, dict):
+            return
         self.concepts = []
         for i in range(len(self.concept_entries)):
             self.concepts.append({"instance_prompt": self.concept_entries[i][0].get(), "class_prompt": self.concept_entries[i][1].get(), "instance_data_dir": self.concept_entries[i][2].get(), "class_data_dir": self.concept_entries[i][3].get(), "do_not_balance": self.concept_entries[i][4].get()})
@@ -1562,7 +1568,7 @@ class App(tk.Frame):
         self.update_controlled_seed_sample()
         self.update_sample_prompts()
         
-        self.save_concept_to_json(filename='StableTuner_concept_list.json')
+        self.save_concept_to_json(filename='stabletune_concept_list.json')
         self.update_concepts()
         for i in range(len(self.sample_prompts)):
             self.sample_prompts.append(self.sample_prompts[i])
@@ -1600,12 +1606,12 @@ class App(tk.Frame):
         self.sample_width = self.sample_width_entry.get()
         self.sample_random_aspect_ratio = self.sample_random_aspect_ratio_var.get()
         self.save_on_training_start = self.save_on_training_start_var.get()
-        self.concept_list_json_path = 'StableTuner_concept_list.json'
+        self.concept_list_json_path = 'stabletune_concept_list.json'
         self.use_aspect_ratio_bucketing = self.use_aspect_ratio_bucketing_var.get()
         self.seed_number = self.seed_entry.get()
-        #open StableTuner_concept_list.json
-        if os.path.exists('StableTuner_last_run.json'):
-            with open('StableTuner_last_run.json') as f:
+        #open stabletune_concept_list.json
+        if os.path.exists('stabletune_last_run.json'):
+            with open('stabletune_last_run.json') as f:
                 self.last_run = json.load(f)
             if self.regenerate_latent_cache == False:
                 if self.last_run["concepts"] == self.concepts:
@@ -1614,7 +1620,7 @@ class App(tk.Frame):
                         self.regenerate_latent_cache = True
                         #show message
                         
-                        messagebox.showinfo("StableTuner", "Configuration changed, regenerating latent cache")
+                        messagebox.showinfo("StableTune", "Configuration changed, regenerating latent cache")
                 
                 
 
@@ -1679,7 +1685,7 @@ class App(tk.Frame):
         if self.save_on_training_start == True:
             batBase += f' "--save_on_training_start" '
         #save config
-        self.save_config('StableTuner_last_run.json')
+        self.save_config('stabletune_last_run.json')
         
         #save the bat file
         with open("train.bat", "w", encoding="utf-8") as f:
