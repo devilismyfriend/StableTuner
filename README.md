@@ -42,6 +42,7 @@ Refer to the tool tips in the GUI for more information, if you have any question
 * Diffusers - For the latest and greatest implementations
 * Everydream - For the Aspect Ratio bucketing
 * Sygil.dev - For the environment setup
+* sd_dreambooth_extension - for the bitsandbytes files and install script
 * StabilityAI - For the latest and greatest models
 * The whole SD community - For making this possible
 
