@@ -1339,7 +1339,7 @@ def main():
         # Create the pipeline using using the trained modules and save it.
         if accelerator.is_main_process:
             if args.train_text_encoder:
-                text_enc_model = accelerator.unwrap_model(text_encoder)
+                text_enc_model = accelerator.unwrap_model(text_encoder,True)
             else:
                 text_enc_model = CLIPTextModel.from_pretrained(args.pretrained_model_name_or_path, subfolder="text_encoder", use_auth_token=True)
             #scheduler = DDIMScheduler(beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear", clip_sample=False, set_alpha_to_one=False)
@@ -1348,7 +1348,7 @@ def main():
 
             pipeline = DiffusionPipeline.from_pretrained(
                 args.pretrained_model_name_or_path,
-                unet=accelerator.unwrap_model(unet),
+                unet=accelerator.unwrap_model(unet,True),
                 text_encoder=text_enc_model,
                 vae=AutoencoderKL.from_pretrained(args.pretrained_vae_name_or_path or args.pretrained_model_name_or_path,subfolder=None if args.pretrained_vae_name_or_path else "vae", use_auth_token=True),
                 safety_checker=None,
