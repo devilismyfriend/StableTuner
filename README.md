@@ -1,8 +1,6 @@
 <p align="center">
     <br>
-    <img src="https://user-images.githubusercontent.com/87043616/204199775-e81e0b37-ed13-4795-99af-488314a58839.png" width="250"/>
     <img src="https://i.imgur.com/DWIZXIh.png" width="800"/>
-    <img src="https://user-images.githubusercontent.com/87043616/204199622-e8c08886-b09e-4bc6-bd67-8031cd5b957f.png" width="250"/>
     <br>
 <p>
 
