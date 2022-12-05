@@ -39,10 +39,10 @@ To install simply unzip the directory and place in the same directory as StableT
 Refer to the tool tips in the GUI for more information, if you have any questions feel free to ask in the <a href="https://discord.gg/n8cKK7AAm4">Discord</a>
 
 ## Kudos
-* Shivam - For the original code and inspiration
-* Diffusers - For the latest and greatest implementations
-* Everydream - For the Aspect Ratio bucketing
-* Sygil.dev - For the environment setup
+* Shivam - For the original code and inspiration - A2 License
+* Diffusers - For the latest and greatest implementations - A2 License
+* Everydream - For the Aspect Ratio bucketing - MIT License
+* Sygil.dev - For the environment setup - GAPLV3 License
 * sd_dreambooth_extension - for the bitsandbytes files and install script
 * StabilityAI - For the latest and greatest models
 * The whole SD community - For making this possible
