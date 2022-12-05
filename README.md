@@ -29,8 +29,8 @@ Features
 ## Installation
 Download and install Anaconda or miniconda and clone this repo, run the install_stabletuner.bat, when finished start the app with the StableTuner.cmd file.
 
-## CUDNN 1.8
-Due to the filesize I can't host the DLLs needed for CUDNN 1.8 on Github, I **strongly** advise you download them for a speed boost in sample generation (almost **50%** on 4090) you can download them from here: <a href="https://b1.thefileditch.ch/mwxKTEtelILoIbMbruuM.zip">CUDNN 1.8</a>
+## CUDNN 8.6
+Due to the filesize I can't host the DLLs needed for CUDNN 8.6 on Github, I **strongly** advise you download them for a speed boost in sample generation (almost **50%** on 4090) you can download them from here: <a href="https://b1.thefileditch.ch/mwxKTEtelILoIbMbruuM.zip">CUDNN 8.6</a>
 
 To install simply unzip the directory and place in the same directory as StableTuner.cmd, run install_stabletuner.bat and you're good to go!
 
