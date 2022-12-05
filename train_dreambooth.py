@@ -1,3 +1,19 @@
+"""
+Copyright 2022 HuggingFace, ShivamShrirao
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+
 import argparse
 import random
 from faulthandler import disable
@@ -316,18 +332,7 @@ def parse_args():
 
     return args
 
-#code taken from everydream
-'''
-ASPECTS = [[512,512], # 1 262144\
-        [576,448],[448,576], # 1.29 258048\
-        [640,384],[384,640], # 1.67 245760\
-        [768,320],[320,768], # 2.4 245760\
-        [832,256],[256,832], # 3.25 212992\
-        [896,256],[256,896], # 3.5 229376\
-        [960,256],[256,960],  # 3.75 245760\
-        [1024,256],[256,1024]  # 4 245760\
-    ]
-'''
+
 ASPECTS6 = [[832, 832], 
 [896, 768], [768, 896], 
 [960, 704], [704, 960], 
