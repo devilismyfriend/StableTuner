@@ -108,11 +108,10 @@ if not dreambooth_skip_install:
                     #load from cwd
                     src = Path.cwd() / src_file
                     dst = accelerate_dir / dst_file
+                    print(src)
                     if src.exists():
-                        print('test')
-                        if dst.exists():
-                            shutil.copy2(src, dst)
-                            print(f"Updated {dst_file} in {accelerate_dir}")
+                        shutil.copy2(src, dst)
+                        print(f"Updated {dst_file} in {accelerate_dir}")
         else:
             #make dirs
             hf_cache_dir.mkdir(parents=True, exist_ok=True)
