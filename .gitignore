@@ -22,3 +22,5 @@ train.bat
 *.bin
 *.txt
 data/soda/
+data/soda_stream/
+data/ans_huh/

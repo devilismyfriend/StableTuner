@@ -754,7 +754,7 @@ class DataLoaderMultiAspect():
 
                 if os.path.exists(txt_file_path):
                     try:
-                        with open(txt_file_path, 'r') as f:
+                        with open(txt_file_path, 'r',encoding='utf-8') as f:
                             identifier = f.readline().rstrip()
                             if len(identifier) < 1:
                                 raise ValueError(f" *** Could not find valid text in: {txt_file_path}")
