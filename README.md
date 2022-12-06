@@ -6,7 +6,7 @@
 
 
 # Stable Tuner, Fine-tune your SD
-<a href='https://ko-fi.com/O4O5GU04F' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi2.png?v=3' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a> <a href='https://discord.gg/n8cKK7AAm4' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://cincydiscord.com/wp-content/uploads/2019/02/CINCYDISCORDJOIN.png' border='0' alt='Join the discord :)' /></a>
+<a href='https://ko-fi.com/O4O5GU04F' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi2.png?v=3' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a> <a href='https://discord.gg/DahNECrBUZ' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://cincydiscord.com/wp-content/uploads/2019/02/CINCYDISCORDJOIN.png' border='0' alt='Join the discord :)' /></a>
 
 
 ### Join the Discord for training and chill ;) 
@@ -35,7 +35,7 @@ Due to the filesize I can't host the DLLs needed for CUDNN 8.6 on Github, I **st
 To install simply unzip the directory and place in the same directory as StableTuner.cmd, run install_stabletuner.bat and you're good to go!
 
 ## Usage
-Refer to the tool tips in the GUI for more information, if you have any questions feel free to ask in the <a href="https://discord.gg/n8cKK7AAm4">Discord</a>
+Refer to the tool tips in the GUI for more information, if you have any questions feel free to ask in the <a href="https://discord.gg/DahNECrBUZ">Discord</a>
 
 ## Kudos
 * Shivam - For the original code and inspiration - A2 License
