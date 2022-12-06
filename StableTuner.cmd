@@ -58,7 +58,7 @@ IF "%v_conda_path%"=="" (
 )
 
 :CONDA_FOUND
-echo Stashing local changes and pulling latest update...
+echo Starting conda environment %v_conda_env_name% from %v_conda_path%
 
 call "%v_conda_path%\Scripts\activate.bat" "%v_conda_env_name%"
 python configuration_gui.py

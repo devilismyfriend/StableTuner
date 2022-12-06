@@ -543,6 +543,8 @@ class App(tk.Frame):
         #create checkbox
         self.use_aspect_ratio_bucketing_checkbox = tk.Checkbutton(self.dataset_tab, variable=self.use_aspect_ratio_bucketing_var,fg=self.dark_mode_text_var, bg=self.dark_mode_var, activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var, selectcolor=self.dark_mode_var)
         self.use_aspect_ratio_bucketing_checkbox.grid(row=5, column=1, sticky="nsew")
+        #do something on checkbox click
+        self.use_aspect_ratio_bucketing_checkbox.bind("<Button-1>", self.disable_with_prior_loss)
         #add download dataset entry
         self.download_dataset_label = tk.Label(self.dataset_tab, text="Download Dataset from HF",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         download_dataset_label_ttp = CreateToolTip(self.download_dataset_label, "Will git clone a HF dataset repo")
@@ -774,6 +776,14 @@ class App(tk.Frame):
         self.generate_btn["text"] = "Start Training!"
         self.generate_btn["command"] = self.process_inputs
         self.generate_btn.grid(row=100, column=0,columnspan=2, sticky="nsew")
+    def disable_with_prior_loss(self, *args):
+        if self.use_aspect_ratio_bucketing_var.get() == 1:
+            self.with_prior_loss_preservation_var.set(0)
+            self.with_prior_loss_preservation_checkbox.configure(state="disabled")
+
+        else:
+            self.with_prior_loss_preservation_checkbox.configure(state="normal")
+    
     def download_dataset(self):
         #get the dataset name
         #import datasets
@@ -1681,14 +1691,16 @@ class App(tk.Frame):
             batBase += f' "--regenerate_latent_cache" '
         if self.train_text_encoder == True:
             batBase += f' "--train_text_encoder" '
-        if self.with_prior_loss_preservation == True:
+        if self.with_prior_loss_preservation == True and self.use_aspect_ratio_bucketing == False:
             batBase += f' "--with_prior_preservation" '
             batBase += f' "--prior_loss_weight={self.prior_loss_preservation_weight}" '
+        else:
+            print('loss preservation isnt supported with aspect ratio bucketing yet, sorry!')
         if self.use_image_names_as_captions == True:
             batBase += f' "--use_image_names_as_captions" '
         if self.auto_balance_concept_datasets == True:
             batBase += f' "--auto_balance_concept_datasets" '
-        if self.add_class_images_to_dataset == True:
+        if self.add_class_images_to_dataset == True and self.with_prior_loss_preservation == False:
             batBase += f' "--add_class_images_to_dataset" '
         batBase += f' "--concepts_list={self.concept_list_json_path}" '
         batBase += f' "--num_class_images={self.number_of_class_images}" '
@@ -1725,6 +1737,7 @@ class App(tk.Frame):
         #run the bat file
         self.master.quit()
         os.system("train.bat")
+        os.system("pause")
         
 
 

@@ -470,6 +470,7 @@ class AutoBucketing(Dataset):
                  add_class_images_to_dataset=None,
                  balance_datasets=False,
                  crop_jitter=20,
+                 with_prior_loss=False,
                  ):
         self.debug_level = debug_level
         self.resolution = resolution
@@ -485,6 +486,7 @@ class AutoBucketing(Dataset):
         self.add_class_images_to_dataset = add_class_images_to_dataset
         self.balance_datasets = balance_datasets
         self.crop_jitter = crop_jitter
+        self.with_prior_loss = with_prior_loss
         self.image_transforms = transforms.Compose(
             [
                 transforms.ToTensor(),
@@ -493,12 +495,22 @@ class AutoBucketing(Dataset):
         )
         #shared_dataloader = None
         print("Creating new dataloader singleton")
-        shared_dataloader = DataLoaderMultiAspect(concepts_list, debug_level=debug_level,resolution=self.resolution, batch_size=self.batch_size, flip_p=flip_p,use_image_names_as_captions=self.use_image_names_as_captions,add_class_images_to_dataset=self.add_class_images_to_dataset,balance_datasets=self.balance_datasets)
-        self.image_train_items = shared_dataloader.get_all_images()
+        shared_dataloader = DataLoaderMultiAspect(concepts_list, debug_level=debug_level,resolution=self.resolution, batch_size=self.batch_size, flip_p=flip_p,use_image_names_as_captions=self.use_image_names_as_captions,add_class_images_to_dataset=self.add_class_images_to_dataset,balance_datasets=self.balance_datasets,with_prior_loss=self.with_prior_loss)
+        
         #print(self.image_train_items)
-        self.num_train_images = self.num_train_images + len(self.image_train_items)
+        if self.with_prior_loss and self.add_class_images_to_dataset == False:
+            self.image_train_items, self.class_train_items = shared_dataloader.get_all_images()
+            self.num_train_images = self.num_train_images + len(self.image_train_items)
+            self.num_reg_images = self.num_reg_images + len(self.class_train_items)
+            self._length = max(max(math.trunc(self.num_train_images * repeats), batch_size),math.trunc(self.num_reg_images * repeats), batch_size) - self.num_train_images % self.batch_size
+            self.num_train_images = self.num_train_images + self.num_reg_images
+            
+        else:
+            self.image_train_items = shared_dataloader.get_all_images()
+            self.num_train_images = self.num_train_images + len(self.image_train_items)
+            self._length = max(math.trunc(self.num_train_images * repeats), batch_size) - self.num_train_images % self.batch_size
 
-        self._length = max(math.trunc(self.num_train_images * repeats), batch_size) - self.num_train_images % self.batch_size
+        
         #print(self.image_train_items)
         print()
         print(f" ** Validation Set: {set}, steps: {self._length / batch_size:.0f}, repeats: {repeats} ")
@@ -513,11 +525,18 @@ class AutoBucketing(Dataset):
         image_train_item = self.image_train_items[idx]
         
         example = self.__get_image_for_trainer(image_train_item,debug_level=self.debug_level)
+        if self.with_prior_loss and self.add_class_images_to_dataset == False:
+            idx = i % self.num_reg_images
+            class_train_item = self.class_train_items[idx]
+            example_class = self.__get_image_for_trainer(class_train_item,debug_level=self.debug_level,class_img=True)
+            example= {**example, **example_class}
+            
         #print the tensor shape
         #print(example['instance_images'].shape)
+        #print(example.keys())
         return example
 
-    def __get_image_for_trainer(self,image_train_item,debug_level=0):
+    def __get_image_for_trainer(self,image_train_item,debug_level=0,class_img=False):
         example = {}
         save = debug_level > 2
         def normalize8(I):
@@ -528,16 +547,28 @@ class AutoBucketing(Dataset):
 
             I = ((I - mn)/mx) * 255
             return I.astype(np.uint8)
-        image_train_tmp = image_train_item.hydrate(crop=False, save=0, crop_jitter=self.crop_jitter)
-        image_train_tmp_image = Image.fromarray(normalize8(image_train_tmp.image)).convert("RGB")
-        example["instance_images"] = self.image_transforms(image_train_tmp_image)
-        example["instance_prompt_ids"] = self.tokenizer(
-            image_train_tmp.caption,
-            padding="do_not_pad",
-            truncation=True,
-            max_length=self.tokenizer.model_max_length,
-        ).input_ids
-        return example
+        if class_img==False:
+            image_train_tmp = image_train_item.hydrate(crop=False, save=0, crop_jitter=self.crop_jitter)
+            image_train_tmp_image = Image.fromarray(normalize8(image_train_tmp.image)).convert("RGB")
+            example["instance_images"] = self.image_transforms(image_train_tmp_image)
+            example["instance_prompt_ids"] = self.tokenizer(
+                image_train_tmp.caption,
+                padding="do_not_pad",
+                truncation=True,
+                max_length=self.tokenizer.model_max_length,
+            ).input_ids
+            return example
+        if class_img==True:
+            image_train_tmp = image_train_item.hydrate(crop=False, save=4, crop_jitter=self.crop_jitter)
+            image_train_tmp_image = Image.fromarray(normalize8(image_train_tmp.image)).convert("RGB")
+            example["class_images"] = self.image_transforms(image_train_tmp_image)
+            example["class_prompt_ids"] = self.tokenizer(
+                image_train_tmp.caption,
+                padding="do_not_pad",
+                truncation=True,
+                max_length=self.tokenizer.model_max_length,
+            ).input_ids
+            return example
 
 _RANDOM_TRIM = 0.04
 class ImageTrainItem(): 
@@ -645,6 +676,7 @@ class DataLoaderMultiAspect():
         self.use_image_names_as_captions = use_image_names_as_captions
         self.balance_datasets = balance_datasets
         self.with_prior_loss = with_prior_loss
+        self.add_class_images_to_dataset = add_class_images_to_dataset
         prepared_train_data = []
         
         self.aspects = get_aspect_buckets(resolution)
@@ -688,12 +720,25 @@ class DataLoaderMultiAspect():
                 prepared_train_data.extend(self.__prescan_images(debug_level, self.image_paths, flip_p,use_image_names_as_captions,concept_class_prompt)) # ImageTrainItem[]
             
         self.image_caption_pairs = self.__bucketize_images(prepared_train_data, batch_size=batch_size, debug_level=debug_level)
+        if self.with_prior_loss and add_class_images_to_dataset == False:
+            self.class_image_caption_pairs = []
+            for concept in concept_list:
+                self.image_paths = []
+                data_root_class = concept['class_data_dir']
+                concept_class_prompt = concept['class_prompt']
+                self.__recurse_data_root(self=self, recurse_root=data_root_class)
+                random.Random(seed).shuffle(self.image_paths)
+                use_image_names_as_captions = False
+                self.class_image_caption_pairs.extend(self.__prescan_images(debug_level, self.image_paths, flip_p,use_image_names_as_captions,concept_class_prompt))
+            self.class_image_caption_pairs = self.__bucketize_images(self.class_image_caption_pairs, batch_size=batch_size, debug_level=debug_level)
         if debug_level > 0: print(f" * DLMA Example: {self.image_caption_pairs[0]} images")
         #print the length of image_caption_pairs
         print(" Number of image-caption pairs: ",len(self.image_caption_pairs))
     def get_all_images(self):
-        return self.image_caption_pairs
-
+        if self.with_prior_loss == False and self.add_class_images_to_dataset == False:
+            return self.image_caption_pairs
+        else:
+            return self.image_caption_pairs, self.class_image_caption_pairs
     def __prescan_images(self,debug_level: int, image_paths: list, flip_p=0.0,use_image_names_as_captions=True,concept=None):
         """
         Create ImageTrainItem objects with metadata for hydration later 
@@ -1036,13 +1081,20 @@ def main():
                     )
                     pipeline.set_progress_bar_config(disable=True)
                     pipeline.to(accelerator.device)
+                
+                if args.use_bueckting == False:
+                    num_new_images = args.num_class_images - cur_class_images
+                    logger.info(f"Number of class images to sample: {num_new_images}.")
 
-                num_new_images = args.num_class_images - cur_class_images
-                logger.info(f"Number of class images to sample: {num_new_images}.")
-
-                sample_dataset = PromptDataset(concept["class_prompt"], num_new_images)
-                sample_dataloader = torch.utils.data.DataLoader(sample_dataset, batch_size=args.sample_batch_size)
-
+                    sample_dataset = PromptDataset(concept["class_prompt"], num_new_images)
+                    sample_dataloader = torch.utils.data.DataLoader(sample_dataset, batch_size=args.sample_batch_size)
+                else:
+                    #create class images that match up to the concept target buckets
+                    instance_images_dir = Path(concept["instance_data_dir"])
+                    cur_instance_images = len(list(instance_images_dir.iterdir()))
+                    #target_wh = min(self.aspects, key=lambda aspects:abs(aspects[0]/aspects[1] - image_aspect))
+                    num_new_images = cur_instance_images - cur_class_images
+                
                 sample_dataloader = accelerator.prepare(sample_dataloader)
 
                 with torch.autocast("cuda"):
@@ -1141,6 +1193,7 @@ def main():
             add_class_images_to_dataset=args.add_class_images_to_dataset,
             balance_datasets=args.auto_balance_concept_datasets,
             resolution=args.resolution,
+            with_prior_loss=False#args.with_prior_preservation,
         )
     else:
         train_dataset = DreamBoothDataset(
