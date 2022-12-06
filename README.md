@@ -1,4 +1,4 @@
-wsssssss
+
 <p align="center">
     <br>
     <img src="https://i.imgur.com/DWIZXIh.png" width="800"/>
