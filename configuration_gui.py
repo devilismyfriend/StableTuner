@@ -9,6 +9,7 @@ import tkinter.filedialog as fd
 import json
 from tkinter import messagebox
 from PIL import Image, ImageTk
+#from scripts import converters
 #work in progress code, not finished, credits will be added at a later date.
 
 class CreateToolTip(object):
@@ -101,18 +102,21 @@ class App(tk.Frame):
         self.sample_tab = tk.Frame(self.notebook)
         self.concepts_tab = tk.Frame(self.notebook)
         self.play_tab = tk.Frame(self.notebook)
+        self.tools_tab = tk.Frame(self.notebook)
         self.notebook.add(self.general_tab, text="General Settings",sticky="n")
         self.notebook.add(self.training_tab, text="Training Settings",sticky="n")
         self.notebook.add(self.dataset_tab, text="Dataset Settings",sticky="n")
         self.notebook.add(self.sample_tab, text="Sample Settings",sticky="n")
         self.notebook.add(self.concepts_tab, text="Concept Settings",sticky="n")
         self.notebook.add(self.play_tab, text="Model Playground",sticky="n")
+        self.notebook.add(self.tools_tab, text="Toolbox",sticky="n")
         self.general_tab.configure(bg=self.dark_mode_var)
         self.training_tab.configure(bg=self.dark_mode_var)
         self.dataset_tab.configure(bg=self.dark_mode_var)
         self.sample_tab.configure(bg=self.dark_mode_var)
         self.concepts_tab.configure(bg=self.dark_mode_var)
         self.play_tab.configure(bg=self.dark_mode_var)
+        self.tools_tab.configure(bg=self.dark_mode_var)
         
         #notebook dark mode style
         self.notebook_style = ttk.Style()
@@ -186,6 +190,7 @@ class App(tk.Frame):
         self.pipe = None
         self.current_model = None
         self.play_save_image_button = None
+        self.dataset_repeats = 1
         self.create_widgets()
  
         width = self.notebook.winfo_reqwidth()
@@ -208,7 +213,7 @@ class App(tk.Frame):
         tab_id = self.notebook.select()
         #get the tab index
         tab_index = self.notebook.index(tab_id)
-        tabsSizes = {0 : [650,280], 1 : [650,490], 2 : [650,230],3 : [650,400],4 : [650,400],5 : [650,360]}
+        tabsSizes = {0 : [715,280], 1 : [715,490], 2 : [715,230],3 : [715,400],4 : [715,400],5 : [715,360],6 : [715,490]}
         #get the tab size
         tab_size = tabsSizes[tab_index]
         #resize the window to fit the widgets
@@ -533,27 +538,28 @@ class App(tk.Frame):
         self.number_of_class_images_entry = tk.Entry(self.dataset_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         self.number_of_class_images_entry.grid(row=4, column=1, sticky="nsew")
         self.number_of_class_images_entry.insert(0, self.num_class_images)
+        #create dataset repeat entry
+        self.dataset_repeats_label = tk.Label(self.dataset_tab, text="Dataset Repeats",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        dataset_repeat_label_ttp = CreateToolTip(self.dataset_repeats_label, "The number of times to repeat the dataset, this will increase the number of images in the dataset.")
+        self.dataset_repeats_label.grid(row=5, column=0, sticky="nsew")
+        self.dataset_repeats_entry = tk.Entry(self.dataset_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        self.dataset_repeats_entry.grid(row=5, column=1, sticky="nsew")
+        self.dataset_repeats_entry.insert(0, self.dataset_repeats)
+
         #add use_aspect_ratio_bucketing checkbox
         self.use_aspect_ratio_bucketing_var = tk.IntVar()
         self.use_aspect_ratio_bucketing_var.set(self.use_aspect_ratio_bucketing)
         #create label
         self.use_aspect_ratio_bucketing_label = tk.Label(self.dataset_tab, text="Use Aspect Ratio Bucketing",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         use_aspect_ratio_bucketing_label_ttp = CreateToolTip(self.use_aspect_ratio_bucketing_label, "Will use aspect ratio bucketing, may improve aspect ratio generations.")
-        self.use_aspect_ratio_bucketing_label.grid(row=5, column=0, sticky="nsew")
+        self.use_aspect_ratio_bucketing_label.grid(row=6, column=0, sticky="nsew")
         #create checkbox
         self.use_aspect_ratio_bucketing_checkbox = tk.Checkbutton(self.dataset_tab, variable=self.use_aspect_ratio_bucketing_var,fg=self.dark_mode_text_var, bg=self.dark_mode_var, activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var, selectcolor=self.dark_mode_var)
-        self.use_aspect_ratio_bucketing_checkbox.grid(row=5, column=1, sticky="nsew")
+        self.use_aspect_ratio_bucketing_checkbox.grid(row=6, column=1, sticky="nsew")
         #do something on checkbox click
         self.use_aspect_ratio_bucketing_checkbox.bind("<Button-1>", self.disable_with_prior_loss)
         #add download dataset entry
-        self.download_dataset_label = tk.Label(self.dataset_tab, text="Download Dataset from HF",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
-        download_dataset_label_ttp = CreateToolTip(self.download_dataset_label, "Will git clone a HF dataset repo")
-        self.download_dataset_label.grid(row=6, column=0, sticky="nsew")
-        self.download_dataset_entry = tk.Entry(self.dataset_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var)
-        self.download_dataset_entry.grid(row=6, column=1, sticky="nsew")
-        #add download dataset button
-        self.download_dataset_button = tk.Button(self.dataset_tab, text="Download Dataset", command=self.download_dataset,fg=self.dark_mode_text_var, bg=self.dark_mode_var, activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var)
-        self.download_dataset_button.grid(row=6, column=2, sticky="nsew")
+        
         #add download dataset entry
         #create Sampling Settings label like the model settings label
         self.sampling_settings_label = tk.Label(self.sample_tab, text="Sampling Settings", font=("Arial", 12, "bold"),fg=self.dark_mode_title_var, bg=self.dark_mode_var)
@@ -769,6 +775,38 @@ class App(tk.Frame):
         self.play_interactive_generation_button.grid(row=9, column=1, columnspan=1, sticky="w")
         self.play_interactive_generation_button_bool.set(False)
 
+        #add label to tools tab
+        self.tools_label = tk.Label(self.tools_tab, text="Toolbox",  font=("Helvetica", 12, "bold"),fg=self.dark_mode_title_var, bg=self.dark_mode_var)
+        self.tools_label.grid(row=0, column=0,columnspan=3, sticky="nsew")
+        #empty row
+        self.empty_row = tk.Label(self.tools_tab, text="",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        self.empty_row.grid(row=1, column=0, sticky="nsew")
+        #add a label model tools title
+        self.model_tools_label = tk.Label(self.tools_tab, text="Model Tools",  font=("Helvetica", 12, "bold"),fg=self.dark_mode_title_var, bg=self.dark_mode_var)
+        self.model_tools_label.grid(row=2, column=0,columnspan=3, sticky="nsew")
+        #add a button to convert to ckpt
+        self.convert_to_ckpt_button = tk.Button(self.tools_tab, text="Convert Diffusers To CKPT", command=lambda:self.convert_ckpt(),fg=self.dark_mode_title_var, bg=self.dark_mode_var,activebackground=self.dark_mode_title_var)
+        self.convert_to_ckpt_button.configure(border=4, relief='flat')
+        self.convert_to_ckpt_button.grid(row=3, column=0, columnspan=1, sticky="nsew")
+        #add a button to convert ckpt to diffusers
+        self.convert_ckpt_to_diffusers_button = tk.Button(self.tools_tab, text="Convert CKPT To Diffusers", command=lambda:self.convert_ckpt_to_diffusers(),fg=self.dark_mode_title_var, bg=self.dark_mode_var,activebackground=self.dark_mode_title_var)
+        self.convert_ckpt_to_diffusers_button.configure(border=4, relief='flat',state="disabled")
+        self.convert_ckpt_to_diffusers_button.grid(row=3, column=1, columnspan=1, sticky="nsew")
+        #empty row
+        self.empty_row = tk.Label(self.tools_tab, text="",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        self.empty_row.grid(row=6, column=0, sticky="nsew")
+        #add a label dataset tools title
+        self.dataset_tools_label = tk.Label(self.tools_tab, text="Dataset Tools",  font=("Helvetica", 12, "bold"),fg=self.dark_mode_title_var, bg=self.dark_mode_var)
+        self.dataset_tools_label.grid(row=7, column=0,columnspan=3, sticky="nsew")
+        self.download_dataset_label = tk.Label(self.tools_tab, text="Download Dataset from HF",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        download_dataset_label_ttp = CreateToolTip(self.download_dataset_label, "Will git clone a HF dataset repo")
+        self.download_dataset_label.grid(row=9, column=0, sticky="nsew")
+        self.download_dataset_entry = tk.Entry(self.tools_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        self.download_dataset_entry.grid(row=9, column=1, sticky="nsew")
+        #add download dataset button
+        self.download_dataset_button = tk.Button(self.tools_tab, text="Download Dataset", command=self.download_dataset,fg=self.dark_mode_text_var, bg=self.dark_mode_var, activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var)
+        self.download_dataset_button.grid(row=9, column=2, sticky="nsew")
+
 
         self.generate_btn = tk.Button(self.general_tab)
         
@@ -776,6 +814,13 @@ class App(tk.Frame):
         self.generate_btn["text"] = "Start Training!"
         self.generate_btn["command"] = self.process_inputs
         self.generate_btn.grid(row=100, column=0,columnspan=2, sticky="nsew")
+    def convert_ckpt_to_diffusers(self):
+        #get the model path
+        model_path = fd.askopenfilename(title="Select Model", filetypes=(("Model", "*.ckpt"), ("All Files", "*.*")))
+        #get the output path
+        output_path = fd.askdirectory()
+        #run the command
+        os.system("python3 /content/CLIP/convert_ckpt_to_diffusers.py --model_path " + model_path + " --output_path " + output_path)
     def disable_with_prior_loss(self, *args):
         if self.use_aspect_ratio_bucketing_var.get() == 1:
             self.with_prior_loss_preservation_var.set(0)
@@ -1491,6 +1536,7 @@ class App(tk.Frame):
         config['concepts'] = self.concepts
         config['aspect_ratio_bucketing'] = self.use_aspect_ratio_bucketing_var.get()
         config['seed'] = self.seed_entry.get()
+        config['dataset_repeats'] = self.dataset_repeats_entry.get()
         #save the config file
         #if the file exists, delete it
         if os.path.exists(file_name):
@@ -1594,6 +1640,8 @@ class App(tk.Frame):
         self.use_aspect_ratio_bucketing_var.set(config["aspect_ratio_bucketing"])
         self.seed_entry.delete(0, tk.END)
         self.seed_entry.insert(0, config["seed"])
+        self.dataset_repeats_entry.delete(0, tk.END)
+        self.dataset_repeats_entry.insert(0, config["dataset_repeats"])
         #self.update_controlled_seed_sample()
         #self.update_sample_prompts()
         self.master.update()
@@ -1645,6 +1693,7 @@ class App(tk.Frame):
         self.concept_list_json_path = 'stabletune_concept_list.json'
         self.use_aspect_ratio_bucketing = self.use_aspect_ratio_bucketing_var.get()
         self.seed_number = self.seed_entry.get()
+        self.dataset_repeats = self.dataset_repeats_entry.get()
         #open stabletune_concept_list.json
         if os.path.exists('stabletune_last_run.json'):
             with open('stabletune_last_run.json') as f:
@@ -1652,7 +1701,7 @@ class App(tk.Frame):
             if self.regenerate_latent_cache == False:
                 if self.last_run["concepts"] == self.concepts:
                     #check if resolution is the same
-                    if self.last_run["resolution"] != self.resolution or self.last_run["batch_size"] != self.batch_size or self.last_run["train_text_encoder"] != self.train_text_encoder or self.last_run["use_image_names_as_captions"] != self.use_image_names_as_captions or self.last_run["auto_balance_concept_datasets"] != self.auto_balance_concept_datasets or self.last_run["add_class_images_to_dataset"] != self.add_class_images_to_dataset or self.last_run["number_of_class_images"] != self.number_of_class_images or self.last_run["aspect_ratio_bucketing"] != self.use_aspect_ratio_bucketing:
+                    if self.last_run["resolution"] != self.resolution or self.last_run['dataset_repeats'] != self.dataset_repeats or self.last_run["batch_size"] != self.batch_size or self.last_run["train_text_encoder"] != self.train_text_encoder or self.last_run["use_image_names_as_captions"] != self.use_image_names_as_captions or self.last_run["auto_balance_concept_datasets"] != self.auto_balance_concept_datasets or self.last_run["add_class_images_to_dataset"] != self.add_class_images_to_dataset or self.last_run["number_of_class_images"] != self.number_of_class_images or self.last_run["aspect_ratio_bucketing"] != self.use_aspect_ratio_bucketing:
                         self.regenerate_latent_cache = True
                         #show message
                         
@@ -1694,7 +1743,7 @@ class App(tk.Frame):
         if self.with_prior_loss_preservation == True and self.use_aspect_ratio_bucketing == False:
             batBase += f' "--with_prior_preservation" '
             batBase += f' "--prior_loss_weight={self.prior_loss_preservation_weight}" '
-        else:
+        elif self.with_prior_loss_preservation == True and self.use_aspect_ratio_bucketing == True:
             print('loss preservation isnt supported with aspect ratio bucketing yet, sorry!')
         if self.use_image_names_as_captions == True:
             batBase += f' "--use_image_names_as_captions" '
@@ -1708,6 +1757,7 @@ class App(tk.Frame):
         batBase += f' "--n_save_sample={self.number_of_samples_to_generate}" '
         batBase += f' "--sample_height={self.sample_height}" '
         batBase += f' "--sample_width={self.sample_width}" '
+        batBase += f' "--dataset_repeats={self.dataset_repeats}" '
         if self.sample_random_aspect_ratio == True:
             batBase += f' "--sample_aspect_ratios" '
         if self.send_telegram_updates == True:
@@ -1736,8 +1786,20 @@ class App(tk.Frame):
         self.master.destroy()
         #run the bat file
         self.master.quit()
-        os.system("train.bat")
-        os.system("pause")
+        train = os.system("train.bat")
+        #if exit code is 0, then the training was successful
+        if train == 0:
+            root = tk.Tk()
+            app = App(master=root)
+            app.mainloop()
+            #get the output path
+            self.play_model_entry.insert(0, self.output_path_entry.get() / self.train_epochs_entry.get())
+            #switch to the play tab
+            self.notebook.select(5)
+            
+        else:
+            os.system("pause")
+        #restart the app
         
 
 

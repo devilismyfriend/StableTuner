@@ -59,6 +59,7 @@ from PIL.Image import Resampling
 def parse_args():
     parser = argparse.ArgumentParser(description="Simple example of a training script.")
     parser.add_argument(
+
         "--use_bucketing",
         default=False,
         action="store_true",
@@ -100,6 +101,12 @@ def parse_args():
         default=False,
         action="store_true",
         help="sample different aspect ratios for each image",
+    )
+    parser.add_argument(
+        "--dataset_repeats",
+        type=int,
+        default=1,
+        help="repeat the dataset this many times",
     )
     parser.add_argument(
         "--save_every_n_epoch",
@@ -316,7 +323,7 @@ def parse_args():
         default=None,
         help="Path to json containing multiple concepts, will overwrite parameters like instance_prompt, class_prompt, etc.",
     )
-    parser.add_argument("--save_sample_controlled_seed", type=int, default=0, help="Set a seed for an extra sample image to be constantly saved.")
+    parser.add_argument("--save_sample_controlled_seed", type=int, action='append', help="Set a seed for an extra sample image to be constantly saved.")
     parser.add_argument("--delete_checkpoints_when_full_drive", default=False, action="store_true", help="Delete checkpoints when the drive is full.")
     parser.add_argument("--send_telegram_updates", default=False, action="store_true", help="Send Telegram updates.")
     parser.add_argument("--telegram_chat_id", type=str, default="0", help="Telegram chat ID.")
@@ -842,7 +849,8 @@ class DreamBoothDataset(Dataset):
         size=512,
         center_crop=False,
         num_class_images=None,
-        use_image_names_as_captions=False
+        use_image_names_as_captions=False,
+        repeats=1,
     ):
         self.use_image_names_as_captions = use_image_names_as_captions
         self.size = size
@@ -854,19 +862,21 @@ class DreamBoothDataset(Dataset):
         self.class_images_path = []
 
         for concept in concepts_list:
-            inst_img_path = [(x, concept["instance_prompt"]) for x in Path(concept["instance_data_dir"]).iterdir() if x.is_file()]
-            self.instance_images_path.extend(inst_img_path)
+            for i in range(repeats):
+                inst_img_path = [(x, concept["instance_prompt"]) for x in Path(concept["instance_data_dir"]).iterdir() if x.is_file() and x.suffix == ".jpg" or x.suffix == ".png"]
+                self.instance_images_path.extend(inst_img_path)
 
             if with_prior_preservation:
-                class_img_path = [(x, concept["class_prompt"]) for x in Path(concept["class_data_dir"]).iterdir() if x.is_file()]
-                self.class_images_path.extend(class_img_path[:num_class_images])
+                for i in range(repeats):
+                    class_img_path = [(x, concept["class_prompt"]) for x in Path(concept["class_data_dir"]).iterdir() if x.is_file() and x.suffix == ".jpg" or x.suffix == ".png"]
+                    self.class_images_path.extend(class_img_path[:num_class_images])
         random.shuffle(self.instance_images_path)
 
         self.num_instance_images = len(self.instance_images_path)
         self._length = self.num_instance_images
         self.num_class_images = len(self.class_images_path)
         self._length = max(self.num_class_images, self.num_instance_images)
-
+        print (f" ** Dataset length: {self._length}, {self.num_instance_images / repeats} images using {repeats} repeats")
         self.image_transforms = transforms.Compose(
             [
                 transforms.Resize(size, interpolation=transforms.InterpolationMode.BILINEAR),
@@ -887,6 +897,15 @@ class DreamBoothDataset(Dataset):
             instance_prompt = str(instance_path).split("/")[-1].split(".")[0]
             if '(' in instance_prompt:
                 instance_prompt = instance_prompt.split('(')[0]
+        #else if there's a txt file with the same name as the image, read the caption from there
+        else:
+            #if there's a txt file with the same name as the image, read the caption from there
+            txt_path = instance_path.with_suffix('.txt')
+            #if txt_path exists, read the caption from there
+            if os.path.exists(txt_path):
+                with open(txt_path, encoding='utf-8') as f:
+                    instance_prompt = f.readline().rstrip()
+
         instance_image = instance_image.convert("RGB")
         example["instance_images"] = self.image_transforms(instance_image)
         example["instance_prompt_ids"] = self.tokenizer(
@@ -1193,7 +1212,8 @@ def main():
             add_class_images_to_dataset=args.add_class_images_to_dataset,
             balance_datasets=args.auto_balance_concept_datasets,
             resolution=args.resolution,
-            with_prior_loss=False#args.with_prior_preservation,
+            with_prior_loss=False,#args.with_prior_preservation,
+            repeats=args.dataset_repeats,
         )
     else:
         train_dataset = DreamBoothDataset(
@@ -1204,6 +1224,7 @@ def main():
         center_crop=args.center_crop,
         num_class_images=args.num_class_images,
         use_image_names_as_captions=args.use_image_names_as_captions,
+        repeats=args.dataset_repeats,
     )
     def collate_fn(examples):
         #print(examples)
@@ -1436,15 +1457,16 @@ def main():
                         #convert sampleIndex to number in words
                         sampleName = f"prompt_{sampleIndex+1}"
                         os.makedirs(os.path.join(sample_dir,sampleName), exist_ok=True)
-                        for i in tqdm(range(args.n_save_sample) if not args.save_sample_controlled_seed else range(args.n_save_sample+1), desc="Generating samples"):
+                        for i in tqdm(range(args.n_save_sample) if not args.save_sample_controlled_seed else range(args.n_save_sample+len(args.save_sample_controlled_seed)), desc="Generating samples"):
                             #check if the sample is controlled by a seed
                             if i != args.n_save_sample:
                                 images = pipeline(samplePrompt,height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps).images
                                 images[0].save(os.path.join(sample_dir,sampleName, f"{sampleName}_{i}.png"))
                             else:
-                                generator = torch.Generator("cuda").manual_seed(args.save_sample_controlled_seed)
-                                images = pipeline(samplePrompt,height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps, generator=generator).images
-                                images[0].save(os.path.join(sample_dir,sampleName, f"{sampleName}_controlled_seed_{str(args.save_sample_controlled_seed)}.png"))
+                                for seed in args.save_sample_controlled_seed:
+                                    generator = torch.Generator("cuda").manual_seed(seed)
+                                    images = pipeline(samplePrompt,height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps, generator=generator).images
+                                    images[0].save(os.path.join(sample_dir,sampleName, f"{sampleName}_controlled_seed_{str(seed)}.png"))
                         if args.send_telegram_updates:
                             imgs = []
                             #get all the images from the sample folder

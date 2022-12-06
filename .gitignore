@@ -24,3 +24,5 @@ train.bat
 data/soda/
 data/soda_stream/
 data/ans_huh/
+*.pyc
+train_dreambooth2.py
