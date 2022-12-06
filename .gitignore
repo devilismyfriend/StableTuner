@@ -21,3 +21,4 @@ train.bat
 *.png
 *.bin
 *.txt
+data/soda/

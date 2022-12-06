@@ -208,7 +208,7 @@ class App(tk.Frame):
         tab_id = self.notebook.select()
         #get the tab index
         tab_index = self.notebook.index(tab_id)
-        tabsSizes = {0 : [650,280], 1 : [650,490], 2 : [650,180],3 : [650,400],4 : [650,400],5 : [650,360]}
+        tabsSizes = {0 : [650,280], 1 : [650,490], 2 : [650,230],3 : [650,400],4 : [650,400],5 : [650,360]}
         #get the tab size
         tab_size = tabsSizes[tab_index]
         #resize the window to fit the widgets
@@ -543,6 +543,16 @@ class App(tk.Frame):
         #create checkbox
         self.use_aspect_ratio_bucketing_checkbox = tk.Checkbutton(self.dataset_tab, variable=self.use_aspect_ratio_bucketing_var,fg=self.dark_mode_text_var, bg=self.dark_mode_var, activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var, selectcolor=self.dark_mode_var)
         self.use_aspect_ratio_bucketing_checkbox.grid(row=5, column=1, sticky="nsew")
+        #add download dataset entry
+        self.download_dataset_label = tk.Label(self.dataset_tab, text="Download Dataset from HF",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        download_dataset_label_ttp = CreateToolTip(self.download_dataset_label, "Will git clone a HF dataset repo")
+        self.download_dataset_label.grid(row=6, column=0, sticky="nsew")
+        self.download_dataset_entry = tk.Entry(self.dataset_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        self.download_dataset_entry.grid(row=6, column=1, sticky="nsew")
+        #add download dataset button
+        self.download_dataset_button = tk.Button(self.dataset_tab, text="Download Dataset", command=self.download_dataset,fg=self.dark_mode_text_var, bg=self.dark_mode_var, activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var)
+        self.download_dataset_button.grid(row=6, column=2, sticky="nsew")
+        #add download dataset entry
         #create Sampling Settings label like the model settings label
         self.sampling_settings_label = tk.Label(self.sample_tab, text="Sampling Settings", font=("Arial", 12, "bold"),fg=self.dark_mode_title_var, bg=self.dark_mode_var)
         self.sampling_settings_label.grid(row=0, column=0, sticky="nsew")
@@ -764,6 +774,22 @@ class App(tk.Frame):
         self.generate_btn["text"] = "Start Training!"
         self.generate_btn["command"] = self.process_inputs
         self.generate_btn.grid(row=100, column=0,columnspan=2, sticky="nsew")
+    def download_dataset(self):
+        #get the dataset name
+        #import datasets
+        from git import Repo
+        folder = fd.askdirectory()
+        dataset_name = self.download_dataset_entry.get()
+        url = "https://huggingface.co/datasets/" + dataset_name if "/" not in dataset_name[0] else "/" + dataset_name
+        Repo.clone_from(url, folder)
+        
+        #dataset = load_dataset(dataset_name)
+        #for each item in the dataset save it to a file in a folder with the name of the dataset
+        #create the folder
+        #get user to pick a folder
+        #git clone hugging face repo
+                
+        #using 
     def interactive_generation_button(self):
         #get state of button
         button_state = self.play_interactive_generation_button_bool.get()
@@ -826,8 +852,8 @@ class App(tk.Frame):
                 if self.play_width < self.master.winfo_width():
                     self.play_width = self.master.winfo_width()
                     self.master.geometry(f"{self.play_width}x{self.play_height+300}")
-                    self.play_image = self.play_image_canvas.create_image(0, 0, anchor="nw", image=self.play_current_image)
-                    self.play_image_canvas.update()
+                self.play_image = self.play_image_canvas.create_image(0, 0, anchor="nw", image=self.play_current_image)
+                self.play_image_canvas.update()
             #update image
             self.play_image_canvas.itemconfig(self.play_image, image=self.play_current_image)
             self.play_image_canvas.update()
@@ -1626,7 +1652,7 @@ class App(tk.Frame):
 
         #create a bat file to run the training
         if self.mixed_precision == 'fp16':
-            batBase = 'accelerate "launch" --mixed_precision=fp16 "train_dreambooth.py"'
+            batBase = 'accelerate "launch" "--mixed_precision=fp16" "train_dreambooth.py"'
         else:
             batBase = 'accelerate "launch" "train_dreambooth.py"'
         batBase += f' "--pretrained_model_name_or_path={self.model_path}" '
