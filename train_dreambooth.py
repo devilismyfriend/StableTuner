@@ -528,7 +528,7 @@ class AutoBucketing(Dataset):
 
             I = ((I - mn)/mx) * 255
             return I.astype(np.uint8)
-        image_train_tmp = image_train_item.hydrate(crop=False, save=4, crop_jitter=self.crop_jitter)
+        image_train_tmp = image_train_item.hydrate(crop=False, save=0, crop_jitter=self.crop_jitter)
         image_train_tmp_image = Image.fromarray(normalize8(image_train_tmp.image)).convert("RGB")
         example["instance_images"] = self.image_transforms(image_train_tmp_image)
         example["instance_prompt_ids"] = self.tokenizer(
@@ -638,12 +638,13 @@ class DataLoaderMultiAspect():
     batch_size: number of images per batch
     flip_p: probability of flipping image horizontally (i.e. 0-0.5)
     """
-    def __init__(self,concept_list, seed=555, debug_level=0,resolution=512, batch_size=1, flip_p=0.0,use_image_names_as_captions=True,add_class_images_to_dataset=False,balance_datasets=False):
+    def __init__(self,concept_list, seed=555, debug_level=0,resolution=512, batch_size=1, flip_p=0.0,use_image_names_as_captions=True,add_class_images_to_dataset=False,balance_datasets=False,with_prior_loss=False):
         self.resolution = resolution
         self.debug_level = debug_level
         self.flip_p = flip_p
         self.use_image_names_as_captions = use_image_names_as_captions
         self.balance_datasets = balance_datasets
+        self.with_prior_loss = with_prior_loss
         prepared_train_data = []
         
         self.aspects = get_aspect_buckets(resolution)
@@ -685,6 +686,7 @@ class DataLoaderMultiAspect():
                 random.Random(seed).shuffle(self.image_paths)
                 use_image_names_as_captions = False
                 prepared_train_data.extend(self.__prescan_images(debug_level, self.image_paths, flip_p,use_image_names_as_captions,concept_class_prompt)) # ImageTrainItem[]
+            
         self.image_caption_pairs = self.__bucketize_images(prepared_train_data, batch_size=batch_size, debug_level=debug_level)
         if debug_level > 0: print(f" * DLMA Example: {self.image_caption_pairs[0]} images")
         #print the length of image_caption_pairs
@@ -1156,7 +1158,9 @@ def main():
         pixel_values = [example["instance_images"] for example in examples]
         # Concat class and instance examples for prior preservation.
         # We do this to avoid doing two forward passes.
-        
+        if args.with_prior_preservation:
+            input_ids += [example["class_prompt_ids"] for example in examples]
+            pixel_values += [example["class_images"] for example in examples]
         ### no need to do it now when it's loaded by the multiAspectsDataset
         #if args.with_prior_preservation:
         #    input_ids += [example["class_prompt_ids"] for example in examples]

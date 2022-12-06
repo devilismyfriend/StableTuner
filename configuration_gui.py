@@ -1625,7 +1625,10 @@ class App(tk.Frame):
                 
 
         #create a bat file to run the training
-        batBase = 'accelerate "launch" "train_dreambooth.py"'
+        if self.mixed_precision == 'fp16':
+            batBase = 'accelerate "launch" --mixed_precision=fp16 "train_dreambooth.py"'
+        else:
+            batBase = 'accelerate "launch" "train_dreambooth.py"'
         batBase += f' "--pretrained_model_name_or_path={self.model_path}" '
         batBase += f' "--pretrained_vae_name_or_path={self.vae_path}" '
         batBase += f' "--output_dir={self.output_path}" '

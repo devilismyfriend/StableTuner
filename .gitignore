@@ -15,3 +15,9 @@ stabletune_concept_list.json
 StableTuner_last_run.json
 train.bat
 *.jpg
+*.0
+*.pt
+*.json
+*.png
+*.bin
+*.txt
