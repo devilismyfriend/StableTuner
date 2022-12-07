@@ -742,7 +742,7 @@ class DataLoaderMultiAspect():
         #print the length of image_caption_pairs
         print(" Number of image-caption pairs: ",len(self.image_caption_pairs))
     def get_all_images(self):
-        if self.with_prior_loss == False and self.add_class_images_to_dataset == False:
+        if self.with_prior_loss == False:
             return self.image_caption_pairs
         else:
             return self.image_caption_pairs, self.class_image_caption_pairs
