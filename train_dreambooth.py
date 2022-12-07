@@ -1101,7 +1101,7 @@ def main():
                     pipeline.set_progress_bar_config(disable=True)
                     pipeline.to(accelerator.device)
                 
-                if args.use_bueckting == False:
+                if args.use_bucketing == False:
                     num_new_images = args.num_class_images - cur_class_images
                     logger.info(f"Number of class images to sample: {num_new_images}.")
 
