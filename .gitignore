@@ -1813,7 +1813,7 @@ models/with_prior_loss/50/samples/prompt_3/prompt_3_0.png
 models/with_prior_loss/50/samples/prompt_3/prompt_3_2.png
 models/with_prior_loss/50/samples/prompt_3/prompt_3_controlled_seed_2134152.png
 models/with_prior_loss/50/samples/prompt_3/prompt_3_controlled_seed_53463412.png
-test/output/couple of people standing in front of giant painting of city with tall pillars and pillars in the background, best of reddit.png
+resources/stableTuner_icon.png
 test/output/digital painting of city with clock tower in the middle of it's reflection in the water, best of reddit.png
 test/output/feoxpwq - Copy.png
 test/output/feoxpwq.png
@@ -2369,3 +2369,4 @@ test/output/painting of river surrounded best of reddit, best of reddit (2).png
 test/output/painting of ship in the ocean surrounded best of reddit, with city in the background, best of reddit (2).png
 test/output/painting of yellow building on cliff best of reddit, best of reddit (2).png
 test/output/xcasweqs.png
+*.png

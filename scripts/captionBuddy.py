@@ -212,6 +212,16 @@ class ImageBrowser(tk.Frame):
                 captions = self.blip_decoder.generate(torch_image, sample=False, num_beams=16, min_length=self.min_length, \
                             max_length=48, repetition_penalty=self.q_factor)
             caption = captions[0]
+            self.replace = self.replace_entry.get()
+            self.replace_with = self.with_entry.get()
+            self.suffix_var = self.suffix_entry.get()
+            #prepare the caption
+            caption = caption.replace(self.replace, self.replace_with)
+            if caption.endswith(',') or caption.endswith('.'):
+                caption = caption[:-1]
+                caption = caption +', ' + self.suffix_var
+            else:
+                caption = caption + self.suffix_var
             #saving the captioned image
             if self.output_format == 'text':
                 #text file with same name as image
