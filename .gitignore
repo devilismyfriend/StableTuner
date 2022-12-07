@@ -18,7 +18,6 @@ train.bat
 *.0
 *.pt
 *.json
-*.png
 *.bin
 *.txt
 data/soda/
@@ -30,3 +29,2343 @@ parequet_reader.md
 parequet_reader.py
 train-00000-of-00001-82570684cbf189a9.parquet
 scripts/BLIP/
+a painting of a woman walking a dog on a city street with a neon sign in the background.png
+ans_hun_1.png
+ans_hun_org_21.png
+data/watercolour_reg/a painting of blue, pink, and orange watercolors on a white sheet of paper.png
+data/watercolour_reg/a painting of two trees in the middle of a field with a blue sky in the background.png
+data/watercolour_reg/a watercolor painting of a dog standing on a wet ground with a cloudy sky in the background.png
+data/watercolour_reg/a watercolor painting of a group of trees with red, yellow, blue, and green leaves.png
+data/watercolour_reg/a watercolor painting of a house in the middle of a field with trees in the background.png
+data/watercolour_reg/a watercolor painting of a man's face on a piece of paper next to a pen.png
+data/watercolour_reg/a watercolor painting of a person sitting on a bench with a flower in front of them.png
+data/watercolour_reg/a watercolor painting of a plant with red, blue, and green leaves on a white background.png
+data/watercolour_reg/a watercolor painting of a road with trees on one side and a blue sky on the other.png
+data/watercolour_reg/a watercolor painting of a tree in the middle of a field with a red sky in the background.png
+data/watercolour_reg/captioned_images/a painting of blue, pink, and orange watercolors on a white sheet of paper.png
+data/watercolour_reg/captioned_images/a painting of two trees in the middle of a field with a blue sky in the background.png
+data/watercolour_reg/captioned_images/a watercolor painting of a dog standing on a wet ground with a cloudy sky in the background.png
+data/watercolour_reg/captioned_images/a watercolor painting of a group of trees with red, yellow, blue, and green leaves.png
+data/watercolour_reg/captioned_images/a watercolor painting of a house in the middle of a field with trees in the background.png
+data/watercolour_reg/captioned_images/a watercolor painting of a man's face on a piece of paper next to a pen.png
+data/watercolour_reg/captioned_images/a watercolor painting of a person sitting on a bench with a flower in front of them.png
+data/watercolour_reg/captioned_images/a watercolor painting of a plant with red, blue, and green leaves on a white background.png
+data/watercolour_reg/captioned_images/a watercolor painting of a road with trees on one side and a blue sky on the other.png
+data/watercolour_reg/captioned_images/a watercolor painting of a tree in the middle of a field with a red sky in the background.png
+data/watercolour_reg/testttt.png
+lady.png
+logo.png
+logo2.png
+logo3.png
+logos/0.png
+logos/1.png
+logos/10.png
+logos/100.png
+logos/1000.png
+logos/1001.png
+logos/1002.png
+logos/1003.png
+logos/1004.png
+logos/1005.png
+logos/1006.png
+logos/1007.png
+logos/1008.png
+logos/1009.png
+logos/101.png
+logos/1010.png
+logos/1011.png
+logos/1012.png
+logos/1013.png
+logos/1014.png
+logos/1015.png
+logos/1016.png
+logos/1017.png
+logos/1018.png
+logos/1019.png
+logos/102.png
+logos/1020.png
+logos/1021.png
+logos/1022.png
+logos/1023.png
+logos/1024.png
+logos/1025.png
+logos/1026.png
+logos/1027.png
+logos/1028.png
+logos/1029.png
+logos/103.png
+logos/1030.png
+logos/1031.png
+logos/1032.png
+logos/1033.png
+logos/1034.png
+logos/1035.png
+logos/1036.png
+logos/1037.png
+logos/1038.png
+logos/1039.png
+logos/104.png
+logos/1040.png
+logos/1041.png
+logos/1042.png
+logos/1043.png
+logos/1044.png
+logos/1045.png
+logos/1046.png
+logos/1047.png
+logos/1048.png
+logos/1049.png
+logos/105.png
+logos/1050.png
+logos/1051.png
+logos/1052.png
+logos/1053.png
+logos/1054.png
+logos/1055.png
+logos/1056.png
+logos/1057.png
+logos/1058.png
+logos/1059.png
+logos/106.png
+logos/1060.png
+logos/1061.png
+logos/1062.png
+logos/1063.png
+logos/1064.png
+logos/1065.png
+logos/1066.png
+logos/1067.png
+logos/1068.png
+logos/1069.png
+logos/107.png
+logos/1070.png
+logos/1071.png
+logos/1072.png
+logos/1073.png
+logos/1074.png
+logos/1075.png
+logos/1076.png
+logos/1077.png
+logos/1078.png
+logos/1079.png
+logos/108.png
+logos/1080.png
+logos/1081.png
+logos/1082.png
+logos/1083.png
+logos/1084.png
+logos/1085.png
+logos/1086.png
+logos/1087.png
+logos/1088.png
+logos/1089.png
+logos/109.png
+logos/1090.png
+logos/1091.png
+logos/1092.png
+logos/1093.png
+logos/1094.png
+logos/1095.png
+logos/1096.png
+logos/1097.png
+logos/1098.png
+logos/1099.png
+logos/11.png
+logos/110.png
+logos/1100.png
+logos/1101.png
+logos/1102.png
+logos/1103.png
+logos/1104.png
+logos/1105.png
+logos/1106.png
+logos/1107.png
+logos/1108.png
+logos/1109.png
+logos/111.png
+logos/1110.png
+logos/1111.png
+logos/1112.png
+logos/1113.png
+logos/1114.png
+logos/1115.png
+logos/1116.png
+logos/1117.png
+logos/1118.png
+logos/1119.png
+logos/112.png
+logos/1120.png
+logos/1121.png
+logos/1122.png
+logos/1123.png
+logos/1124.png
+logos/1125.png
+logos/1126.png
+logos/1127.png
+logos/1128.png
+logos/1129.png
+logos/113.png
+logos/1130.png
+logos/1131.png
+logos/1132.png
+logos/1133.png
+logos/1134.png
+logos/1135.png
+logos/1136.png
+logos/1137.png
+logos/1138.png
+logos/1139.png
+logos/114.png
+logos/1140.png
+logos/1141.png
+logos/1142.png
+logos/1143.png
+logos/1144.png
+logos/1145.png
+logos/1146.png
+logos/1147.png
+logos/1148.png
+logos/1149.png
+logos/115.png
+logos/1150.png
+logos/1151.png
+logos/1152.png
+logos/1153.png
+logos/1154.png
+logos/1155.png
+logos/1156.png
+logos/1157.png
+logos/1158.png
+logos/1159.png
+logos/116.png
+logos/1160.png
+logos/1161.png
+logos/1162.png
+logos/1163.png
+logos/1164.png
+logos/1165.png
+logos/1166.png
+logos/1167.png
+logos/1168.png
+logos/1169.png
+logos/117.png
+logos/1170.png
+logos/1171.png
+logos/1172.png
+logos/1173.png
+logos/1174.png
+logos/1175.png
+logos/1176.png
+logos/1177.png
+logos/1178.png
+logos/1179.png
+logos/118.png
+logos/1180.png
+logos/1181.png
+logos/1182.png
+logos/1183.png
+logos/1184.png
+logos/1185.png
+logos/1186.png
+logos/1187.png
+logos/1188.png
+logos/1189.png
+logos/119.png
+logos/1190.png
+logos/1191.png
+logos/1192.png
+logos/1193.png
+logos/1194.png
+logos/1195.png
+logos/1196.png
+logos/1197.png
+logos/1198.png
+logos/1199.png
+logos/12.png
+logos/120.png
+logos/1200.png
+logos/1201.png
+logos/1202.png
+logos/1203.png
+logos/1204.png
+logos/1205.png
+logos/1206.png
+logos/1207.png
+logos/1208.png
+logos/1209.png
+logos/121.png
+logos/1210.png
+logos/1211.png
+logos/1212.png
+logos/1213.png
+logos/1214.png
+logos/1215.png
+logos/1216.png
+logos/1217.png
+logos/1218.png
+logos/1219.png
+logos/122.png
+logos/1220.png
+logos/1221.png
+logos/1222.png
+logos/1223.png
+logos/1224.png
+logos/1225.png
+logos/1226.png
+logos/1227.png
+logos/1228.png
+logos/1229.png
+logos/123.png
+logos/1230.png
+logos/1231.png
+logos/1232.png
+logos/1233.png
+logos/1234.png
+logos/1235.png
+logos/1236.png
+logos/1237.png
+logos/1238.png
+logos/1239.png
+logos/124.png
+logos/1240.png
+logos/1241.png
+logos/1242.png
+logos/1243.png
+logos/1244.png
+logos/1245.png
+logos/1246.png
+logos/1247.png
+logos/1248.png
+logos/1249.png
+logos/125.png
+logos/1250.png
+logos/1251.png
+logos/1252.png
+logos/1253.png
+logos/1254.png
+logos/1255.png
+logos/1256.png
+logos/1257.png
+logos/1258.png
+logos/1259.png
+logos/126.png
+logos/1260.png
+logos/1261.png
+logos/1262.png
+logos/1263.png
+logos/1264.png
+logos/1265.png
+logos/1266.png
+logos/1267.png
+logos/1268.png
+logos/1269.png
+logos/127.png
+logos/1270.png
+logos/1271.png
+logos/1272.png
+logos/1273.png
+logos/1274.png
+logos/1275.png
+logos/1276.png
+logos/1277.png
+logos/1278.png
+logos/1279.png
+logos/128.png
+logos/1280.png
+logos/1281.png
+logos/1282.png
+logos/1283.png
+logos/1284.png
+logos/1285.png
+logos/1286.png
+logos/1287.png
+logos/1288.png
+logos/1289.png
+logos/129.png
+logos/1290.png
+logos/1291.png
+logos/1292.png
+logos/1293.png
+logos/1294.png
+logos/1295.png
+logos/1296.png
+logos/1297.png
+logos/1298.png
+logos/1299.png
+logos/13.png
+logos/130.png
+logos/1300.png
+logos/1301.png
+logos/1302.png
+logos/1303.png
+logos/1304.png
+logos/1305.png
+logos/1306.png
+logos/1307.png
+logos/1308.png
+logos/1309.png
+logos/131.png
+logos/1310.png
+logos/1311.png
+logos/1312.png
+logos/1313.png
+logos/1314.png
+logos/1315.png
+logos/1316.png
+logos/1317.png
+logos/1318.png
+logos/1319.png
+logos/132.png
+logos/1320.png
+logos/1321.png
+logos/1322.png
+logos/1323.png
+logos/1324.png
+logos/1325.png
+logos/1326.png
+logos/1327.png
+logos/1328.png
+logos/1329.png
+logos/133.png
+logos/1330.png
+logos/1331.png
+logos/1332.png
+logos/1333.png
+logos/1334.png
+logos/1335.png
+logos/1336.png
+logos/1337.png
+logos/1338.png
+logos/1339.png
+logos/134.png
+logos/1340.png
+logos/1341.png
+logos/1342.png
+logos/1343.png
+logos/1344.png
+logos/1345.png
+logos/1346.png
+logos/1347.png
+logos/1348.png
+logos/1349.png
+logos/135.png
+logos/1350.png
+logos/1351.png
+logos/1352.png
+logos/1353.png
+logos/1354.png
+logos/1355.png
+logos/1356.png
+logos/1357.png
+logos/1358.png
+logos/1359.png
+logos/136.png
+logos/1360.png
+logos/1361.png
+logos/1362.png
+logos/1363.png
+logos/1364.png
+logos/1365.png
+logos/1366.png
+logos/1367.png
+logos/1368.png
+logos/1369.png
+logos/137.png
+logos/1370.png
+logos/1371.png
+logos/1372.png
+logos/1373.png
+logos/1374.png
+logos/1375.png
+logos/1376.png
+logos/1377.png
+logos/1378.png
+logos/1379.png
+logos/138.png
+logos/1380.png
+logos/1381.png
+logos/1382.png
+logos/1383.png
+logos/1384.png
+logos/1385.png
+logos/1386.png
+logos/1387.png
+logos/1388.png
+logos/1389.png
+logos/139.png
+logos/1390.png
+logos/1391.png
+logos/1392.png
+logos/1393.png
+logos/1394.png
+logos/1395.png
+logos/1396.png
+logos/1397.png
+logos/1398.png
+logos/1399.png
+logos/14.png
+logos/140.png
+logos/1400.png
+logos/1401.png
+logos/1402.png
+logos/1403.png
+logos/1404.png
+logos/1405.png
+logos/1406.png
+logos/1407.png
+logos/1408.png
+logos/1409.png
+logos/141.png
+logos/1410.png
+logos/1411.png
+logos/1412.png
+logos/1413.png
+logos/1414.png
+logos/1415.png
+logos/1416.png
+logos/1417.png
+logos/1418.png
+logos/1419.png
+logos/142.png
+logos/1420.png
+logos/1421.png
+logos/1422.png
+logos/1423.png
+logos/1424.png
+logos/1425.png
+logos/1426.png
+logos/1427.png
+logos/1428.png
+logos/1429.png
+logos/143.png
+logos/1430.png
+logos/1431.png
+logos/1432.png
+logos/1433.png
+logos/1434.png
+logos/144.png
+logos/145.png
+logos/146.png
+logos/147.png
+logos/148.png
+logos/149.png
+logos/15.png
+logos/150.png
+logos/151.png
+logos/152.png
+logos/153.png
+logos/154.png
+logos/155.png
+logos/156.png
+logos/157.png
+logos/158.png
+logos/159.png
+logos/16.png
+logos/160.png
+logos/161.png
+logos/162.png
+logos/163.png
+logos/164.png
+logos/165.png
+logos/166.png
+logos/167.png
+logos/168.png
+logos/169.png
+logos/17.png
+logos/170.png
+logos/171.png
+logos/172.png
+logos/173.png
+logos/174.png
+logos/175.png
+logos/176.png
+logos/177.png
+logos/178.png
+logos/179.png
+logos/18.png
+logos/180.png
+logos/181.png
+logos/182.png
+logos/183.png
+logos/184.png
+logos/185.png
+logos/186.png
+logos/187.png
+logos/188.png
+logos/189.png
+logos/19.png
+logos/190.png
+logos/191.png
+logos/192.png
+logos/193.png
+logos/194.png
+logos/195.png
+logos/196.png
+logos/197.png
+logos/198.png
+logos/199.png
+logos/2.png
+logos/20.png
+logos/200.png
+logos/201.png
+logos/202.png
+logos/203.png
+logos/204.png
+logos/205.png
+logos/206.png
+logos/207.png
+logos/208.png
+logos/209.png
+logos/21.png
+logos/210.png
+logos/211.png
+logos/212.png
+logos/213.png
+logos/214.png
+logos/215.png
+logos/216.png
+logos/217.png
+logos/218.png
+logos/219.png
+logos/22.png
+logos/220.png
+logos/221.png
+logos/222.png
+logos/223.png
+logos/224.png
+logos/225.png
+logos/226.png
+logos/227.png
+logos/228.png
+logos/229.png
+logos/23.png
+logos/230.png
+logos/231.png
+logos/232.png
+logos/233.png
+logos/234.png
+logos/235.png
+logos/236.png
+logos/237.png
+logos/238.png
+logos/239.png
+logos/24.png
+logos/240.png
+logos/241.png
+logos/242.png
+logos/243.png
+logos/244.png
+logos/245.png
+logos/246.png
+logos/247.png
+logos/248.png
+logos/249.png
+logos/25.png
+logos/250.png
+logos/251.png
+logos/252.png
+logos/253.png
+logos/254.png
+logos/255.png
+logos/256.png
+logos/257.png
+logos/258.png
+logos/259.png
+logos/26.png
+logos/260.png
+logos/261.png
+logos/262.png
+logos/263.png
+logos/264.png
+logos/265.png
+logos/266.png
+logos/267.png
+logos/268.png
+logos/269.png
+logos/27.png
+logos/270.png
+logos/271.png
+logos/272.png
+logos/273.png
+logos/274.png
+logos/275.png
+logos/276.png
+logos/277.png
+logos/278.png
+logos/279.png
+logos/28.png
+logos/280.png
+logos/281.png
+logos/282.png
+logos/283.png
+logos/284.png
+logos/285.png
+logos/286.png
+logos/287.png
+logos/288.png
+logos/289.png
+logos/29.png
+logos/290.png
+logos/291.png
+logos/292.png
+logos/293.png
+logos/294.png
+logos/295.png
+logos/296.png
+logos/297.png
+logos/298.png
+logos/299.png
+logos/3.png
+logos/30.png
+logos/300.png
+logos/301.png
+logos/302.png
+logos/303.png
+logos/304.png
+logos/305.png
+logos/306.png
+logos/307.png
+logos/308.png
+logos/309.png
+logos/31.png
+logos/310.png
+logos/311.png
+logos/312.png
+logos/313.png
+logos/314.png
+logos/315.png
+logos/316.png
+logos/317.png
+logos/318.png
+logos/319.png
+logos/32.png
+logos/320.png
+logos/321.png
+logos/322.png
+logos/323.png
+logos/324.png
+logos/325.png
+logos/326.png
+logos/327.png
+logos/328.png
+logos/329.png
+logos/33.png
+logos/330.png
+logos/331.png
+logos/332.png
+logos/333.png
+logos/334.png
+logos/335.png
+logos/336.png
+logos/337.png
+logos/338.png
+logos/339.png
+logos/34.png
+logos/340.png
+logos/341.png
+logos/342.png
+logos/343.png
+logos/344.png
+logos/345.png
+logos/346.png
+logos/347.png
+logos/348.png
+logos/349.png
+logos/35.png
+logos/350.png
+logos/351.png
+logos/352.png
+logos/353.png
+logos/354.png
+logos/355.png
+logos/356.png
+logos/357.png
+logos/358.png
+logos/359.png
+logos/36.png
+logos/360.png
+logos/361.png
+logos/362.png
+logos/363.png
+logos/364.png
+logos/365.png
+logos/366.png
+logos/367.png
+logos/368.png
+logos/369.png
+logos/37.png
+logos/370.png
+logos/371.png
+logos/372.png
+logos/373.png
+logos/374.png
+logos/375.png
+logos/376.png
+logos/377.png
+logos/378.png
+logos/379.png
+logos/38.png
+logos/380.png
+logos/381.png
+logos/382.png
+logos/383.png
+logos/384.png
+logos/385.png
+logos/386.png
+logos/387.png
+logos/388.png
+logos/389.png
+logos/39.png
+logos/390.png
+logos/391.png
+logos/392.png
+logos/393.png
+logos/394.png
+logos/395.png
+logos/396.png
+logos/397.png
+logos/398.png
+logos/399.png
+logos/4.png
+logos/40.png
+logos/400.png
+logos/401.png
+logos/402.png
+logos/403.png
+logos/404.png
+logos/405.png
+logos/406.png
+logos/407.png
+logos/408.png
+logos/409.png
+logos/41.png
+logos/410.png
+logos/411.png
+logos/412.png
+logos/413.png
+logos/414.png
+logos/415.png
+logos/416.png
+logos/417.png
+logos/418.png
+logos/419.png
+logos/42.png
+logos/420.png
+logos/421.png
+logos/422.png
+logos/423.png
+logos/424.png
+logos/425.png
+logos/426.png
+logos/427.png
+logos/428.png
+logos/429.png
+logos/43.png
+logos/430.png
+logos/431.png
+logos/432.png
+logos/433.png
+logos/434.png
+logos/435.png
+logos/436.png
+logos/437.png
+logos/438.png
+logos/439.png
+logos/44.png
+logos/440.png
+logos/441.png
+logos/442.png
+logos/443.png
+logos/444.png
+logos/445.png
+logos/446.png
+logos/447.png
+logos/448.png
+logos/449.png
+logos/45.png
+logos/450.png
+logos/451.png
+logos/452.png
+logos/453.png
+logos/454.png
+logos/455.png
+logos/456.png
+logos/457.png
+logos/458.png
+logos/459.png
+logos/46.png
+logos/460.png
+logos/461.png
+logos/462.png
+logos/463.png
+logos/464.png
+logos/465.png
+logos/466.png
+logos/467.png
+logos/468.png
+logos/469.png
+logos/47.png
+logos/470.png
+logos/471.png
+logos/472.png
+logos/473.png
+logos/474.png
+logos/475.png
+logos/476.png
+logos/477.png
+logos/478.png
+logos/479.png
+logos/48.png
+logos/480.png
+logos/481.png
+logos/482.png
+logos/483.png
+logos/484.png
+logos/485.png
+logos/486.png
+logos/487.png
+logos/488.png
+logos/489.png
+logos/49.png
+logos/490.png
+logos/491.png
+logos/492.png
+logos/493.png
+logos/494.png
+logos/495.png
+logos/496.png
+logos/497.png
+logos/498.png
+logos/499.png
+logos/5.png
+logos/50.png
+logos/500.png
+logos/501.png
+logos/502.png
+logos/503.png
+logos/504.png
+logos/505.png
+logos/506.png
+logos/507.png
+logos/508.png
+logos/509.png
+logos/51.png
+logos/510.png
+logos/511.png
+logos/512.png
+logos/513.png
+logos/514.png
+logos/515.png
+logos/516.png
+logos/517.png
+logos/518.png
+logos/519.png
+logos/52.png
+logos/520.png
+logos/521.png
+logos/522.png
+logos/523.png
+logos/524.png
+logos/525.png
+logos/526.png
+logos/527.png
+logos/528.png
+logos/529.png
+logos/53.png
+logos/530.png
+logos/531.png
+logos/532.png
+logos/533.png
+logos/534.png
+logos/535.png
+logos/536.png
+logos/537.png
+logos/538.png
+logos/539.png
+logos/54.png
+logos/540.png
+logos/541.png
+logos/542.png
+logos/543.png
+logos/544.png
+logos/545.png
+logos/546.png
+logos/547.png
+logos/548.png
+logos/549.png
+logos/55.png
+logos/550.png
+logos/551.png
+logos/552.png
+logos/553.png
+logos/554.png
+logos/555.png
+logos/556.png
+logos/557.png
+logos/558.png
+logos/559.png
+logos/56.png
+logos/560.png
+logos/561.png
+logos/562.png
+logos/563.png
+logos/564.png
+logos/565.png
+logos/566.png
+logos/567.png
+logos/568.png
+logos/569.png
+logos/57.png
+logos/570.png
+logos/571.png
+logos/572.png
+logos/573.png
+logos/574.png
+logos/575.png
+logos/576.png
+logos/577.png
+logos/578.png
+logos/579.png
+logos/58.png
+logos/580.png
+logos/581.png
+logos/582.png
+logos/583.png
+logos/584.png
+logos/585.png
+logos/586.png
+logos/587.png
+logos/588.png
+logos/589.png
+logos/59.png
+logos/590.png
+logos/591.png
+logos/592.png
+logos/593.png
+logos/594.png
+logos/595.png
+logos/596.png
+logos/597.png
+logos/598.png
+logos/599.png
+logos/6.png
+logos/60.png
+logos/600.png
+logos/601.png
+logos/602.png
+logos/603.png
+logos/604.png
+logos/605.png
+logos/606.png
+logos/607.png
+logos/608.png
+logos/609.png
+logos/61.png
+logos/610.png
+logos/611.png
+logos/612.png
+logos/613.png
+logos/614.png
+logos/615.png
+logos/616.png
+logos/617.png
+logos/618.png
+logos/619.png
+logos/62.png
+logos/620.png
+logos/621.png
+logos/622.png
+logos/623.png
+logos/624.png
+logos/625.png
+logos/626.png
+logos/627.png
+logos/628.png
+logos/629.png
+logos/63.png
+logos/630.png
+logos/631.png
+logos/632.png
+logos/633.png
+logos/634.png
+logos/635.png
+logos/636.png
+logos/637.png
+logos/638.png
+logos/639.png
+logos/64.png
+logos/640.png
+logos/641.png
+logos/642.png
+logos/643.png
+logos/644.png
+logos/645.png
+logos/646.png
+logos/647.png
+logos/648.png
+logos/649.png
+logos/65.png
+logos/650.png
+logos/651.png
+logos/652.png
+logos/653.png
+logos/654.png
+logos/655.png
+logos/656.png
+logos/657.png
+logos/658.png
+logos/659.png
+logos/66.png
+logos/660.png
+logos/661.png
+logos/662.png
+logos/663.png
+logos/664.png
+logos/665.png
+logos/666.png
+logos/667.png
+logos/668.png
+logos/669.png
+logos/67.png
+logos/670.png
+logos/671.png
+logos/672.png
+logos/673.png
+logos/674.png
+logos/675.png
+logos/676.png
+logos/677.png
+logos/678.png
+logos/679.png
+logos/68.png
+logos/680.png
+logos/681.png
+logos/682.png
+logos/683.png
+logos/684.png
+logos/685.png
+logos/686.png
+logos/687.png
+logos/688.png
+logos/689.png
+logos/69.png
+logos/690.png
+logos/691.png
+logos/692.png
+logos/693.png
+logos/694.png
+logos/695.png
+logos/696.png
+logos/697.png
+logos/698.png
+logos/699.png
+logos/7.png
+logos/70.png
+logos/700.png
+logos/701.png
+logos/702.png
+logos/703.png
+logos/704.png
+logos/705.png
+logos/706.png
+logos/707.png
+logos/708.png
+logos/709.png
+logos/71.png
+logos/710.png
+logos/711.png
+logos/712.png
+logos/713.png
+logos/714.png
+logos/715.png
+logos/716.png
+logos/717.png
+logos/718.png
+logos/719.png
+logos/72.png
+logos/720.png
+logos/721.png
+logos/722.png
+logos/723.png
+logos/724.png
+logos/725.png
+logos/726.png
+logos/727.png
+logos/728.png
+logos/729.png
+logos/73.png
+logos/730.png
+logos/731.png
+logos/732.png
+logos/733.png
+logos/734.png
+logos/735.png
+logos/736.png
+logos/737.png
+logos/738.png
+logos/739.png
+logos/74.png
+logos/740.png
+logos/741.png
+logos/742.png
+logos/743.png
+logos/744.png
+logos/745.png
+logos/746.png
+logos/747.png
+logos/748.png
+logos/749.png
+logos/75.png
+logos/750.png
+logos/751.png
+logos/752.png
+logos/753.png
+logos/754.png
+logos/755.png
+logos/756.png
+logos/757.png
+logos/758.png
+logos/759.png
+logos/76.png
+logos/760.png
+logos/761.png
+logos/762.png
+logos/763.png
+logos/764.png
+logos/765.png
+logos/766.png
+logos/767.png
+logos/768.png
+logos/769.png
+logos/77.png
+logos/770.png
+logos/771.png
+logos/772.png
+logos/773.png
+logos/774.png
+logos/775.png
+logos/776.png
+logos/777.png
+logos/778.png
+logos/779.png
+logos/78.png
+logos/780.png
+logos/781.png
+logos/782.png
+logos/783.png
+logos/784.png
+logos/785.png
+logos/786.png
+logos/787.png
+logos/788.png
+logos/789.png
+logos/79.png
+logos/790.png
+logos/791.png
+logos/792.png
+logos/793.png
+logos/794.png
+logos/795.png
+logos/796.png
+logos/797.png
+logos/798.png
+logos/799.png
+logos/8.png
+logos/80.png
+logos/800.png
+logos/801.png
+logos/802.png
+logos/803.png
+logos/804.png
+logos/805.png
+logos/806.png
+logos/807.png
+logos/808.png
+logos/809.png
+logos/81.png
+logos/810.png
+logos/811.png
+logos/812.png
+logos/813.png
+logos/814.png
+logos/815.png
+logos/816.png
+logos/817.png
+logos/818.png
+logos/819.png
+logos/82.png
+logos/820.png
+logos/821.png
+logos/822.png
+logos/823.png
+logos/824.png
+logos/825.png
+logos/826.png
+logos/827.png
+logos/828.png
+logos/829.png
+logos/83.png
+logos/830.png
+logos/831.png
+logos/832.png
+logos/833.png
+logos/834.png
+logos/835.png
+logos/836.png
+logos/837.png
+logos/838.png
+logos/839.png
+logos/84.png
+logos/840.png
+logos/841.png
+logos/842.png
+logos/843.png
+logos/844.png
+logos/845.png
+logos/846.png
+logos/847.png
+logos/848.png
+logos/849.png
+logos/85.png
+logos/850.png
+logos/851.png
+logos/852.png
+logos/853.png
+logos/854.png
+logos/855.png
+logos/856.png
+logos/857.png
+logos/858.png
+logos/859.png
+logos/86.png
+logos/860.png
+logos/861.png
+logos/862.png
+logos/863.png
+logos/864.png
+logos/865.png
+logos/866.png
+logos/867.png
+logos/868.png
+logos/869.png
+logos/87.png
+logos/870.png
+logos/871.png
+logos/872.png
+logos/873.png
+logos/874.png
+logos/875.png
+logos/876.png
+logos/877.png
+logos/878.png
+logos/879.png
+logos/88.png
+logos/880.png
+logos/881.png
+logos/882.png
+logos/883.png
+logos/884.png
+logos/885.png
+logos/886.png
+logos/887.png
+logos/888.png
+logos/889.png
+logos/89.png
+logos/890.png
+logos/891.png
+logos/892.png
+logos/893.png
+logos/894.png
+logos/895.png
+logos/896.png
+logos/897.png
+logos/898.png
+logos/899.png
+logos/9.png
+logos/90.png
+logos/900.png
+logos/901.png
+logos/902.png
+logos/903.png
+logos/904.png
+logos/905.png
+logos/906.png
+logos/907.png
+logos/908.png
+logos/909.png
+logos/91.png
+logos/910.png
+logos/911.png
+logos/912.png
+logos/913.png
+logos/914.png
+logos/915.png
+logos/916.png
+logos/917.png
+logos/918.png
+logos/919.png
+logos/92.png
+logos/920.png
+logos/921.png
+logos/922.png
+logos/923.png
+logos/924.png
+logos/925.png
+logos/926.png
+logos/927.png
+logos/928.png
+logos/929.png
+logos/93.png
+logos/930.png
+logos/931.png
+logos/932.png
+logos/933.png
+logos/934.png
+logos/935.png
+logos/936.png
+logos/937.png
+logos/938.png
+logos/939.png
+logos/94.png
+logos/940.png
+logos/941.png
+logos/942.png
+logos/943.png
+logos/944.png
+logos/945.png
+logos/946.png
+logos/947.png
+logos/948.png
+logos/949.png
+logos/95.png
+logos/950.png
+logos/951.png
+logos/952.png
+logos/953.png
+logos/954.png
+logos/955.png
+logos/956.png
+logos/957.png
+logos/958.png
+logos/959.png
+logos/96.png
+logos/960.png
+logos/961.png
+logos/962.png
+logos/963.png
+logos/964.png
+logos/965.png
+logos/966.png
+logos/967.png
+logos/968.png
+logos/969.png
+logos/97.png
+logos/970.png
+logos/971.png
+logos/972.png
+logos/973.png
+logos/974.png
+logos/975.png
+logos/976.png
+logos/977.png
+logos/978.png
+logos/979.png
+logos/98.png
+logos/980.png
+logos/981.png
+logos/982.png
+logos/983.png
+logos/984.png
+logos/985.png
+logos/986.png
+logos/987.png
+logos/988.png
+logos/989.png
+logos/99.png
+logos/990.png
+logos/991.png
+logos/992.png
+logos/993.png
+logos/994.png
+logos/995.png
+logos/996.png
+logos/997.png
+logos/998.png
+logos/999.png
+models/logos/0/samples/prompt_1/prompt_1_0.png
+models/logos/0/samples/prompt_1/prompt_1_controlled_seed_2134152.png
+models/logos/0/samples/prompt_2/prompt_2_0.png
+models/logos/0/samples/prompt_2/prompt_2_controlled_seed_2134152.png
+models/logos/0/samples/prompt_3/prompt_3_0.png
+models/logos/0/samples/prompt_3/prompt_3_controlled_seed_2134152.png
+models/logos/10/samples/prompt_1/prompt_1_0.png
+models/logos/10/samples/prompt_1/prompt_1_controlled_seed_2134152.png
+models/logos/10/samples/prompt_2/prompt_2_0.png
+models/logos/10/samples/prompt_2/prompt_2_controlled_seed_2134152.png
+models/logos/10/samples/prompt_3/prompt_3_0.png
+models/logos/10/samples/prompt_3/prompt_3_controlled_seed_2134152.png
+models/logos/11/samples/prompt_1/prompt_1_0.png
+models/logos/11/samples/prompt_1/prompt_1_controlled_seed_2134152.png
+models/logos/120/samples/prompt_1/prompt_1_0.png
+models/logos/120/samples/prompt_1/prompt_1_controlled_seed_2134152.png
+models/logos/120/samples/prompt_2/prompt_2_0.png
+models/logos/120/samples/prompt_2/prompt_2_controlled_seed_2134152.png
+models/logos/120/samples/prompt_3/prompt_3_0.png
+models/logos/120/samples/prompt_3/prompt_3_controlled_seed_2134152.png
+models/logos/15/samples/prompt_1/prompt_1_0.png
+models/logos/15/samples/prompt_1/prompt_1_controlled_seed_2134152.png
+models/logos/15/samples/prompt_2/prompt_2_0.png
+models/logos/15/samples/prompt_2/prompt_2_controlled_seed_2134152.png
+models/logos/15/samples/prompt_3/prompt_3_0.png
+models/logos/15/samples/prompt_3/prompt_3_controlled_seed_2134152.png
+models/logos/20/samples/prompt_1/prompt_1_0.png
+models/logos/20/samples/prompt_1/prompt_1_controlled_seed_2134152.png
+models/logos/20/samples/prompt_2/prompt_2_0.png
+models/logos/20/samples/prompt_2/prompt_2_controlled_seed_2134152.png
+models/logos/20/samples/prompt_3/prompt_3_0.png
+models/logos/20/samples/prompt_3/prompt_3_controlled_seed_2134152.png
+models/logos/25/samples/prompt_1/prompt_1_0.png
+models/logos/25/samples/prompt_1/prompt_1_controlled_seed_2134152.png
+models/logos/25/samples/prompt_2/prompt_2_0.png
+models/logos/25/samples/prompt_2/prompt_2_controlled_seed_2134152.png
+models/logos/25/samples/prompt_3/prompt_3_0.png
+models/logos/25/samples/prompt_3/prompt_3_controlled_seed_2134152.png
+models/logos/3600/samples/prompt_1/prompt_1_0.png
+models/logos/3600/samples/prompt_1/prompt_1_controlled_seed_2134152.png
+models/logos/3600/samples/prompt_2/prompt_2_0.png
+models/logos/3600/samples/prompt_2/prompt_2_controlled_seed_2134152.png
+models/logos/3600/samples/prompt_3/prompt_3_0.png
+models/logos/3600/samples/prompt_3/prompt_3_controlled_seed_2134152.png
+models/logos/4/samples/prompt_1/prompt_1_0.png
+models/logos/4/samples/prompt_1/prompt_1_controlled_seed_2134152.png
+models/logos/5/samples/prompt_1/prompt_1_0.png
+models/logos/5/samples/prompt_1/prompt_1_controlled_seed_2134152.png
+models/logos/5/samples/prompt_2/prompt_2_0.png
+models/logos/5/samples/prompt_2/prompt_2_controlled_seed_2134152.png
+models/logos/5/samples/prompt_3/prompt_3_0.png
+models/logos/5/samples/prompt_3/prompt_3_controlled_seed_2134152.png
+models/repeats_1/0/samples/prompt_1/prompt_1_0.png
+models/repeats_1/0/samples/prompt_1/prompt_1_controlled_seed_53463412.png
+models/repeats_1/0/samples/prompt_2/prompt_2_0.png
+models/repeats_1/0/samples/prompt_2/prompt_2_controlled_seed_53463412.png
+models/repeats_1/0/samples/prompt_3/prompt_3_0.png
+models/repeats_1/0/samples/prompt_3/prompt_3_controlled_seed_53463412.png
+models/repeats_1/0/samples/prompt_4/prompt_4_0.png
+models/repeats_1/0/samples/prompt_4/prompt_4_controlled_seed_53463412.png
+models/repeats_1/10/samples/prompt_1/prompt_1_0.png
+models/repeats_1/10/samples/prompt_1/prompt_1_controlled_seed_53463412.png
+models/repeats_1/10/samples/prompt_2/prompt_2_0.png
+models/repeats_1/10/samples/prompt_2/prompt_2_controlled_seed_53463412.png
+models/repeats_1/10/samples/prompt_3/prompt_3_0.png
+models/repeats_1/10/samples/prompt_3/prompt_3_controlled_seed_53463412.png
+models/repeats_1/10/samples/prompt_4/prompt_4_0.png
+models/repeats_1/10/samples/prompt_4/prompt_4_controlled_seed_53463412.png
+models/repeats_1/20/samples/prompt_1/prompt_1_0.png
+models/repeats_1/20/samples/prompt_1/prompt_1_controlled_seed_53463412.png
+models/repeats_1/20/samples/prompt_2/prompt_2_0.png
+models/repeats_1/20/samples/prompt_2/prompt_2_controlled_seed_53463412.png
+models/repeats_1/20/samples/prompt_3/prompt_3_0.png
+models/repeats_1/20/samples/prompt_3/prompt_3_controlled_seed_53463412.png
+models/repeats_1/20/samples/prompt_4/prompt_4_0.png
+models/repeats_1/20/samples/prompt_4/prompt_4_controlled_seed_53463412.png
+models/repeats_1/200/samples/prompt_1/prompt_1_0.png
+models/repeats_1/200/samples/prompt_1/prompt_1_controlled_seed_53463412.png
+models/repeats_1/200/samples/prompt_2/prompt_2_0.png
+models/repeats_1/200/samples/prompt_2/prompt_2_controlled_seed_53463412.png
+models/repeats_1/200/samples/prompt_3/prompt_3_0.png
+models/repeats_1/200/samples/prompt_3/prompt_3_controlled_seed_53463412.png
+models/repeats_1/200/samples/prompt_4/prompt_4_0.png
+models/repeats_1/200/samples/prompt_4/prompt_4_controlled_seed_53463412.png
+models/repeats_1/230/samples/prompt_1/prompt_1_0.png
+models/repeats_1/230/samples/prompt_1/prompt_1_controlled_seed_53463412.png
+models/repeats_1/2300/samples/prompt_1/prompt_1_0.png
+models/repeats_1/2300/samples/prompt_1/prompt_1_controlled_seed_53463412.png
+models/repeats_1/30/samples/prompt_1/prompt_1_0.png
+models/repeats_1/30/samples/prompt_1/prompt_1_controlled_seed_53463412.png
+models/repeats_1/30/samples/prompt_2/prompt_2_0.png
+models/repeats_1/30/samples/prompt_2/prompt_2_controlled_seed_53463412.png
+models/repeats_1/30/samples/prompt_3/prompt_3_0.png
+models/repeats_1/30/samples/prompt_3/prompt_3_controlled_seed_53463412.png
+models/repeats_1/30/samples/prompt_4/prompt_4_0.png
+models/repeats_1/30/samples/prompt_4/prompt_4_controlled_seed_53463412.png
+models/repeats_1/40/samples/prompt_1/prompt_1_0.png
+models/repeats_1/40/samples/prompt_1/prompt_1_controlled_seed_53463412.png
+models/repeats_1/40/samples/prompt_2/prompt_2_0.png
+models/repeats_1/40/samples/prompt_2/prompt_2_controlled_seed_53463412.png
+models/repeats_1/40/samples/prompt_3/prompt_3_0.png
+models/repeats_1/40/samples/prompt_3/prompt_3_controlled_seed_53463412.png
+models/repeats_1/40/samples/prompt_4/prompt_4_0.png
+models/repeats_1/40/samples/prompt_4/prompt_4_controlled_seed_53463412.png
+models/repeats_1/5/samples/prompt_1/prompt_1_0.png
+models/repeats_1/5/samples/prompt_1/prompt_1_controlled_seed_53463412.png
+models/repeats_1/50/samples/prompt_1/prompt_1_0.png
+models/repeats_1/50/samples/prompt_1/prompt_1_controlled_seed_53463412.png
+models/repeats_1/50/samples/prompt_2/prompt_2_0.png
+models/repeats_1/50/samples/prompt_2/prompt_2_controlled_seed_53463412.png
+models/repeats_1/50/samples/prompt_3/prompt_3_0.png
+models/repeats_1/50/samples/prompt_3/prompt_3_controlled_seed_53463412.png
+models/repeats_1/50/samples/prompt_4/prompt_4_0.png
+models/repeats_1/50/samples/prompt_4/prompt_4_controlled_seed_53463412.png
+models/repeats_1/60/samples/prompt_1/prompt_1_0.png
+models/repeats_1/60/samples/prompt_1/prompt_1_controlled_seed_53463412.png
+models/repeats_1/60/samples/prompt_2/prompt_2_0.png
+models/repeats_1/60/samples/prompt_2/prompt_2_controlled_seed_53463412.png
+models/repeats_1/60/samples/prompt_3/prompt_3_0.png
+models/repeats_1/60/samples/prompt_3/prompt_3_controlled_seed_53463412.png
+models/repeats_1/60/samples/prompt_4/prompt_4_0.png
+models/repeats_1/60/samples/prompt_4/prompt_4_controlled_seed_53463412.png
+models/repeats_1/70/samples/prompt_1/prompt_1_0.png
+models/repeats_1/70/samples/prompt_1/prompt_1_controlled_seed_53463412.png
+models/repeats_1/70/samples/prompt_2/prompt_2_0.png
+models/repeats_1/70/samples/prompt_2/prompt_2_controlled_seed_53463412.png
+models/repeats_1/70/samples/prompt_3/prompt_3_0.png
+models/repeats_1/70/samples/prompt_3/prompt_3_controlled_seed_53463412.png
+models/repeats_1/70/samples/prompt_4/prompt_4_0.png
+models/repeats_1/70/samples/prompt_4/prompt_4_controlled_seed_53463412.png
+models/repeats_1/80/samples/prompt_1/prompt_1_0.png
+models/repeats_1/80/samples/prompt_1/prompt_1_controlled_seed_53463412.png
+models/repeats_1/80/samples/prompt_2/prompt_2_0.png
+models/repeats_1/80/samples/prompt_2/prompt_2_controlled_seed_53463412.png
+models/repeats_1/80/samples/prompt_3/prompt_3_0.png
+models/repeats_1/80/samples/prompt_3/prompt_3_controlled_seed_53463412.png
+models/repeats_1/80/samples/prompt_4/prompt_4_0.png
+models/repeats_1/80/samples/prompt_4/prompt_4_controlled_seed_53463412.png
+models/repeats_1/90/samples/prompt_1/prompt_1_0.png
+models/repeats_1/90/samples/prompt_1/prompt_1_controlled_seed_53463412.png
+models/repeats_1/90/samples/prompt_2/prompt_2_0.png
+models/repeats_1/90/samples/prompt_2/prompt_2_controlled_seed_53463412.png
+models/repeats_1/90/samples/prompt_3/prompt_3_0.png
+models/repeats_1/90/samples/prompt_3/prompt_3_controlled_seed_53463412.png
+models/repeats_1/90/samples/prompt_4/prompt_4_0.png
+models/repeats_1/90/samples/prompt_4/prompt_4_controlled_seed_53463412.png
+models/repeats_10/0/samples/prompt_1/prompt_1_0.png
+models/repeats_10/0/samples/prompt_1/prompt_1_controlled_seed_53463412.png
+models/repeats_10/2300/samples/prompt_1/prompt_1_0.png
+models/repeats_10/2300/samples/prompt_1/prompt_1_controlled_seed_53463412.png
+models/repeats_10/5/samples/prompt_1/prompt_1_0.png
+models/repeats_10/5/samples/prompt_1/prompt_1_controlled_seed_53463412.png
+models/SD_21_test/0/samples/prompt_1/prompt_1_0.png
+models/SD_21_test/0/samples/prompt_1/prompt_1_controlled_seed_12356612.png
+models/SD_21_test/0/samples/prompt_2/prompt_2_0.png
+models/SD_21_test/0/samples/prompt_2/prompt_2_controlled_seed_12356612.png
+models/SD_21_test/0/samples/prompt_3/prompt_3_0.png
+models/SD_21_test/0/samples/prompt_3/prompt_3_controlled_seed_12356612.png
+models/SD_21_test/10/samples/prompt_1/prompt_1_0.png
+models/SD_21_test/10/samples/prompt_1/prompt_1_controlled_seed_12356612.png
+models/SD_21_test/10/samples/prompt_2/prompt_2_0.png
+models/SD_21_test/10/samples/prompt_2/prompt_2_controlled_seed_12356612.png
+models/SD_21_test/10/samples/prompt_3/prompt_3_0.png
+models/SD_21_test/10/samples/prompt_3/prompt_3_controlled_seed_12356612.png
+models/SD_21_test/15/samples/prompt_1/prompt_1_0.png
+models/SD_21_test/15/samples/prompt_1/prompt_1_controlled_seed_12356612.png
+models/SD_21_test/15/samples/prompt_2/prompt_2_0.png
+models/SD_21_test/15/samples/prompt_2/prompt_2_controlled_seed_12356612.png
+models/SD_21_test/15/samples/prompt_3/prompt_3_0.png
+models/SD_21_test/15/samples/prompt_3/prompt_3_controlled_seed_12356612.png
+models/SD_21_test/20/samples/prompt_1/prompt_1_0.png
+models/SD_21_test/20/samples/prompt_1/prompt_1_controlled_seed_12356612.png
+models/SD_21_test/20/samples/prompt_2/prompt_2_0.png
+models/SD_21_test/20/samples/prompt_2/prompt_2_controlled_seed_12356612.png
+models/SD_21_test/20/samples/prompt_3/prompt_3_0.png
+models/SD_21_test/20/samples/prompt_3/prompt_3_controlled_seed_12356612.png
+models/SD_21_test/25/samples/prompt_1/prompt_1_0.png
+models/SD_21_test/25/samples/prompt_1/prompt_1_controlled_seed_12356612.png
+models/SD_21_test/25/samples/prompt_2/prompt_2_0.png
+models/SD_21_test/25/samples/prompt_2/prompt_2_controlled_seed_12356612.png
+models/SD_21_test/25/samples/prompt_3/prompt_3_0.png
+models/SD_21_test/25/samples/prompt_3/prompt_3_controlled_seed_12356612.png
+models/SD_21_test/30/samples/prompt_1/prompt_1_0.png
+models/SD_21_test/30/samples/prompt_1/prompt_1_controlled_seed_12356612.png
+models/SD_21_test/30/samples/prompt_2/prompt_2_0.png
+models/SD_21_test/30/samples/prompt_2/prompt_2_controlled_seed_12356612.png
+models/SD_21_test/30/samples/prompt_3/prompt_3_0.png
+models/SD_21_test/30/samples/prompt_3/prompt_3_controlled_seed_12356612.png
+models/SD_21_test/5/samples/prompt_1/prompt_1_0.png
+models/SD_21_test/5/samples/prompt_1/prompt_1_controlled_seed_12356612.png
+models/SD_21_test/5/samples/prompt_2/prompt_2_0.png
+models/SD_21_test/5/samples/prompt_2/prompt_2_controlled_seed_12356612.png
+models/SD_21_test/5/samples/prompt_3/prompt_3_0.png
+models/SD_21_test/5/samples/prompt_3/prompt_3_controlled_seed_12356612.png
+models/soda_stream/0/samples/prompt_1/prompt_1_0.png
+models/soda_stream/0/samples/prompt_1/prompt_1_controlled_seed_2134152.png
+models/soda_stream/0/samples/prompt_1/prompt_1_controlled_seed_53463412.png
+models/soda_stream/10/samples/prompt_1/prompt_1_0.png
+models/soda_stream/10/samples/prompt_1/prompt_1_controlled_seed_2134152.png
+models/soda_stream/10/samples/prompt_1/prompt_1_controlled_seed_53463412.png
+models/soda_stream/15/samples/prompt_1/prompt_1_0.png
+models/soda_stream/15/samples/prompt_1/prompt_1_controlled_seed_2134152.png
+models/soda_stream/20/samples/prompt_1/prompt_1_0.png
+models/soda_stream/20/samples/prompt_1/prompt_1_controlled_seed_2134152.png
+models/soda_stream/25/samples/prompt_1/prompt_1_0.png
+models/soda_stream/25/samples/prompt_1/prompt_1_controlled_seed_2134152.png
+models/soda_stream/450/samples/prompt_1/prompt_1_0.png
+models/soda_stream/450/samples/prompt_1/prompt_1_controlled_seed_2134152.png
+models/soda_stream/5/samples/prompt_1/prompt_1_0.png
+models/soda_stream/5/samples/prompt_1/prompt_1_controlled_seed_2134152.png
+models/soda_stream/5/samples/prompt_1/prompt_1_controlled_seed_53463412.png
+models/soda_stream2/0/samples/prompt_1/prompt_1_0.png
+models/soda_stream2/0/samples/prompt_1/prompt_1_controlled_seed_2134152.png
+models/soda_stream2/10/samples/prompt_1/prompt_1_0.png
+models/soda_stream2/10/samples/prompt_1/prompt_1_controlled_seed_2134152.png
+models/soda_stream2/15/samples/prompt_1/prompt_1_0.png
+models/soda_stream2/15/samples/prompt_1/prompt_1_controlled_seed_2134152.png
+models/soda_stream2/20/samples/prompt_1/prompt_1_0.png
+models/soda_stream2/20/samples/prompt_1/prompt_1_controlled_seed_2134152.png
+models/soda_stream2/25/samples/prompt_1/prompt_1_0.png
+models/soda_stream2/25/samples/prompt_1/prompt_1_controlled_seed_2134152.png
+models/soda_stream2/30/samples/prompt_1/prompt_1_0.png
+models/soda_stream2/30/samples/prompt_1/prompt_1_controlled_seed_2134152.png
+models/soda_stream2/5/samples/prompt_1/prompt_1_0.png
+models/soda_stream2/5/samples/prompt_1/prompt_1_controlled_seed_2134152.png
+models/with_prior_loss/0/samples/prompt_1/prompt_1_0.png
+models/with_prior_loss/0/samples/prompt_1/prompt_1_2.png
+models/with_prior_loss/0/samples/prompt_1/prompt_1_controlled_seed_2134152.png
+models/with_prior_loss/0/samples/prompt_1/prompt_1_controlled_seed_53463412.png
+models/with_prior_loss/0/samples/prompt_2/prompt_2_0.png
+models/with_prior_loss/0/samples/prompt_2/prompt_2_2.png
+models/with_prior_loss/0/samples/prompt_2/prompt_2_controlled_seed_2134152.png
+models/with_prior_loss/0/samples/prompt_2/prompt_2_controlled_seed_53463412.png
+models/with_prior_loss/0/samples/prompt_3/prompt_3_0.png
+models/with_prior_loss/0/samples/prompt_3/prompt_3_2.png
+models/with_prior_loss/0/samples/prompt_3/prompt_3_controlled_seed_2134152.png
+models/with_prior_loss/0/samples/prompt_3/prompt_3_controlled_seed_53463412.png
+models/with_prior_loss/10/samples/prompt_1/prompt_1_0.png
+models/with_prior_loss/10/samples/prompt_1/prompt_1_2.png
+models/with_prior_loss/10/samples/prompt_1/prompt_1_controlled_seed_2134152.png
+models/with_prior_loss/10/samples/prompt_1/prompt_1_controlled_seed_53463412.png
+models/with_prior_loss/10/samples/prompt_2/prompt_2_0.png
+models/with_prior_loss/10/samples/prompt_2/prompt_2_2.png
+models/with_prior_loss/10/samples/prompt_2/prompt_2_controlled_seed_2134152.png
+models/with_prior_loss/10/samples/prompt_2/prompt_2_controlled_seed_53463412.png
+models/with_prior_loss/10/samples/prompt_3/prompt_3_0.png
+models/with_prior_loss/10/samples/prompt_3/prompt_3_2.png
+models/with_prior_loss/10/samples/prompt_3/prompt_3_controlled_seed_2134152.png
+models/with_prior_loss/10/samples/prompt_3/prompt_3_controlled_seed_53463412.png
+models/with_prior_loss/15/samples/prompt_1/prompt_1_0.png
+models/with_prior_loss/15/samples/prompt_1/prompt_1_2.png
+models/with_prior_loss/15/samples/prompt_1/prompt_1_controlled_seed_2134152.png
+models/with_prior_loss/15/samples/prompt_1/prompt_1_controlled_seed_53463412.png
+models/with_prior_loss/15/samples/prompt_2/prompt_2_0.png
+models/with_prior_loss/15/samples/prompt_2/prompt_2_2.png
+models/with_prior_loss/15/samples/prompt_2/prompt_2_controlled_seed_2134152.png
+models/with_prior_loss/15/samples/prompt_2/prompt_2_controlled_seed_53463412.png
+models/with_prior_loss/15/samples/prompt_3/prompt_3_0.png
+models/with_prior_loss/15/samples/prompt_3/prompt_3_2.png
+models/with_prior_loss/15/samples/prompt_3/prompt_3_controlled_seed_2134152.png
+models/with_prior_loss/15/samples/prompt_3/prompt_3_controlled_seed_53463412.png
+models/with_prior_loss/20/samples/prompt_1/prompt_1_0.png
+models/with_prior_loss/20/samples/prompt_1/prompt_1_2.png
+models/with_prior_loss/20/samples/prompt_1/prompt_1_controlled_seed_2134152.png
+models/with_prior_loss/20/samples/prompt_1/prompt_1_controlled_seed_53463412.png
+models/with_prior_loss/20/samples/prompt_2/prompt_2_0.png
+models/with_prior_loss/20/samples/prompt_2/prompt_2_2.png
+models/with_prior_loss/20/samples/prompt_2/prompt_2_controlled_seed_2134152.png
+models/with_prior_loss/20/samples/prompt_2/prompt_2_controlled_seed_53463412.png
+models/with_prior_loss/20/samples/prompt_3/prompt_3_0.png
+models/with_prior_loss/20/samples/prompt_3/prompt_3_2.png
+models/with_prior_loss/20/samples/prompt_3/prompt_3_controlled_seed_2134152.png
+models/with_prior_loss/20/samples/prompt_3/prompt_3_controlled_seed_53463412.png
+models/with_prior_loss/25/samples/prompt_1/prompt_1_0.png
+models/with_prior_loss/25/samples/prompt_1/prompt_1_2.png
+models/with_prior_loss/25/samples/prompt_1/prompt_1_controlled_seed_2134152.png
+models/with_prior_loss/25/samples/prompt_1/prompt_1_controlled_seed_53463412.png
+models/with_prior_loss/25/samples/prompt_2/prompt_2_0.png
+models/with_prior_loss/25/samples/prompt_2/prompt_2_2.png
+models/with_prior_loss/25/samples/prompt_2/prompt_2_controlled_seed_2134152.png
+models/with_prior_loss/25/samples/prompt_2/prompt_2_controlled_seed_53463412.png
+models/with_prior_loss/25/samples/prompt_3/prompt_3_0.png
+models/with_prior_loss/25/samples/prompt_3/prompt_3_2.png
+models/with_prior_loss/25/samples/prompt_3/prompt_3_controlled_seed_2134152.png
+models/with_prior_loss/25/samples/prompt_3/prompt_3_controlled_seed_53463412.png
+models/with_prior_loss/30/samples/prompt_1/prompt_1_0.png
+models/with_prior_loss/30/samples/prompt_1/prompt_1_2.png
+models/with_prior_loss/30/samples/prompt_1/prompt_1_controlled_seed_2134152.png
+models/with_prior_loss/30/samples/prompt_1/prompt_1_controlled_seed_53463412.png
+models/with_prior_loss/30/samples/prompt_2/prompt_2_0.png
+models/with_prior_loss/30/samples/prompt_2/prompt_2_2.png
+models/with_prior_loss/30/samples/prompt_2/prompt_2_controlled_seed_2134152.png
+models/with_prior_loss/30/samples/prompt_2/prompt_2_controlled_seed_53463412.png
+models/with_prior_loss/30/samples/prompt_3/prompt_3_0.png
+models/with_prior_loss/30/samples/prompt_3/prompt_3_2.png
+models/with_prior_loss/30/samples/prompt_3/prompt_3_controlled_seed_2134152.png
+models/with_prior_loss/30/samples/prompt_3/prompt_3_controlled_seed_53463412.png
+models/with_prior_loss/5/samples/prompt_1/prompt_1_0.png
+models/with_prior_loss/5/samples/prompt_1/prompt_1_2.png
+models/with_prior_loss/5/samples/prompt_1/prompt_1_controlled_seed_2134152.png
+models/with_prior_loss/5/samples/prompt_1/prompt_1_controlled_seed_53463412.png
+models/with_prior_loss/5/samples/prompt_2/prompt_2_0.png
+models/with_prior_loss/5/samples/prompt_2/prompt_2_2.png
+models/with_prior_loss/5/samples/prompt_2/prompt_2_controlled_seed_2134152.png
+models/with_prior_loss/5/samples/prompt_2/prompt_2_controlled_seed_53463412.png
+models/with_prior_loss/5/samples/prompt_3/prompt_3_0.png
+models/with_prior_loss/5/samples/prompt_3/prompt_3_2.png
+models/with_prior_loss/5/samples/prompt_3/prompt_3_controlled_seed_2134152.png
+models/with_prior_loss/5/samples/prompt_3/prompt_3_controlled_seed_53463412.png
+models/with_prior_loss/50/samples/prompt_1/prompt_1_0.png
+models/with_prior_loss/50/samples/prompt_1/prompt_1_2.png
+models/with_prior_loss/50/samples/prompt_1/prompt_1_controlled_seed_2134152.png
+models/with_prior_loss/50/samples/prompt_1/prompt_1_controlled_seed_53463412.png
+models/with_prior_loss/50/samples/prompt_2/prompt_2_0.png
+models/with_prior_loss/50/samples/prompt_2/prompt_2_2.png
+models/with_prior_loss/50/samples/prompt_2/prompt_2_controlled_seed_2134152.png
+models/with_prior_loss/50/samples/prompt_2/prompt_2_controlled_seed_53463412.png
+models/with_prior_loss/50/samples/prompt_3/prompt_3_0.png
+models/with_prior_loss/50/samples/prompt_3/prompt_3_2.png
+models/with_prior_loss/50/samples/prompt_3/prompt_3_controlled_seed_2134152.png
+models/with_prior_loss/50/samples/prompt_3/prompt_3_controlled_seed_53463412.png
+test/output/couple of people standing in front of giant painting of city with tall pillars and pillars in the background, best of reddit.png
+test/output/digital painting of city with clock tower in the middle of it's reflection in the water, best of reddit.png
+test/output/feoxpwq - Copy.png
+test/output/feoxpwq.png
+test/output/grqsdxc.png
+test/output/man with large head and machine on top of him, surrounded best of reddit, is depicted in surrealistic painting, best of reddit (2).png
+test/output/painting of a bald eagle flying over large group of fish in pond of water with man standing on ledge, best of reddit.png
+test/output/painting of a beach with sky line and sky background with line of moon phases over the beach and sky line with line of moon phases, best of reddit.png
+test/output/painting of a beautiful castle with river running through it and lots of flowers around it and bench in the foreground, best of reddit.png
+test/output/painting of a bed in room with red curtain and window with view of the earth outside of the window, best of reddit.png
+test/output/painting of a bird flying through hole in stone building with sky background and clouds in the sky above, best of reddit.png
+test/output/painting of a bird is perched on wooden bridge in front of waterfall with waterfall in the background and bird perched on the bridge, best of reddit.png
+test/output/painting of a black and white photo of castle on hill with sky background and clouds in the background, best of reddit.png
+test/output/painting of a black and white photo of door handle on door handle on door handle on door, best of reddit.png
+test/output/painting of a black and white photo of planet with clouds and moon in the sky with black background, best of reddit.png
+test/output/painting of a boat floating in body of water near giant octopus like creature in the ocean with ice around it, best of reddit.png
+test/output/painting of a boat floating in body of water near icebergs and mountains in dark, cloudy sky, best of reddit.png
+test/output/painting of a boat floating in body of water near waterfall and waterfall fall in the background with waterfall in the foreground, best of reddit.png
+test/output/painting of a boat floating in lake next to tall building with tree on top of it and boat in the water, best of reddit.png
+test/output/painting of a boat floating on top of body of water near city at night time with lit up hill in the background, best of reddit.png
+test/output/painting of a boat floating on top of lake next to forest filled with trees and green roofed cabin, best of reddit.png
+test/output/painting of a boat is in the water near cliff side shore and boat is in the water near cliff side shore, best of reddit.png
+test/output/painting of a boat is in the water near dock at night with full moon in the sky above it, best of reddit.png
+test/output/painting of a boat is in the water near rocky cliff and waterfall with waterfall coming out of it, best of reddit.png
+test/output/painting of a boat sitting on beach with cloudy sky above it and blue water below it, with white sand bottom, best of reddit.png
+test/output/painting of a book with drawing of mountain and map of the mind in it's center and line of buildings on the other side, by M.W. Kaluta.png
+test/output/painting of a bridge in forest with fire burning in the middle of it and man standing on the bridge, best of reddit.png
+test/output/painting of a bridge over river with castle on top of it and rainbow in the sky above it, best of reddit.png
+test/output/painting of a bridge that is over canyon in the mountains with bridge going over it and boat going down the river, best of reddit (2).png
+test/output/painting of a car driving down highway under bridge with giant cat on top of it's head, best of reddit.png
+test/output/painting of a car driving down road in the middle of desert arewith mountains in the background and blue sky, best of reddit.png
+test/output/painting of a car driving down road under cloud filled sky with large building in the middle of it, best of reddit.png
+test/output/painting of a cartoon of city in the woods with giant log in the middle of the forest and man laying on the ground, best of reddit.png
+test/output/painting of a cartoon of girl looking at bird in forest with village in the background and river running through it, best of reddit.png
+test/output/painting of a cartoon of lighthouse on hill with sheep laying on the ground in front of it and sunset in the background, best of reddit.png
+test/output/painting of a cartoon of river with bunch of red planes flying over it and city in the background, best of reddit.png
+test/output/painting of a cartoon scene of man and woman on horse drawn carriage in field with castle in the background, best of reddit.png
+test/output/painting of a cartoon scene with person standing in the middle of forest with strange tree growing out of it, best of reddit.png
+test/output/painting of a castle built on cliff overlooking river and mountains in the distance with river running through it, by François Louis Thomas Francia.png
+test/output/painting of a castle in the middle of cliff with waterfall coming out of it and waterfall coming out of the cliff, best of reddit.png
+test/output/painting of a castle in the middle of mountain range with river running through it and dark sky above, best of reddit.png
+test/output/painting of a castle in the middle of mountain with sky background and clouds above it, with full moon in the sky, best of reddit.png
+test/output/painting of a castle on cliff with sky background and clouds in the foreground, with bird flying over it, best of reddit.png
+test/output/painting of a castle on hill with sky background and clouds in the background, with bird flying over it, by Eugène Carrière.png
+test/output/painting of a castle on mountain with group of people standing on it's side in the foreground, best of reddit.png
+test/output/painting of a castle on rock in the ocean with boat in the background and blue sky above it, best of reddit.png
+test/output/painting of a castle on small island in the middle of the ocean with stairs leading to it and staircase leading to the upper level, best of reddit.png
+test/output/painting of a castle with light at the end of it's entrance and bridge leading to it in the distance, best of reddit.png
+test/output/painting of a castle with lot of lights on it and boat in the water near best of reddit, best of reddit (2).png
+test/output/painting of a castle with lot of towers and towers on it in the sky above mountain range with castle on top, best of reddit.png
+test/output/painting of a castle with river in front of it and trees around it and sky background with clouds and sun, best of reddit.png
+test/output/painting of a castle with tower and clock on it's side in the sky above mountain range, best of reddit.png
+test/output/painting of a castle with waterfall and bridge in the middle of it at night time with lights on the buildings, best of reddit (2).png
+test/output/painting of a cat sitting on window sill looking out at clouds and plane in the sky above it, best of reddit.png
+test/output/painting of a cave with man standing in the middle of it and green light coming from the cave door, best of reddit.png
+test/output/painting of a chair sitting in room with lot of flowers on the wall and ladder in the background, best of reddit.png
+test/output/painting of a chair sitting in room with window and view of the ocean outside of it with curtained window, best of reddit (Beeple).png
+test/output/painting of a church on hill under cloudy sky with dark sky in the background and few clouds in the sky, best of reddit.png
+test/output/painting of a circular picture of mountain with train going through it and foggy sky behind it and train going through the middle, best of reddit (Beeple).png
+test/output/painting of a city with lots of tall buildings and street in the middle of it, from above, with bird's eye view of the city, best of reddit.png
+test/output/painting of a cityscape with lot of lights and clouds in the sky at night time with full moon, best of reddit.png
+test/output/painting of a close up of hole in the ground with person standing next to it and camerin the background, best of reddit.png
+test/output/painting of a computer generated image of castle surrounded best of reddit, with bridge leading to it and bridge leading to another castle, best of reddit.png
+test/output/painting of a computer generated image of cave with small tree growing out of it's entrance and stone arch, best of reddit.png
+test/output/painting of a computer generated image of city on cliff over water with bridge and boat in the water, best of reddit.png
+test/output/painting of a computer generated image of distant planet with large black object in the middle of the picture and distant object in the distance, best of reddit (Beeple).png
+test/output/painting of a computer generated image of fantasy island with bridge and dragon wings in the sky above stream of water, best of reddit.png
+test/output/painting of a computer generated image of flooded arewith houses and trees in it and boat in the water, best of reddit.png
+test/output/painting of a computer generated image of planet with red and purple background and distant planet in the distance, best of reddit. Hardy.png
+test/output/painting of a computer generated image of pyramids in the desert with distant planet in the background and distant star in the sky, best of reddit (Beeple).png
+test/output/painting of a couple of people standing in front of city skyline in the foggy day with city skyline in the distance, best of reddit.png
+test/output/painting of a couple of people standing on top of hill next to giant demon like structure with giant moon in the background, best of reddit.png
+test/output/painting of a couple of people standing on top of mountain under sky filled with stars and moon filled sky, best of reddit.png
+test/output/painting of a deer is standing in field near mountain and hot air balloon is flying overhead in the sky, best of reddit.png
+test/output/painting of a desert scene with large structure in the middle of it and person walking on the road in the distance, best of reddit.png
+test/output/painting of a desert with person standing in the middle of it and several large white objects floating above it in the distance, best of reddit.png
+test/output/painting of a desk with book shelf and window in the background with book case and desk lamp, best of reddit.png
+test/output/painting of a drawing of castle in book with mountains in the background and clock on the wall behind it, best of reddit.png
+test/output/painting of a drawing of city on the moon with sky background and small tower in the distance, with small airplane flying over it, by Eishōsai Chōki.png
+test/output/painting of a drawing of city with lot of buildings and people walking around it and person holding an umbrella, by PosukDemizu.png
+test/output/painting of a drawing of man standing on top of mountain next to giant statue of man in suit, best of reddit.png
+test/output/painting of a drawing of mountain landscape on notebook with pencil and pair of scissors on table, best of reddit.png
+test/output/painting of a drawing of tiger in glass vase with bamboo sticks in the background and fish in the water, best of reddit.png
+test/output/painting of a drawing of tower in desert with moon in the background and clouds in the sky above, by AkirToriyama.png
+test/output/painting of a drawing of woman in red dress flying through the air with pink umbrellover her head, best of reddit.png
+test/output/painting of a fantasy castle floating in the ocean with moon in the sky above it and tree on top, best of reddit.png
+test/output/painting of a fantasy castle on mountain with people on horseback in front of it and sky background with clouds, best of reddit.png
+test/output/painting of a fantasy city with boat in the water and lots of buildings on the sides of it, and bridge over the water, best of reddit.png
+test/output/painting of a fantasy city with castle on top of it and bridge over it that leads to bridge, best of reddit.png
+test/output/painting of a fantasy island floating in the air surrounded best of reddit, surrounded best of reddit, best of reddit.png
+test/output/painting of a fantasy island with rainbow in the sky and rainbow in the water in the middle of the picture, best of reddit.png
+test/output/painting of a fantasy landscape with castle and bridge in the distance, with river running through it and few people on the other side of the bridge, best of reddit.png
+test/output/painting of a fantasy landscape with castle and rainbow in the sky above it and river running through it, best of reddit.png
+test/output/painting of a floating island with trees on top of it in the ocean with sky background and clouds above it, best of reddit.png
+test/output/painting of a futuristic bird flying through city filled with tall buildings and skyscrapers in the foggy sky with glowing light, best of reddit.png
+test/output/painting of a futuristic building with large white structure on top of it's roof and water flowing out of it, best of reddit.png
+test/output/painting of a futuristic city surrounded best of reddit, best of reddit (2).png
+test/output/painting of a futuristic city with giant building in the background and man walking best of reddit, best of reddit (2).png
+test/output/painting of a futuristic city with giant circular structure on top of it and two people standing on the top of cliff, best of reddit.png
+test/output/painting of a futuristic city with green roof and green lawn on the roof of the building and plane flying over the city, best of reddit.png
+test/output/painting of a futuristic city with green roof and green roof on top of building with green roof, best of reddit.png
+test/output/painting of a futuristic city with large body of water in front of it and bridge over it that is surrounded by trees, best of reddit.png
+test/output/painting of a futuristic city with lot of red flowers on it's roof and river running through it, best of reddit.png
+test/output/painting of a futuristic city with lot of tall buildings and lots of lights on the top of it, surrounded by mountain, best of reddit.png
+test/output/painting of a futuristic city with lot of tall buildings and sky background with clouds and person standing in the distance, best of reddit.png
+test/output/painting of a futuristic city with massive amount of snow on the ground and large amount of buildings in the background, best of reddit.png
+test/output/painting of a futuristic city with massive roof and massive mountain in the background with sky line above it, best of reddit.png
+test/output/painting of a futuristic city with massive tower and massive body of water in the middle of it, surrounded best of reddit, best of reddit (Beeple) (2).png
+test/output/painting of a futuristic city with red sun in the background and black background with red circle in the middle, best of reddit.png
+test/output/painting of a futuristic city with river running through it and bridge crossing over it with traffic light above, best of reddit.png
+test/output/painting of a futuristic city with waterfall and bridge in the background and river running through it with windmill in the foreground, best of reddit (2).png
+test/output/painting of a futuristic city with waterfall and bridge in the background and river running through it with windmill in the foreground, best of reddit.png
+test/output/painting of a futuristic flying object with green roof and green roof on top of it in the sky above the clouds, best of reddit.png
+test/output/painting of a futuristic landscape with tower and light at the end of it, surrounded best of reddit, best of reddit (2).png
+test/output/painting of a futuristic landscape with train and mountain range in the background with futuristic city on top of hill, best of reddit.png
+test/output/painting of a futuristic landscape with waterfall and plane in the foreground and waterfall in the background with man standing on bridge, best of reddit.png
+test/output/painting of a futuristic looking structure with sky background and clouds in the background, with circular hole in the center, best of reddit.png
+test/output/painting of a garden with stream and flowers on the side of it and building in the background with window, best of reddit.png
+test/output/painting of a gas station in the middle of desert with sign on the side of the road pointing to the gas station, best of reddit.png
+test/output/painting of a giant crab with castle on top of it in the desert with man standing next to it, best of reddit (Beeple).png
+test/output/painting of a giant key in cave with man standing on it's side and another man standing on the other side, best of reddit.png
+test/output/painting of a giant monster with sword in its mouth standing on rocky shore in the ocean with ship in the background, best of reddit.png
+test/output/painting of a giant robot sitting in the middle of waterfall with waterfall behind it and man standing in the water, best of reddit.png
+test/output/painting of a girl is standing on ledge above the clouds and looking at bird cage in the sky above, best of reddit.png
+test/output/painting of a girl sitting on the ground looking at castle best of reddit, best of reddit (2).png
+test/output/painting of a girl standing on cliff looking at waterfall and tree in the sky with waterfall in the background, best of reddit (2).png
+test/output/painting of a group of cars driving down road in city with tall buildings and yellow haze over it, best of reddit.png
+test/output/painting of a group of cars parked in parking lot next to building with red light on it's side, best of reddit.png
+test/output/painting of a group of green water pools surrounded best of reddit, best of reddit (2).png
+test/output/painting of a group of people riding on the back of horse through the ocean with long horns on their heads, best of reddit.png
+test/output/painting of a group of people standing around field with flags and flags flying in the air and crowd of people standing around, best of reddit (Beeple).png
+test/output/painting of a group of people standing around glass structure with tree inside of it and two large rocks in the background, best of reddit.png
+test/output/painting of a group of people standing in front of building with glass ceiling and clock on it's side, best of reddit.png
+test/output/painting of a group of people standing on top of beach next to boats with fireworks in the sky above them, best of reddit (Beeple).png
+test/output/painting of a group of people walking across snow covered field next to forest filled with trees and burning torches, best of reddit.png
+test/output/painting of a group of strange looking animals with glowing eyes in the snow with mountains in the background and clouds in the sky, best of reddit.png
+test/output/painting of a group of tables set up on cliff best of reddit, best of reddit (2).png
+test/output/painting of a highway intersection with multiple lanes and blue car on the top of it in city with lots of traffic, best of reddit.png
+test/output/painting of a horse is standing in frozen river with icebergs in the background and man on horse in the foreground, best of reddit.png
+test/output/painting of a horse with castle on its back in the middle of mountain range with sky background and clouds, best of reddit.png
+test/output/painting of a house in the middle of forest with path leading to it and tree in the foreground, best of reddit.png
+test/output/painting of a house made of grass in field with trees around it and fence around it and blue sky in the background, best of reddit.png
+test/output/painting of a house on cliff with sky background and bird flying over it, with bird flying over the house, best of reddit.png
+test/output/painting of a house on small island in the middle of lake with boat in the water and mountains in the background, best of reddit.png
+test/output/painting of a house with green roof sitting on top of hill next to lake and forest filled with trees, best of reddit.png
+test/output/painting of a house with round window and chimney on hill with trees and rocks around it and woman standing outside, best of reddit.png
+test/output/painting of a house with tower and lot of windows and lot of flowers in front of it and cloudy sky, best of reddit.png
+test/output/painting of a large boat in the middle of body of water with massive iceberg in the middle of it, best of reddit. Mandelbrot (2).png
+test/output/painting of a large building with balcony and lake in the background at night time with lights on the windows, best of redditützner.png
+test/output/painting of a large building with lot of trees in it and lot of water in the middle of it, best of reddit.png
+test/output/painting of a large castle in the middle of field with sky background and clouds above it, with large rock in the foreground, best of reddit.png
+test/output/painting of a large castle surrounded best of reddit, best of reddit (2).png
+test/output/painting of a large circle of light in the middle of forest path with trees and bushes around it, with path leading to it, by ElsBleda.png
+test/output/painting of a large city with lot of red lights in the middle of it and mountains in the background with blue sky, best of reddit.png
+test/output/painting of a large city with lot of tall buildings and lot of traffic on it's sides and lot of scaffoldings, best of reddit.png
+test/output/painting of a large dinosaur like structure in field of grass with mountains in the background and fog in the sky, best of reddit.png
+test/output/painting of a large fish floating on top of body of water next to mountain range with waterfall in the middle, best of reddit.png
+test/output/painting of a large glass ball sitting in the middle of lush green field with trees around it and forest in the background, best of reddit.png
+test/output/painting of a large grassy hill with house on top of it in the middle of the forest with sunbeams, best of reddit.png
+test/output/painting of a large greenhouse with pool of water in the middle of it and lots of plants growing in the middle, best of reddit.png
+test/output/painting of a large group of cell phones are in tunnel of dark room with lights on them and dark ceiling, best of reddit.png
+test/output/painting of a large group of people standing in front of giant building with giant round structure on top of it, best of reddit (Beeple).png
+test/output/painting of a large group of pipes stacked up in circle together in building with black background and white person in the middle, best of reddit.png
+test/output/painting of a large head floating in the water with small island in the background and boat in the water, best of reddit.png
+test/output/painting of a large ice covered mountain with house on top of it and large ice covered cliff in the background, best of reddit.png
+test/output/painting of a large iceberg with man standing on it in the middle of the ocean with boat in front of it, best of reddit.png
+test/output/painting of a large industrial arewith river and bridge in the background with lot of buildings and lot of water, by François Bocion.png
+test/output/painting of a large plume of smoke is rising from mountain lake in the desert, with mountain in the background, best of reddit.png
+test/output/painting of a large rock formation next to beach with light coming from it's top and light coming from the top, best of reddit.png
+test/output/painting of a large snake is on desert with people walking on bridge in the distance and man on bike, best of reddit.png
+test/output/painting of a large statue of man and woman in the water at night with sky background and stars, best of reddit.png
+test/output/painting of a large structure with giant white object in the middle of it's landscape, with man standing in the middle of it, best of reddit.png
+test/output/painting of a large tower with many stairs on top of it in the sky with sky background and clouds in the sky, by H. R. Giger.png
+test/output/painting of a large triangle shaped object in the middle of field with sunset in the background and reflection of the sky, best of reddit (Beeple).png
+test/output/painting of a large white building with clock on the top of it's tower and sky background with clouds, best of reddit.png
+test/output/painting of a large white monument sitting in the middle of desert arewith sky background and person walking by, best of reddit.png
+test/output/painting of a man and child standing in front of circular object with flowers in front of them and sky background, best of reddit (Beeple).png
+test/output/painting of a man and dog standing in the snow near boat and trees in the background with person holding camera, best of reddit.png
+test/output/painting of a man and his dog are walking in the snow with giant alien statue in the background in the distance, best of reddit.png
+test/output/painting of a man and wolf walking through forest with tank in the background and man in the foreground, best of reddit.png
+test/output/painting of a man and woman standing in cave with giant ship in the background and bird flying overhead, best of reddit.png
+test/output/painting of a man flying through the air while riding kiteboard in river surrounded best of reddit, best of reddit (2).png
+test/output/painting of a man flying through the air while riding skateboard in front of space station and planet, best of reddit.png
+test/output/painting of a man in red cloak standing in forest at night with two torches lit up in front of him, best of reddit.png
+test/output/painting of a man in red outfit is walking through snowy forest with dragon in the background and demon in the foreground, best of reddit.png
+test/output/painting of a man in space suit is flying through black hole in the sky with black hole in the background, best of reddit.png
+test/output/painting of a man on wooden raft in the water with hammer in his hand and bird flying overhead, best of reddit.png
+test/output/painting of a man riding bike down dirt road next to large billboard on field of grass and trees, best of reddit.png
+test/output/painting of a man sitting on boat in the ocean at night with full moon in the background and boat in the water, best of reddit.png
+test/output/painting of a man sitting on roof looking at shooting star in the sky above city at night time, best of reddit.png
+test/output/painting of a man sitting on top of car in field next to giant robot statue in the background, best of reddit.png
+test/output/painting of a man standing in cave with giant lavbehind him and man standing in the distance with flashlight in his hand, best of reddit (Beeple).png
+test/output/painting of a man standing in cave with light ball in his hand and lot of rocks in the background, best of reddit.png
+test/output/painting of a man standing in field next to giant fake animal skeleton in the background of large sculpture, best of reddit (Beeple).png
+test/output/painting of a man standing in field next to large airplane in the mountains with person standing next to it, best of reddit.png
+test/output/painting of a man standing in field with sheep next to robot that is in the middle of field, best of reddit.png
+test/output/painting of a man standing in forest with portal in the middle of it, surrounded best of reddit, best of reddit (2).png
+test/output/painting of a man standing in front of doorway in the sky with clouds above it and man standing in front of it, best of reddit.png
+test/output/painting of a man standing in front of giant dinosaur statue in zoo enclosure with man walking by it, best of reddit.png
+test/output/painting of a man standing in front of giant structure with cow on top of it and person holding an umbrella, best of reddit.png
+test/output/painting of a man standing in front of statue in cave with flames coming out of it and man standing next to it, best of reddit.png
+test/output/painting of a man standing in front of tall tower of rocks with crescent on top of it in the middle of desert, best of reddit (Beeple).png
+test/output/painting of a man standing in front of waterfall surrounded best of reddit, best of reddit (2).png
+test/output/painting of a man standing in narrow canyon between two rocks and cliff face with sky background and light coming from the top, best of reddit.png
+test/output/painting of a man standing in the middle of forest next to fire place in the middle of the night, best of reddit.png
+test/output/painting of a man standing in the middle of lake with deer on it's sides and line of deer on the other side, best of reddit.png
+test/output/painting of a man standing on bridge looking at map of city and river with ships in the background, best of reddit.png
+test/output/painting of a man standing on cliff with sword in his hand and boat in the water below him, best of reddit.png
+test/output/painting of a man standing on hill under cloudy sky with lightning in the background and red sky with clouds, best of reddit.png
+test/output/painting of a man standing on lush green field under full moon filled sky with mountains in the background and distant moon, best of reddit.png
+test/output/painting of a man standing on mossy log in forest with glowing light coming from behind it and tree branch, best of reddit.png
+test/output/painting of a man standing on mountain top next to giant chain of chains in front of castle in the sky, best of reddit (2).png
+test/output/painting of a man standing on rock in front of forest with large object in the sky above him, best of reddit.png
+test/output/painting of a man standing on rock in river next to forest filled with trees and boats on the water, best of reddit.png
+test/output/painting of a man standing on roof looking at shark in the sky above city at sunset or dawn, best of reddit.png
+test/output/painting of a man standing on the moon looking at the stars in the sky above him and blue object in the distance, best of reddit. Hardy.png
+test/output/painting of a man walking across bridge over river next to forest filled with trees and grass and rocks, best of reddit.png
+test/output/painting of a man walking down path in dark forest with red light coming from the end of it, best of reddit.png
+test/output/painting of a man walking down street at night with clock tower in the background and car parked on the street, best of reddit.png
+test/output/painting of a man walking down street in city at sunset with large building in the background and bright orange sun, by AlenAenami.png
+test/output/painting of a man with backpack and backpack in lake with lily pads and windmills in the background, best of reddit.png
+test/output/painting of a map of farm with pond and barn in the middle of it and road running through it, best of reddit.png
+test/output/painting of a map of the world with statues of people in front of it and blue background with white letters, by François Bocion.png
+test/output/painting of a map of town on island in the ocean with lot of buildings and bridge on top, best of reddit.png
+test/output/painting of a map of town with lot of trees and buildings on it, and lot of rocks, best of reddit.png
+test/output/painting of a mountain with lake surrounded best of reddit, with mountain range in the background, by Yoshiyuki Tomino.png
+test/output/painting of a mountain with stream running through it and trees around it, with blue sky and clouds above, best of reddit.png
+test/output/painting of a painting of person standing next to tree on beach with boat in the background and sunset, best of reddit.png
+test/output/painting of a painting of person standing on platform with water spout in the grass near train track, best of reddit.png
+test/output/painting of a painting of person standing on road with large object in the distance and building in the background, best of reddit.png
+test/output/painting of a painting of person standing on stone wall with balloons flying above them and sky background with clouds, best of reddit.png
+test/output/painting of a painting of piece of meat in the sky with clouds in the background and red flag in the foreground, best of reddit.png
+test/output/painting of a painting of pink castle with staircase leading to it and green roof on top of it, best of reddit.png
+test/output/painting of a painting of polar bear on pan on stove top with fire in the background and smokestack, best of reddit.png
+test/output/painting of a painting of pyramids in the desert with sky background and sun in the sky above, best of reddit. Hardy.png
+test/output/painting of a painting of river and sky with green aurorlight in the background and bridge on the other side, best of reddit.png
+test/output/painting of a painting of road with sky background and trees and flowers on the side of the road and stop sign, best of reddit.png
+test/output/painting of a painting of robot in the woods with stream running through it and people standing around it,, best of reddit.png
+test/output/painting of a painting of rocky landscape with lake and cave in the middle of it, and painting of rocky landscape with cave in the middle, best of reddit.png
+test/output/painting of a painting of ship in the ocean at sunset with cloudy sky above it and sun setting, best of reddit.png
+test/output/painting of a painting of ship in the ocean near rock formation with statue of man on top, by Jean-Léon Gérôme.png
+test/output/painting of a painting of ship in the water with city in the background and sky in the background, best of reddit.png
+test/output/painting of a painting of snowy forest with red fox running through the snow and trees with full moon in the background, best of reddit.png
+test/output/painting of a painting of staircase leading to tree covered hill next to body of water with boat in the water, best of reddit.png
+test/output/painting of a painting of strange alien island with flying object in the sky above it and man standing on beach, best of reddit.png
+test/output/painting of a painting of sunset over lake with trees and plane in the sky above it and few clouds, best of reddit.png
+test/output/painting of a painting of sunset with cafe sign in the foreground and forest in the background with clouds, by AlenAenami.png
+test/output/painting of a painting of tower with clock on it's side and body of water below it, best of reddit.png
+test/output/painting of a painting of town with bridge and couple walking through it with flag flying in the background, best of reddit.png
+test/output/painting of a painting of tree house with cat in it's window and man on ladder, best of reddit (2).png
+test/output/painting of a painting of tree in green field with sky background and clouds in the sky above it, best of reddit.png
+test/output/painting of a painting of tree in mountainous arewith man standing on swing set in the distance, best of reddit.png
+test/output/painting of a painting of tunnel with trees and people inside it, with man walking through the tunnel, and woman walking through the tunnel, best of reddit.png
+test/output/painting of a painting of two foxes sitting in field of flowers and trees, with mountain in the background, by Hanna-Barbera.png
+test/output/painting of a painting of two statues on rocky shore with horse and man on horse - drawn carriage, best of reddit.png
+test/output/painting of a painting of vase of flowers on table with book and window in the background with full moon, best of reddit.png
+test/output/painting of a painting of village on hill with bridge and horse and carriage on it, and man on horse, best of reddit.png
+test/output/painting of a painting of village on small island with dock and boat in the water and path leading to bridge, best of reddit (2).png
+test/output/painting of a painting of waterfall and balcony with flowers and potted plants on the railings and view of lake, best of reddit.png
+test/output/painting of a painting of waterfall and bridge in forest with waterfall in the background and bridge leading to waterfall, best of reddit (2).png
+test/output/painting of a painting of waterfall and river in cave with bridge over it and forest below, best of reddit.png
+test/output/painting of a painting of waterfall and waterfall surrounded best of reddit, best of reddit.png
+test/output/painting of a painting of waterfall in fantasy setting with waterfall in the distance and cave in the foreground, best of reddit.png
+test/output/painting of a painting of waterfall in forest with bridge over river and person on boat, best of reddit.png
+test/output/painting of a painting of waterfall with lot of water flowing down it's side and house in the middle of the waterfall, best of reddit (2).png
+test/output/painting of a painting of waterfall with rainbow in the sky above it and rainbow in the sky above it, best of reddit.png
+test/output/painting of a painting of woman and two men in forest setting with giant tree in the background and woman in white dress, best of reddit. Manzanedo.png
+test/output/painting of a painting of woman holding an umbrellin front of castle with woman holding flower bouquet, best of reddit.png
+test/output/painting of a painting of woman in boat in canal with bridge and buildings in the background and horse and buggy in the foreground, best of reddit.png
+test/output/painting of a painting of woman in white dress walking through maze of grass with purple flowers in the foreground, best of reddit.png
+test/output/painting of a painting of woman sitting in forest with dog on blanket under tree with sky background, best of reddit.png
+test/output/painting of a painting of woman standing in field with bucket of water in her hand and tree in the background, best of reddit.png
+test/output/painting of a painting of woman standing on mountain with fire flowing from it's top and body of water below, best of reddit.png
+test/output/painting of a painting of woman walking through field of flowers and giant ball in the background with sky filled with balloons, best of reddit.png
+test/output/painting of a painting of yellow truck with load on top of it driving down rural road in front of mountain range, best of reddit.png
+test/output/painting of a person sitting on hill with an umbrellover their head looking down at city and river, best of reddit.png
+test/output/painting of a person standing in dark forest with bright sun in the background and person standing in the middle of the road, best of reddit.png
+test/output/painting of a person standing in field with red light in the dark, with tall rectangular object in the background, best of reddit (Beeple).png
+test/output/painting of a person standing in forest looking at lake and rocks with waterfall in the background and tree in the foreground, best of reddit.png
+test/output/painting of a person standing in forest with purple light on the ground and trees and plants around them,, best of reddit.png
+test/output/painting of a person standing in forest with umbrellin the rain at night time with person standing in the background, best of reddit (Beeple).png
+test/output/painting of a person standing in front of castle with giant clock tower in the background and red sky, best of reddit.png
+test/output/painting of a person standing in front of city with sky background and pink and blue sky with pink and purple hue, best of reddit.png
+test/output/painting of a person standing in front of large window with umbrellin the rain and large airplane in the background, best of reddit.png
+test/output/painting of a person standing in front of tall building with tree in the background at sunset or sunrise or sunset, best of reddit (Beeple).png
+test/output/painting of a person standing in front of waterfall with shrine in the background and person standing in front of waterfall, best of reddit.png
+test/output/painting of a person standing in room with large doorway and brick floor with small figure in the middle, best of reddit (Beeple).png
+test/output/painting of a person standing in the middle of large body of water with plane flying overhead in the sky, best of reddit.png
+test/output/painting of a person standing on bridge over river with castle in the background and sky background with clouds, best of reddit.png
+test/output/painting of a person standing on hill looking at the sunset over body of water with red sky in the background, by AlenAenami.png
+test/output/painting of a person standing on rocky cliff in the desert with foggy sky behind them and person standing on rock cliff, best of reddit. Mandelbrot.png
+test/output/painting of a person walking down path in forest with fog and trees on either side of the path is red light, best of reddit.png
+test/output/painting of a person walking down street in city with tall buildings and sky background with clouds and buildings, by RebeccSugar.png
+test/output/painting of a person walking down street in front of building with arches and arches on it's sides, best of reddit.png
+test/output/painting of a person with sword in front of giant skull head in snowy graveyard with graves and trees, best of reddit.png
+test/output/painting of a picture of city with tall buildings and yellow sky in the background with few clouds in the sky, best of reddit.png
+test/output/painting of a picture of mountain and picture of secreature in the water with sky background and picture of mountain, best of reddit.png
+test/output/painting of a pirate ship sailing through narrow passage in mountain landscape with waterfall and bridge in the background, best of reddit.png
+test/output/painting of a pool with view of the ocean and doorway to the outside of it, with palm tree in the foreground, best of reddit.png
+test/output/painting of a red and black photo of sunset with ring of light in the sky above highway and road, by AlenAenami.png
+test/output/painting of a red light in dark room with red light coming out of it's side window and red light coming out of the window, best of reddit (Beeple).png
+test/output/painting of a red sign that says sorry we are closed in front of space station in the background is the earth, best of reddit.png
+test/output/painting of a red sky with red sun and some buildings and plane in the distance with red sky, best of reddit.png
+test/output/painting of a red sun is setting over mountain range with two people standing in the foreground and red moon in the background, best of reddit.png
+test/output/painting of a rhino with lot of buildings on its back in the water with boats floating around it and sky background, best of reddit.png
+test/output/painting of a rhino with tower on its back in body of water with boats floating around it and sky background, best of reddit.png
+test/output/painting of a road in the middle of forest with blue sky background and trees in the foreground and blue sky background, best of reddit.png
+test/output/painting of a room with large round window and chair in it with lamp on the side of the room, best of reddit.png
+test/output/painting of a room with red wall and red door and green tree in the corner of the room, best of reddit.png
+test/output/painting of a room with view of the ocean and bench in the middle of it with bench in the middle of the room, best of reddit (Beeple).png
+test/output/painting of a scene of lavwith giant alien in the background and fire in the middle of the scene, best of reddit.png
+test/output/painting of a scenic view of city and body of water from high point of view of mountain, by François Bocion.png
+test/output/painting of a series of four images of mountain range with red and blue sky and blue moon in the distance, best of reddit.png
+test/output/painting of a series of four posters with landscape in the middle of them, each with different color scheme, best of reddit.png
+test/output/painting of a series of three pictures of house and person fishing from dock and man sitting on bench, best of reddit.png
+test/output/painting of a series of three pictures of landscape with man and an elephant in the middle of the picture, best of reddit.png
+test/output/painting of a series of three pictures of landscape with man in spaceship and man in space station, best of reddit.png
+test/output/painting of a series of three pictures of swampy arewith trees and plants in it, and mountain in the background, best of reddit.png
+test/output/painting of a set of pixel art style landscape with mountains and trees and cabin in the distance with mountain in the background, by A. J. Casson.png
+test/output/painting of a ship is in the water near large island with fire coming out of it and boat is in the water, best of reddit.png
+test/output/painting of a sign in the middle of desert with sky background and few clouds in the sky above, best of reddit.png
+test/output/painting of a skeleton sitting in the woods with flower in its hand and skeleton standing next to it, with flower in his hand, best of reddit.png
+test/output/painting of a small green ball sitting in the middle of field of grass and trees in the middle of city, best of reddit.png
+test/output/painting of a small house with red roof and red roof and green door and window and stone pathway, best of reddit.png
+test/output/painting of a small island with boat and house on it, surrounded best of reddit, best of reddit (2).png
+test/output/painting of a small lake surrounded best of reddit, with reflection of the sun in the water, best of reddit. Mandelbrot (2).png
+test/output/painting of a snow covered mountain with bird's eye view of the top of it and bird's eye view of the bottom, best of reddit.png
+test/output/painting of a snowy scene with barn and light in the window and hose connected to hose connected to hose, best of reddit.png
+test/output/painting of a solar eclipse seen through the clouds over trees in the night sky with red glow on the moon, best of reddit.png
+test/output/painting of a space station with lot of white balls floating in the air and lot of lights on the ground, best of reddit (Beeple).png
+test/output/painting of a statue of lion drinking water from fountain in cliff best of reddit, best of reddit (2).png
+test/output/painting of a statue of man standing on rock in front of body of water and mountains in the background, by Jean-Léon Gérôme.png
+test/output/painting of a statue of woman holding baseball bat in front of boat in the ocean with mountain in the background, by François Bocion.png
+test/output/painting of a strange looking house in the middle of forest with lot of trees around it and person standing outside, best of reddit.png
+test/output/painting of a stylized image of futuristic city with palm trees and giant building with clock on it's side, best of reddit.png
+test/output/painting of a surreal landscape with waterfall and waterfall in the middle of the picture, with waterfall in the middle of the picture, best of reddit.png
+test/output/painting of a surreal looking house with bridge over it in the middle of lake with castle on top, best of reddit.png
+test/output/painting of a surreal picture of city in the desert with birds flying overhead and bird flying over it,, best of reddit. Mandelbrot.png
+test/output/painting of a surreal picture of tree in forest with sky background and green light coming from the top of the tree, best of reddit.png
+test/output/painting of a surreal scene with sun and mountains in the background and sky with clouds in the foreground, best of reddit.png
+test/output/painting of a surrealistic scene of tree and person standing on hill with body wrapped around it, best of reddit (Beeple).png
+test/output/painting of a tall building surrounded best of reddit's side, best of reddit (2).png
+test/output/painting of a tall tower with lot of plants growing on it's side in city arewith skyscrapers in the background, best of reddit.png
+test/output/painting of a tower in the middle of forest with pond in front of it and trees around it,, best of reddit.png
+test/output/painting of a tower on hill with sky background and crescent moon in the sky above it and hill with steeple and tower with clock on top, best of reddit.png
+test/output/painting of a train is traveling over bridge in the woods with trees around it and train is on the track, best of reddit.png
+test/output/painting of a train station with person sitting on bench in front of it and train on the tracks, best of reddit.png
+test/output/painting of a train traveling down train tracks next to lush green forest filled with purple flowers and trees in the background, best of reddit.png
+test/output/painting of a tree in glass container with blue light around it and circular light fixture above it that is lit up, best of reddit.png
+test/output/painting of a tree on rocky shore with sunset in the background and pink sky with clouds and stars, best of reddit.png
+test/output/painting of a truck with lot of cargo on top of it in the desert with sky background and clouds, best of reddit.png
+test/output/painting of a two pictures of woman standing in front of tree and man standing in front of tree, best of reddit.png
+test/output/painting of a very large and colorful looking building with lots of windows and doors in it's center, with large circular hole in the middle, best of reddit. Mandelbrot.png
+test/output/painting of a very large building with massive waterfall in front of it and sky background that is very high, best of reddit.png
+test/output/painting of a very tall forest filled with lots of trees and tall rocks with sky background that is very high, best of reddit.png
+test/output/painting of a very tall mountain towering over desert landscape with clouds in the foreground and blue sky above, best of reddit.png
+test/output/painting of a view of blue sky with ice cubes floating in it's center and blue sky with clouds, best of reddit.png
+test/output/painting of a view of canyon with few people on it and mountains in the background with blue sky, best of reddit.png
+test/output/painting of a view of city from very high point of view of river and city with bridge, best of reddit.png
+test/output/painting of a view of park through tunnel of hedges and trees with bench in the distance and body of water in the distance, best of reddit.png
+test/output/painting of a view of valley with river running through it and mountains in the background with snow on the tops, best of reddit.png
+test/output/painting of a waterfall in the middle of forest with waterfall coming out of it's center and bird flying over it, best of reddit.png
+test/output/painting of a white bird standing on top of fountain in park next to trees and man in red shirt, best of reddit.png
+test/output/painting of a white building in field of grass with sky background and white structure with white roof, best of reddit.png
+test/output/painting of a white triangle with red lights in the middle of it and boat in the water below it in the middle of dark forest, best of reddit (Beeple).png
+test/output/painting of a woman in long dress is walking towards tall tower with long tail on it's head, best of reddit (Beeple).png
+test/output/painting of a woman is walking down sidewalk with bicycle next to woman with purse on her shoulder, best of reddit.png
+test/output/painting of a woman laying on bed in room with light on it and window in the background, best of reddit.png
+test/output/painting of a woman riding bike down dirt road next to tree and field with bird flying overhead, best of reddit.png
+test/output/painting of a woman standing in room with bed and window in it that looks like spaceship ship, best of reddit (Beeple).png
+test/output/painting of a woman standing next to man on blanket on field with picnic blanket on it and flag in the background, best of reddit.png
+test/output/painting of a woman standing on hill with ring in her hand and tower in the background with sky full of clouds, best of reddit.png
+test/output/painting of a woman walking down path next to train on track with train on it's side, best of reddit.png
+test/output/painting of a woman walking down street holding an umbrellat night with car parked in the background and street light in the foreground, best of reddit-Bunel.png
+test/output/painting of a woman with an umbrellstanding in front of building with lanterns on it's roof and lantern in the sky, best of reddit.png
+test/output/painting of an elephant with long tusks and sky background with clouds and trees and few elephants, best of reddit.png
+test/output/painting of bird flying in the sky over field with dead grass and trees in the foreground, best of reddit. Manzanedo.png
+test/output/painting of bird perched on tree branch in fantasy setting with man in boat, best of reddit.png
+test/output/painting of bison in mountain landscape with river running through it and mountain range in the background, best of reddit.png
+test/output/painting of blue ocean with cloud in the sky above it and boat in the water, best of reddit.png
+test/output/painting of boat in body of water with fish around it and man in hat on the front, best of reddit.png
+test/output/painting of boat in body of water with trees in the background and man in boat in the water, best of redditöcklin.png
+test/output/painting of boat in field of grass and flowers at sunset with sky background and clouds, best of reddit.png
+test/output/painting of boat in green field with sky background and person on boat in the water, best of reddit (2).png
+test/output/painting of boat in the ocean with sunset in the background and large wave coming in, best of reddit.png
+test/output/painting of bridge over stream in snowy forest with waterfall and waterfall in the background, best of reddit.png
+test/output/painting of building with blue sky in the background and few trees in the foreground, best of reddit.png
+test/output/painting of building with fountain in front of it and full moon in the sky above it, best of reddit.png
+test/output/painting of building with pond and trees in it and boat in the water in the middle, best of reddit.png
+test/output/painting of building with tower and sky background with clouds and bird flying over it, best of reddit.png
+test/output/painting of castle and river with man on horse riding down the road next to it, by François Quesnel.png
+test/output/painting of castle in hilly arewith river running through it and bridge leading to it, by François Louis Thomas Francia.png
+test/output/painting of castle in mountain with lot of trees and birds flying around it and few birds flying around, best of reddit.png
+test/output/painting of castle in the middle of field with lake in front of it and cloudy sky, best of reddit.png
+test/output/painting of castle in the sky with lot of clouds around it and lot of birds flying around, best of reddit.png
+test/output/painting of castle in tree with river below it and forest below it with lots of trees, best of reddit.png
+test/output/painting of castle on cliff with man standing in front of it and person standing on the cliff, best of reddit.png
+test/output/painting of castle on hill with horse and rider in front of it and forest and body of water in the background, best of reddit.png
+test/output/painting of castle on hill with river running through it and trees surrounding it and bridge in the foreground, best of reddit.png
+test/output/painting of castle on hill with sky background and clouds above it, with person standing on path leading to the top of the castle, best of reddit.png
+test/output/painting of castle on hill with sky background and painting of castle on hill with sky background, best of reddit.png
+test/output/painting of castle on mountain with man on horse in the foreground and person on horse in the background, best of reddit.png
+test/output/painting of castle on mountain with waterfall in the background and bridge in the foreground, best of reddit.png
+test/output/painting of castle with deer in front of it and lake in the foreground with mountain in the background, best of reddit.png
+test/output/painting of castle with man on horse in front of it and bird flying over it, best of reddit.png
+test/output/painting of castle with man standing in the water next to it and boat in the water, best of reddit.png
+test/output/painting of cave with person standing in the middle of it and bright light coming from the cave, best of reddit.png
+test/output/painting of city at night with full moon in the sky above it and few buildings, best of reddit.png
+test/output/painting of city at night with lake in front of it and trees in the foreground, best of reddit.png
+test/output/painting of city on cliff overlooking body of water with city on top of it, best of reddit.png
+test/output/painting of city on hill with lot of trees and buildings on it and red and white building, best of reddit.png
+test/output/painting of city on top of mountain with sky background and group of people standing on the top of mountain, best of reddit.png
+test/output/painting of city surrounded best of reddit, best of reddit (2).png
+test/output/painting of city with birds flying around it and man standing on ledge above the city, best of reddit.png
+test/output/painting of city with bridge and boat in the water and cloudy sky above it, best of reddit.png
+test/output/painting of city with bridge and castle on top of it, with river running through it, best of reddit.png
+test/output/painting of city with bridge and river in the middle of it, with light shining through the window, best of reddit.png
+test/output/painting of city with bridge and river running through it and bridge over it that has bridge going through it, best of reddit.png
+test/output/painting of city with bridge and train on it and sky background with clouds and train on the tracks, best of reddit.png
+test/output/painting of city with bridge in the middle of it and sunset in the background with red sky, best of reddit.png
+test/output/painting of city with bridge over river and boat in the water below it, with bridge over the water, best of reddit.png
+test/output/painting of city with bridge over river and lots of people standing on the bridge and looking at the water, best of redditō.png
+test/output/painting of city with lot of buildings and boats in the water and sky background with clouds, best of reddit.png
+test/output/painting of city with lot of buildings and people walking around it and sky line in the background, best of reddit.png
+test/output/painting of city with lot of flowers on it's roof and staircase leading to building, best of reddit.png
+test/output/painting of city with lot of red buildings and large body of water in the background, best of reddit.png
+test/output/painting of city with lots of buildings and people riding bikes in the street and person on bike, best of reddit.png
+test/output/painting of city with red ball floating in the air above the clouds and river below, best of reddit.png
+test/output/painting of city with river and bridge in the middle of it and boat in the water, best of reddit.png
+test/output/painting of city with river running through it and sunbeam in the background that is shining, best of reddit.png
+test/output/painting of city with tower and hot air balloons in the sky above it and bridge leading to mountain, best of reddit.png
+test/output/painting of city with very tall tower and very long spire in the middle of the picture, best of reddit.png
+test/output/painting of city with waterfall and boat in the water near bridge and bridge, best of reddit.png
+test/output/painting of cliff with grassy island in the middle of it and cross on top of it, best of reddit.png
+test/output/painting of creature in the water with castle in the background and dark sky above it, best of reddit.png
+test/output/painting of dark city with clock tower in the distance and man walking in the foreground, best of reddit.png
+test/output/painting of deer standing on train track with mountains in the background and sky filled with clouds, best of reddit.png
+test/output/painting of desert with rock formation and tree in the foreground and blue sky with clouds, best of reddit.png
+test/output/painting of dinosaur in desert setting with man standing next to it and another dinosaur in the background, best of reddit (2).png
+test/output/painting of dragon and deer in snowy landscape with castle in the background and deer in the foreground, best of reddit.png
+test/output/painting of dragon flying over mountain range in the sky with man standing on cliff, by Taiyō Matsumoto.png
+test/output/painting of fantasy city surrounded best of reddit, best of reddit (2).png
+test/output/painting of fantasy island in the sky with castle on top of it and bridge leading to it, best of reddit.png
+test/output/painting of fantasy island with waterfall and castle in the background, with bridge leading to waterfall, best of reddit.png
+test/output/painting of fantasy land with mountain and river in the background and castle in the middle, best of reddit.png
+test/output/painting of forest with bench and trees in the background and dog in the foreground, best of reddit.png
+test/output/painting of forest with birds on wire and water tower in the distance at night time, best of reddit.png
+test/output/painting of forest with house and tree house in the background and bird on branch, best of reddit.png
+test/output/painting of forest with lake and house in the middle of it with lot of trees, best of reddit.png
+test/output/painting of forest with path leading through it and trees with orange leaves on them, and blue sky, best of reddit.png
+test/output/painting of forest with person walking through the woods at night with foggy sky and person in the distance, best of reddit. Hardy.png
+test/output/painting of forest with red umbrelland man standing in the middle of the forest with red umbrella, best of reddit.png
+test/output/painting of forest with small house on hill surrounded best of reddit, best of reddit (2).png
+test/output/painting of forest with stream and trees in the background and few mushrooms growing on the ground, best of reddit.png
+test/output/painting of forest with trees and clouds in the background with watercolors and brush on the table, best of reddit.png
+test/output/painting of fox sitting in forest with tree in the foreground and dark sky in the background, best of reddit.png
+test/output/painting of futuristic city surrounded best of reddit, best of reddit (2).png
+test/output/painting of futuristic city surrounded best of reddit, with river running through the center, best of reddit (2).png
+test/output/painting of garden with waterfall and arches in the background, with sunbeam coming through the window, best of reddit.png
+test/output/painting of giant creature attacking man on horse in desert arewith building in the background, best of reddit.png
+test/output/painting of giant creature on horse in the desert with man on horse in front of it, best of reddit.png
+test/output/painting of giant hand holding box on top of mountain with body of water below, by Jean-Léon Gérôme.png
+test/output/painting of giant monster standing in front of giant black object with glowing eyes and horns on its head, best of reddit. Manzanedo.png
+test/output/painting of giant mountain with sword in it's hand and giant rock in the background, best of reddit. Manzanedo.png
+test/output/painting of giant structure with giant spiral staircase going up it's side in the mountains, best of reddit.png
+test/output/painting of giant vase with tree in it and man standing in the foreground with cat in the background, best of reddit.png
+test/output/painting of green forest with stream running through it and lot of white flowers in the foreground, best of reddit.png
+test/output/painting of green hill with blue sky in the background and green field with few trees, best of reddit.png
+test/output/painting of group of people working on machine in factory arewith crane in the background, by TeradKatsuya.png
+test/output/painting of harbor with ships in the water and smoke pouring out of the stacks of buildings and buildings, best of reddit.png
+test/output/painting of horse drawn sleigh in the snow with castle in the background and person on sleigh, best of reddit.png
+test/output/painting of house in field of flowers with sky background and clouds above it, with blue sky and clouds, best of reddit.png
+test/output/painting of house in forest with stream running through it and lot of trees around it, best of reddit.png
+test/output/painting of house in the woods with pond in front of it and trees in the background, best of reddit.png
+test/output/painting of house in the woods with waterfall in the background and waterfall in the foreground, best of reddit.png
+test/output/painting of house on cliff with path leading to it and mountain in the background, best of reddit.png
+test/output/painting of house on cliff with tree on top of it and boat in the water, best of reddit.png
+test/output/painting of house on hill with fence and trees in the foreground and mountain in the background, best of reddit.png
+test/output/painting of house on hill with full moon in the background and path leading to it, best of reddit.png
+test/output/painting of house on hill with tree growing out of it's roof and path leading to the top, best of reddit.png
+test/output/painting of house with car parked in front of it in the snow with city in the background, best of reddit.png
+test/output/painting of house with lot of balloons flying in the air above it and lot of flowers in the yard, best of reddit.png
+test/output/painting of house with staircase leading to it and beach in front of it at night, best of reddit.png
+test/output/painting of landscape with bridge and river in the foreground and man on horse, best of reddit.png
+test/output/painting of landscape with lake and mountain in the background with giant arch in the middle, best of reddit.png
+test/output/painting of landscape with large moon in the sky and field of flowers in the foreground, best of reddit. Hardy.png
+test/output/painting of landscape with man on horse and woman on horse on hill, best of reddit.png
+test/output/painting of landscape with mountain and river in the distance with birds flying overhead and blue sky, best of reddit.png
+test/output/painting of landscape with mountain in the background and lake in the foreground with few birds flying around, best of reddit.png
+test/output/painting of landscape with mountains and rocks in the background and sky background with few clouds, best of reddit.png
+test/output/painting of landscape with river and tower in the distance with clouds in the sky above, best of reddit.png
+test/output/painting of landscape with tree and mountains in the background with foggy sky and few clouds, best of reddit.png
+test/output/painting of landscape with trees and clouds in the background and sky with clouds and sun shining, best of reddit.png
+test/output/painting of landscape with trees and mountains in the background and stream running through the middle of the picture, best of reddit.png
+test/output/painting of large object in field with tree and sky background with clouds and few birds, best of reddit.png
+test/output/painting of lavender field with blue sky and clouds above it and lone tree in the foreground, best of reddit (2).png
+test/output/painting of lighthouse in the middle of the ocean with dock and buildings in the background and cloudy sky, by François Bocion.png
+test/output/painting of lighthouse on rock in the ocean with boat in the water below it and person in boat in the water below it, best of reddit.png
+test/output/painting of man and cow in field near tall tower with sky background and clouds, best of reddit.png
+test/output/painting of man and woman standing in tunnel with ivy growing on the walls and building in the background, best of reddit.png
+test/output/painting of man hanging from tree branch in the woods with bird flying overhead in the sky, best of reddit-Kallela.png
+test/output/painting of man holding magnifying glass in forest with man standing on hill, best of reddit.png
+test/output/painting of man in boat in river with huge building in the background that is sinking, best of reddit.png
+test/output/painting of man riding bike in front of tree with sky background and clouds in the background, best of reddit (2).png
+test/output/painting of man riding horse next to river with giant boat in the background and man on horse, best of reddit.png
+test/output/painting of man sitting on bench in field with mountain in the background and clouds in the sky, best of reddit.png
+test/output/painting of man sitting on chair in desert setting with tray of food in his hand, by Jean-Léon Gérôme.png
+test/output/painting of man sitting on dock in city at night with street light on the side, best of reddit.png
+test/output/painting of man sitting on stone staircase overlooking valley and valley below him is painting of man sitting on stone staircase, best of reddit.png
+test/output/painting of man standing in front of doorway with giant angel above it and another man standing in front of it, best of reddit.png
+test/output/painting of man standing in narrow canyon with sky background and person standing in the middle of the canyon, by Beksinski.png
+test/output/painting of man standing in the water with cross in the background and rocks in the foreground, best of reddit.png
+test/output/painting of man standing next to horse in field with large skull in the background, best of reddit.png
+test/output/painting of man standing on bridge over river in forest with blue river running through it, best of reddit.png
+test/output/painting of man standing on cliff in the middle of forest with tree in the middle, best of reddit. Hardy.png
+test/output/painting of man standing on cliff overlooking lake and castle in the sky with flying bird, best of reddit.png
+test/output/painting of man standing on hill next to waterfall and forest with waterfall in the background, best of reddit.png
+test/output/painting of man with strange face in the woods with stream of water coming out of his face, best of reddit.png
+test/output/painting of mountain lake surrounded best of reddit, best of reddit (2).png
+test/output/painting of mountain lake with boat in the water and sunset in the background with boat in the water, best of reddit.png
+test/output/painting of mountain lake with red boat in the water and mountain range in the background, best of reddit.png
+test/output/painting of mountain landscape with lavand lavflow in the foreground and mountain range in the background, best of reddit.png
+test/output/painting of mountain landscape with river and forest in the foreground and distant mountain range in the background, best of reddit.png
+test/output/painting of mountain landscape with river running through it and lot of trees on the side, best of reddit (2).png
+test/output/painting of mountain landscape with trees and flowers on the hillside and moon in the sky above, best of reddit.png
+test/output/painting of mountain scene with bridge and stream in the foreground and forest in the background, best of reddit.png
+test/output/painting of mountain surrounded best of reddit, best of reddit (2).png
+test/output/painting of mountain with bridge going across it and man on bike riding on the bridge, best of reddit.png
+test/output/painting of mountain with field of flowers in front of it and blue sky with clouds, best of reddit.png
+test/output/painting of mountain with grassy field below it and sky background with clouds and few rocks, best of reddit.png
+test/output/painting of mountain with group of people walking around it and sky background with few clouds, best of reddit.png
+test/output/painting of mountain with lake below it and man fishing in the water below it,, best of reddit.png
+test/output/painting of mountain with large animal on it's face and mountain in the background, best of reddit.png
+test/output/painting of mountain with person standing on it's side in the snow under lightning, best of reddit.png
+test/output/painting of mountain with river running through it and forest below it with waterfall running through it, best of reddit.png
+test/output/painting of mountain with river running through it and lot of trees on the side of it, best of reddit.png
+test/output/painting of mountain with sky background and trees in the foreground and yellow field in the foreground, best of reddit.png
+test/output/painting of mountain with trees and clouds in the background and sunset in the background with red sky, best of reddit.png
+test/output/painting of mountain with two giant rocks and trees in the foreground and person walking on the ground, best of reddit.png
+test/output/painting of mountain with waterfall and castle in the background with forest and lake below, best of reddit.png
+test/output/painting of mountain with waterfall and two horses running through it, with birds flying around the waterfall, best of reddit.png
+test/output/painting of night sky with stars and clouds above field and mountains with full moon in the distance, best of reddit.png
+test/output/painting of pagodin forest with trees and clouds in the background, with bird perched on top of the pagoda, best of reddit.png
+test/output/painting of path leading to castle in the woods with flowers and mushrooms on the ground and forest floor, best of reddit.png
+test/output/painting of path leading to sign on hill with flowers on it and sky with clouds, best of reddit.png
+test/output/painting of person floating in lake with sky background and moon in the sky above, best of reddit.png
+test/output/painting of person in forest with tent in the distance and person in the distance, best of reddit.png
+test/output/painting of person looking out window at city skyline at night with person standing in the window, best of reddit.png
+test/output/painting of person on horse and person on horse drawn carriage on city street, best of reddit.png
+test/output/painting of person riding bike on path through flower garden with fence and trees, best of reddit.png
+test/output/painting of person sitting on hill looking at plane in the sky above them and body of water below, by RebeccSugar.png
+test/output/painting of person sitting on the ground looking at statue of liberty in the water and beach, best of reddit.png
+test/output/painting of river surrounded best of reddit, best of reddit (2).png
+test/output/painting of ship in the ocean surrounded best of reddit, with city in the background, best of reddit (2).png
+test/output/painting of yellow building on cliff best of reddit, best of reddit (2).png
+test/output/xcasweqs.png
