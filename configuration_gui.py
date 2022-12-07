@@ -186,7 +186,7 @@ class App(tk.Frame):
         self.play_cfg = 7.5
         self.play_steps = 25
         self.schedulers = ["DPMSolverMultistepScheduler", "PNDMScheduler", 'DDIMScheduler','EulerAncestralDiscreteScheduler','EulerDiscreteScheduler']
-        self.quick_select_models = ["Stable Diffusion 1.4", "Stable Diffusion 1.5", "Stable Diffusion 2 Base (512)", "Stable Diffusion 2 (768)"]
+        self.quick_select_models = ["Stable Diffusion 1.4", "Stable Diffusion 1.5", "Stable Diffusion 2 Base (512)", "Stable Diffusion 2 (768)", 'Stable Diffusion 2.1 Base (512)', "Stable Diffusion 2.1 (768)"]
         self.play_scheduler = 'DPMSolverMultistepScheduler'
         self.pipe = None
         self.current_model = None
@@ -256,6 +256,11 @@ class App(tk.Frame):
                 self.diffusers_model_path_entry.insert(0,"stabilityai/stable-diffusion-2-base")
             elif val == 'Stable Diffusion 2 (768)':
                 self.diffusers_model_path_entry.insert(0,"stabilityai/stable-diffusion-2")
+                self.resolution_var.set("768")
+            elif val == 'Stable Diffusion 2.1 Base (512)':
+                self.diffusers_model_path_entry.insert(0,"stabilityai/stable-diffusion-2-1-base")
+            elif val == 'Stable Diffusion 2.1 (768)':
+                self.diffusers_model_path_entry.insert(0,"stabilityai/stable-diffusion-2-1")
                 self.resolution_var.set("768")
             self.master.update()
     def create_widgets(self):
