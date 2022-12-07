@@ -13,6 +13,9 @@ import glob
 #from scripts import converters
 #work in progress code, not finished, credits will be added at a later date.
 
+#class to make popup right click menu with select all, copy, paste, cut, and delete when right clicked on an entry box
+
+
 class CreateToolTip(object):
     """
     create a tooltip for a given widget
@@ -216,6 +219,21 @@ class App(tk.Frame):
             #self.load_config()
             pass
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+    #create a right click menu for entry widgets
+    def create_right_click_menu(self, event):
+        #create a menu
+        self.menu = Menu(self.master, tearoff=0)
+        #add commands to the menu
+        self.menu.add_command(label="Cut", command=lambda: self.master.focus_get().event_generate("<<Cut>>"))
+        self.menu.add_command(label="Copy", command=lambda: self.master.focus_get().event_generate("<<Copy>>"))
+        self.menu.add_command(label="Paste", command=lambda: self.master.focus_get().event_generate("<<Paste>>"))
+        self.menu.add_command(label="Select All", command=lambda: self.master.focus_get().event_generate("<<SelectAll>>"))
+        #display the menu
+        try:
+            self.menu.tk_popup(event.x_root, event.y_root)
+        finally:
+            #make sure to release the grab (Tk 8.0a1 only)
+            self.menu.grab_release()
     def resize_window(self, event):
         #get the current selected notebook tab id
         tab_id = self.notebook.select()
@@ -296,6 +314,7 @@ class App(tk.Frame):
         diffusers_model_path_label_ttp = CreateToolTip(self.diffusers_model_path_label, "The path to the diffusers model to use. Can be a local path or a HuggingFace repo path.")
         self.diffusers_model_path_label.grid(row=2, column=0, sticky="nsew")
         self.diffusers_model_path_entry = tk.Entry(self.general_tab,width=30,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
+        
         self.diffusers_model_path_entry.grid(row=2, column=1, sticky="nsew")
         self.diffusers_model_path_entry.insert(0, self.diffusers_model_path)
         #make a button to open a file dialog
@@ -649,6 +668,8 @@ class App(tk.Frame):
             self.sample_prompt_entries.append(tk.Entry(self.sample_tab, width=70,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white"))
             self.sample_prompt_entries[i].grid(row=self.sample_prompt_row + i, column=1, sticky="nsew")
             self.sample_prompt_entries[i].insert(0, self.sample_prompts[i])
+        for i in self.sample_prompt_entries:
+            i.bind("<Button-3>", self.create_right_click_menu)
         self.controlled_sample_row = 30 + len(self.sample_prompts)
         #create a button to add controlled seed sample
         self.add_controlled_seed_sample_button = tk.Button(self.sample_tab, text="Add Controlled Seed Sample",  command=self.add_controlled_seed_sample,fg=self.dark_mode_title_var, bg=self.dark_mode_var,activebackground=self.dark_mode_title_var)
@@ -671,7 +692,8 @@ class App(tk.Frame):
             self.controlled_seed_sample_entries.append(tk.Entry(self.sample_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white"))
             self.controlled_seed_sample_entries[i].grid(row=self.controlled_sample_row + len(self.sample_prompts) + i, column=1, sticky="nsew")
             self.controlled_seed_sample_entries[i].insert(0, self.add_controlled_seed_to_sample[i])
-
+        for i in self.controlled_seed_sample_entries:
+            i.bind("<Button-3>", self.create_right_click_menu)
         
         #add concept settings label
         self.concept_settings_label = tk.Label(self.concepts_tab, text="Concept Settings",  font=("Helvetica", 12, "bold"),fg=self.dark_mode_title_var, bg=self.dark_mode_var)
@@ -826,8 +848,10 @@ class App(tk.Frame):
         #add download dataset button
         self.download_dataset_button = tk.Button(self.tools_tab, text="Download Dataset", command=self.download_dataset,fg=self.dark_mode_text_var, bg=self.dark_mode_var, activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var)
         self.download_dataset_button.grid(row=9, column=2, sticky="nsew")
-
-
+        
+        self.all_entries_list = [self.diffusers_model_path_entry, self.seed_entry,self.play_seed_entry,self.play_model_entry,self.output_path_entry,self.play_prompt_entry,self.sample_width_entry,self.train_epochs_entry,self.learning_rate_entry,self.sample_height_entry,self.telegram_token_entry,self.vae_model_path_entry,self.dataset_repeats_entry,self.download_dataset_entry,self.num_warmup_steps_entry,self.download_dataset_entry,self.telegram_chat_id_entry,self.save_every_n_epochs_entry,self.play_negative_prompt_entry,self.number_of_class_images_entry,self.number_of_samples_to_generate_entry,self.prior_loss_preservation_weight_entry]
+        for entry in self.all_entries_list:
+            entry.bind("<Button-3>", self.create_right_click_menu)
         self.generate_btn = tk.Button(self.general_tab)
         
         self.generate_btn.configure(border=4, relief='flat',fg=self.dark_mode_title_var, bg=self.dark_mode_var,activebackground=self.dark_mode_title_var, font=("Helvetica", 12, "bold"))
@@ -1379,6 +1403,8 @@ class App(tk.Frame):
             do_not_balance_dataset_var.set(1)
         #combine all the entries into a list
         concept_entries = [ins_prompt_entry, class_prompt_entry, ins_data_path_entry, class_data_path_entry,do_not_balance_dataset_var,do_not_balance_dataset_checkbox]
+        for i in concept_entries[:4]:
+            i.bind("<Button-3>", self.create_right_click_menu)
         #add the list to the list of concept entries
         self.concept_entries.append(concept_entries)
         #add the title to the list of concept titles
@@ -1472,7 +1498,9 @@ class App(tk.Frame):
         self.controlled_seed_sample_labels.append(tk.Label(self.sample_tab, text="Controlled Seed Sample " + str(len(self.controlled_seed_sample_labels)),fg=self.dark_mode_text_var, bg=self.dark_mode_var))
         self.controlled_seed_sample_labels[-1].grid(row=self.controlled_sample_row + len(self.sample_prompts) + len(self.controlled_seed_sample_labels), column=0, sticky="nsew")
         #create entry
-        self.controlled_seed_sample_entries.append(tk.Entry(self.sample_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white"))
+        entry = tk.Entry(self.sample_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
+        entry.bind("<Button-3>",self.create_right_click_menu)
+        self.controlled_seed_sample_entries.append(entry)
         self.controlled_seed_sample_entries[-1].grid(row=self.controlled_sample_row + len(self.sample_prompts) + len(self.controlled_seed_sample_entries), column=1, sticky="nsew")
         if value != "":
             self.controlled_seed_sample_entries[-1].insert(0, value)
@@ -1508,8 +1536,11 @@ class App(tk.Frame):
         #add a new label and entry
         self.sample_prompt_labels.append(tk.Label(self.sample_tab, text="Sample Prompt " + str(len(self.sample_prompt_labels)),fg=self.dark_mode_text_var, bg=self.dark_mode_var))
         self.sample_prompt_labels[-1].grid(row=self.sample_prompt_row + len(self.sample_prompt_labels) - 1, column=0, sticky="nsew")
-        self.sample_prompt_entries.append(tk.Entry(self.sample_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white"))
+        entry = tk.Entry(self.sample_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
+        entry.bind("<Button-3>", self.create_right_click_menu)
+        self.sample_prompt_entries.append(entry)
         self.sample_prompt_entries[-1].grid(row=self.sample_prompt_row + len(self.sample_prompt_labels) - 1, column=1, sticky="nsew")
+        
         if value != "":
             self.sample_prompt_entries[-1].insert(0, value)
         #update the sample prompts list
