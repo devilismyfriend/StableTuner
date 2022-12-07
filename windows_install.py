@@ -172,7 +172,7 @@ if os.name == "nt":
                 #if dest file exists, check if it's different
                 if os.path.exists(dest_file):
                     shutil.copy2(src_file, cudnn_dest)
-            print("Copied CUDNN 1.8 files to destination")
-    diffusers_cmd = "git+https://github.com/huggingface/diffusers.git@c053564#egg=diffusers --force-reinstall"
-    run(f'"{python}" -m pip install {diffusers_cmd}', "Installing custom diffusers", "Couldn't install diffusers")
+            print("Copied CUDNN 8.6 files to destination")
+    diffusers_cmd = "git+https://github.com/huggingface/diffusers.git@8e74efa#egg=diffusers --force-reinstall"
+    run(f'"{python}" -m pip install {diffusers_cmd}', "Installing particular diffusers commit", "Couldn't install diffusers")
             
