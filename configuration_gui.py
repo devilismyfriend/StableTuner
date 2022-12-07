@@ -78,6 +78,7 @@ class App(tk.Frame):
         self.dark_mode_button_var = "#8ea0e1"
         self.dark_mode_text_var = "#c6c7c8"
         self.master.title("StableTune")
+        self.master.configure(cursor="left_ptr")
         #resizable window
         self.master.resizable(True, True)
         #master canvas
@@ -292,7 +293,7 @@ class App(tk.Frame):
         self.diffusers_model_path_label = tk.Label(self.general_tab, text="Diffusers model path / HuggingFace Repo",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         diffusers_model_path_label_ttp = CreateToolTip(self.diffusers_model_path_label, "The path to the diffusers model to use. Can be a local path or a HuggingFace repo path.")
         self.diffusers_model_path_label.grid(row=2, column=0, sticky="nsew")
-        self.diffusers_model_path_entry = tk.Entry(self.general_tab,width=30,fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        self.diffusers_model_path_entry = tk.Entry(self.general_tab,width=30,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
         self.diffusers_model_path_entry.grid(row=2, column=1, sticky="nsew")
         self.diffusers_model_path_entry.insert(0, self.diffusers_model_path)
         #make a button to open a file dialog
@@ -303,7 +304,7 @@ class App(tk.Frame):
         self.vae_model_path_label = tk.Label(self.general_tab, text="VAE model path / HuggingFace Repo",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         vae_model_path_label_ttp = CreateToolTip(self.vae_model_path_label, "OPTINAL The path to the VAE model to use. Can be a local path or a HuggingFace repo path.")
         self.vae_model_path_label.grid(row=3, column=0, sticky="nsew")
-        self.vae_model_path_entry = tk.Entry(self.general_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        self.vae_model_path_entry = tk.Entry(self.general_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
         self.vae_model_path_entry.grid(row=3, column=1, sticky="nsew")
         self.vae_model_path_entry.insert(0, self.vae_model_path)
         #make a button to open a file dialog
@@ -314,7 +315,7 @@ class App(tk.Frame):
         self.output_path_label = tk.Label(self.general_tab, text="Output Path",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         output_path_label_ttp = CreateToolTip(self.output_path_label, "The path to the output directory. If it doesn't exist, it will be created.")
         self.output_path_label.grid(row=4, column=0, sticky="nsew")
-        self.output_path_entry = tk.Entry(self.general_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        self.output_path_entry = tk.Entry(self.general_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
         self.output_path_entry.grid(row=4, column=1, sticky="nsew")
         self.output_path_entry.insert(0, self.output_path)
         #make a button to open a file dialog
@@ -333,14 +334,14 @@ class App(tk.Frame):
         self.telegram_token_label = tk.Label(self.general_tab, text="Telegram Token",  state="disabled",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         telegram_token_label_ttp = CreateToolTip(self.telegram_token_label, "The Telegram token for your bot.")
         self.telegram_token_label.grid(row=6, column=0, sticky="nsew")
-        self.telegram_token_entry = tk.Entry(self.general_tab,  state="disabled",fg=self.dark_mode_text_var, bg=self.dark_mode_var, disabledbackground=self.dark_mode_var)
+        self.telegram_token_entry = tk.Entry(self.general_tab,  state="disabled",fg=self.dark_mode_text_var, bg=self.dark_mode_var, disabledbackground=self.dark_mode_var,insertbackground="white")
         self.telegram_token_entry.grid(row=6, column=1, sticky="nsew")
         self.telegram_token_entry.insert(0, self.telegram_token)
         #create telegram chat id dark mode
         self.telegram_chat_id_label = tk.Label(self.general_tab, text="Telegram Chat ID",  state="disabled",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         telegram_chat_id_label_ttp = CreateToolTip(self.telegram_chat_id_label, "The Telegram chat ID to send updates to.")
         self.telegram_chat_id_label.grid(row=7, column=0, sticky="nsew")
-        self.telegram_chat_id_entry = tk.Entry(self.general_tab,  state="disabled",fg=self.dark_mode_text_var, bg=self.dark_mode_var, disabledbackground=self.dark_mode_var)
+        self.telegram_chat_id_entry = tk.Entry(self.general_tab,  state="disabled",fg=self.dark_mode_text_var, bg=self.dark_mode_var, disabledbackground=self.dark_mode_var,insertbackground="white")
         self.telegram_chat_id_entry.grid(row=7, column=1, sticky="nsew")
         self.telegram_chat_id_entry.insert(0, self.telegram_chat_id)
 
@@ -351,7 +352,7 @@ class App(tk.Frame):
         self.seed_label = tk.Label(self.training_tab, text="Seed",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         seed_label_ttp = CreateToolTip(self.seed_label, "The seed to use for training.")
         self.seed_label.grid(row=1, column=0, sticky="nsew")
-        self.seed_entry = tk.Entry(self.training_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        self.seed_entry = tk.Entry(self.training_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
         self.seed_entry.grid(row=1, column=1, sticky="nsew")
         self.seed_entry.insert(0, self.seed_number)
 
@@ -381,7 +382,7 @@ class App(tk.Frame):
         self.train_epochs_label = tk.Label(self.training_tab, text="Train Epochs",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         train_epochs_label_ttp = CreateToolTip(self.train_epochs_label, "The number of epochs to train for. An epoch is one pass through the entire dataset.")
         self.train_epochs_label.grid(row=4, column=0, sticky="nsew")
-        self.train_epochs_entry = tk.Entry(self.training_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        self.train_epochs_entry = tk.Entry(self.training_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
         self.train_epochs_entry.grid(row=4, column=1, sticky="nsew")
         self.train_epochs_entry.insert(0, self.num_train_epochs)
         
@@ -430,7 +431,7 @@ class App(tk.Frame):
         self.learning_rate_label = tk.Label(self.training_tab, text="Learning Rate",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         learning_rate_label_ttp = CreateToolTip(self.learning_rate_label, "The learning rate to use for training.")
         self.learning_rate_label.grid(row=9, column=0, sticky="nsew")
-        self.learning_rate_entry = tk.Entry(self.training_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        self.learning_rate_entry = tk.Entry(self.training_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
         self.learning_rate_entry.grid(row=9, column=1, sticky="nsew")
         self.learning_rate_entry.insert(0, self.learning_rate)
         #create learning rate scheduler dropdown
@@ -447,7 +448,7 @@ class App(tk.Frame):
         self.num_warmup_steps_label = tk.Label(self.training_tab, text="LR Warmup Steps",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         num_warmup_steps_label_ttp = CreateToolTip(self.num_warmup_steps_label, "The number of warmup steps to use for the learning rate scheduler.")
         self.num_warmup_steps_label.grid(row=11, column=0, sticky="nsew")
-        self.num_warmup_steps_entry = tk.Entry(self.training_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        self.num_warmup_steps_entry = tk.Entry(self.training_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
         self.num_warmup_steps_entry.grid(row=11, column=1, sticky="nsew")
         self.num_warmup_steps_entry.insert(0, self.learning_rate_warmup_steps)
         #create use latent cache checkbox
@@ -504,7 +505,7 @@ class App(tk.Frame):
         self.prior_loss_preservation_weight_label = tk.Label(self.training_tab, text="Weight",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         prior_loss_preservation_weight_label_ttp = CreateToolTip(self.prior_loss_preservation_weight_label, "The weight of the prior loss preservation loss.")
         self.prior_loss_preservation_weight_label.grid(row=16, column=1, sticky="e")
-        self.prior_loss_preservation_weight_entry = tk.Entry(self.training_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        self.prior_loss_preservation_weight_entry = tk.Entry(self.training_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
         self.prior_loss_preservation_weight_entry.grid(row=16, column=3, sticky="w")
         self.prior_loss_preservation_weight_entry.insert(0, self.prior_loss_weight)
         #create Dataset Settings label like the model settings label
@@ -545,14 +546,14 @@ class App(tk.Frame):
         self.number_of_class_images_label = tk.Label(self.dataset_tab, text="Number of Class Images",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         number_of_class_images_label_ttp = CreateToolTip(self.number_of_class_images_label, "The number of class images to add to the dataset, if they don't exist in the class directory they will be generated.")
         self.number_of_class_images_label.grid(row=4, column=0, sticky="nsew")
-        self.number_of_class_images_entry = tk.Entry(self.dataset_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        self.number_of_class_images_entry = tk.Entry(self.dataset_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
         self.number_of_class_images_entry.grid(row=4, column=1, sticky="nsew")
         self.number_of_class_images_entry.insert(0, self.num_class_images)
         #create dataset repeat entry
         self.dataset_repeats_label = tk.Label(self.dataset_tab, text="Dataset Repeats",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         dataset_repeat_label_ttp = CreateToolTip(self.dataset_repeats_label, "The number of times to repeat the dataset, this will increase the number of images in the dataset.")
         self.dataset_repeats_label.grid(row=5, column=0, sticky="nsew")
-        self.dataset_repeats_entry = tk.Entry(self.dataset_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        self.dataset_repeats_entry = tk.Entry(self.dataset_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
         self.dataset_repeats_entry.grid(row=5, column=1, sticky="nsew")
         self.dataset_repeats_entry.insert(0, self.dataset_repeats)
 
@@ -578,28 +579,28 @@ class App(tk.Frame):
         self.save_every_n_epochs_label = tk.Label(self.sample_tab, text="Save Every N Epochs",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         save_every_n_epochs_label_ttp = CreateToolTip(self.save_every_n_epochs_label, "Will save and sample the model every N epochs.")
         self.save_every_n_epochs_label.grid(row=1, column=0, sticky="nsew")
-        self.save_every_n_epochs_entry = tk.Entry(self.sample_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        self.save_every_n_epochs_entry = tk.Entry(self.sample_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
         self.save_every_n_epochs_entry.grid(row=1, column=1, sticky="nsew")
         self.save_every_n_epochs_entry.insert(0, self.save_and_sample_every_x_epochs)
         #create number of samples to generate entry
         self.number_of_samples_to_generate_label = tk.Label(self.sample_tab, text="Number of Samples to Generate",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         number_of_samples_to_generate_label_ttp = CreateToolTip(self.number_of_samples_to_generate_label, "The number of samples to generate per prompt.")
         self.number_of_samples_to_generate_label.grid(row=2, column=0, sticky="nsew")
-        self.number_of_samples_to_generate_entry = tk.Entry(self.sample_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        self.number_of_samples_to_generate_entry = tk.Entry(self.sample_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
         self.number_of_samples_to_generate_entry.grid(row=2, column=1, sticky="nsew")
         self.number_of_samples_to_generate_entry.insert(0, self.num_samples_to_generate)
         #create sample width entry
         self.sample_width_label = tk.Label(self.sample_tab, text="Sample Width",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         sample_width_label_ttp = CreateToolTip(self.sample_width_label, "The width of the generated samples.")
         self.sample_width_label.grid(row=3, column=0, sticky="nsew")
-        self.sample_width_entry = tk.Entry(self.sample_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        self.sample_width_entry = tk.Entry(self.sample_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
         self.sample_width_entry.grid(row=3, column=1, sticky="nsew")
         self.sample_width_entry.insert(0, self.sample_width)
         #create sample height entry
         self.sample_height_label = tk.Label(self.sample_tab, text="Sample Height",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         sample_height_label_ttp = CreateToolTip(self.sample_height_label, "The height of the generated samples.")
         self.sample_height_label.grid(row=4, column=0, sticky="nsew")
-        self.sample_height_entry = tk.Entry(self.sample_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        self.sample_height_entry = tk.Entry(self.sample_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
         self.sample_height_entry.grid(row=4, column=1, sticky="nsew")
         self.sample_height_entry.insert(0, self.sample_height)
         
@@ -643,7 +644,7 @@ class App(tk.Frame):
             self.sample_prompt_labels.append(tk.Label(self.sample_tab, text="Sample Prompt " + str(i),fg=self.dark_mode_text_var, bg=self.dark_mode_var))
             self.sample_prompt_labels[i].grid(row=self.sample_prompt_row + i, column=0, sticky="nsew")
             #create entry
-            self.sample_prompt_entries.append(tk.Entry(self.sample_tab, width=70,fg=self.dark_mode_text_var, bg=self.dark_mode_var))
+            self.sample_prompt_entries.append(tk.Entry(self.sample_tab, width=70,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white"))
             self.sample_prompt_entries[i].grid(row=self.sample_prompt_row + i, column=1, sticky="nsew")
             self.sample_prompt_entries[i].insert(0, self.sample_prompts[i])
         self.controlled_sample_row = 30 + len(self.sample_prompts)
@@ -665,7 +666,7 @@ class App(tk.Frame):
             self.controlled_seed_sample_labels.append(tk.Label(self.sample_tab, text="Controlled Seed Sample " + str(i),fg=self.dark_mode_text_var, bg=self.dark_mode_var))
             self.controlled_seed_sample_labels[i].grid(row=self.controlled_sample_row + len(self.sample_prompts) + i, column=0, sticky="nsew")
             #create entry
-            self.controlled_seed_sample_entries.append(tk.Entry(self.sample_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var))
+            self.controlled_seed_sample_entries.append(tk.Entry(self.sample_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white"))
             self.controlled_seed_sample_entries[i].grid(row=self.controlled_sample_row + len(self.sample_prompts) + i, column=1, sticky="nsew")
             self.controlled_seed_sample_entries[i].insert(0, self.add_controlled_seed_to_sample[i])
 
@@ -699,7 +700,7 @@ class App(tk.Frame):
         #add play model entry with button to open file dialog
         self.play_model_label = tk.Label(self.play_tab, text="Diffusers Model Directory",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         self.play_model_label.grid(row=0, column=0, sticky="nsew")
-        self.play_model_entry = tk.Entry(self.play_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        self.play_model_entry = tk.Entry(self.play_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
         self.play_model_entry.grid(row=0, column=1, sticky="nsew")
         self.play_model_entry.insert(0, self.play_diffusers_model_path)
         self.play_model_file_dialog_button = tk.Button(self.play_tab, text="...",width=5, command=lambda: self.open_file_dialog(self.play_model_entry),fg=self.dark_mode_text_var, bg=self.dark_mode_title_var, activebackground=self.dark_mode_button_var, activeforeground="white")
@@ -708,19 +709,19 @@ class App(tk.Frame):
         #add a prompt entry to play tab
         self.play_prompt_label = tk.Label(self.play_tab, text="Prompt",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         self.play_prompt_label.grid(row=1, column=0, sticky="nsew")
-        self.play_prompt_entry = tk.Entry(self.play_tab, width=40,fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        self.play_prompt_entry = tk.Entry(self.play_tab, width=40,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
         self.play_prompt_entry.grid(row=1, column=1, sticky="nsew")
         self.play_prompt_entry.insert(0, self.play_postive_prompt)
         #add a negative prompt entry to play tab
         self.play_negative_prompt_label = tk.Label(self.play_tab, text="Negative Prompt",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         self.play_negative_prompt_label.grid(row=2, column=0, sticky="nsew")
-        self.play_negative_prompt_entry = tk.Entry(self.play_tab, width=40,fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        self.play_negative_prompt_entry = tk.Entry(self.play_tab, width=40,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
         self.play_negative_prompt_entry.grid(row=2, column=1, sticky="nsew")
         self.play_negative_prompt_entry.insert(0, self.play_negative_prompt)
         #add a seed entry to play tab
         self.play_seed_label = tk.Label(self.play_tab, text="Seed",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         self.play_seed_label.grid(row=3, column=0, sticky="nsew")
-        self.play_seed_entry = tk.Entry(self.play_tab, width=10,fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        self.play_seed_entry = tk.Entry(self.play_tab, width=10,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
         self.play_seed_entry.grid(row=3, column=1, sticky="w")
         self.play_seed_entry.insert(0, self.play_seed)
         #create a steps slider from 1 to 100
@@ -818,7 +819,7 @@ class App(tk.Frame):
         self.download_dataset_label = tk.Label(self.tools_tab, text="Download Dataset from HF",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         download_dataset_label_ttp = CreateToolTip(self.download_dataset_label, "Will git clone a HF dataset repo")
         self.download_dataset_label.grid(row=9, column=0, sticky="nsew")
-        self.download_dataset_entry = tk.Entry(self.tools_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        self.download_dataset_entry = tk.Entry(self.tools_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
         self.download_dataset_entry.grid(row=9, column=1, sticky="nsew")
         #add download dataset button
         self.download_dataset_button = tk.Button(self.tools_tab, text="Download Dataset", command=self.download_dataset,fg=self.dark_mode_text_var, bg=self.dark_mode_var, activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var)
@@ -1322,7 +1323,7 @@ class App(tk.Frame):
         ins_prompt_label_ttp = CreateToolTip(ins_prompt_label, "The token for the concept, will be ignored if use image names as captions is checked.")
         ins_prompt_label.grid(row=4 + (len(self.concept_labels)*6), column=0, sticky="nsew")
         #create instance prompt entry
-        ins_prompt_entry = tk.Entry(self.concepts_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        ins_prompt_entry = tk.Entry(self.concepts_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
         ins_prompt_entry.grid(row=4 + (len(self.concept_labels)*6), column=1, sticky="nsew")
         if inst_prompt_val != None:
             ins_prompt_entry.insert(0, inst_prompt_val)
@@ -1331,7 +1332,7 @@ class App(tk.Frame):
         class_prompt_label_ttp = CreateToolTip(class_prompt_label, "The prompt will be used to generate class images and train the class images if added to dataset")
         class_prompt_label.grid(row=5 + (len(self.concept_labels)*6), column=0, sticky="nsew")
         #create class prompt entry
-        class_prompt_entry = tk.Entry(self.concepts_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        class_prompt_entry = tk.Entry(self.concepts_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
         class_prompt_entry.grid(row=5 + (len(self.concept_labels)*6), column=1, sticky="nsew")
         if class_prompt_val != None:
             class_prompt_entry.insert(0, class_prompt_val)
@@ -1340,7 +1341,7 @@ class App(tk.Frame):
         ins_data_path_label_ttp = CreateToolTip(ins_data_path_label, "The path to the folder containing the concept's images.")
         ins_data_path_label.grid(row=6 + (len(self.concept_labels)*6), column=0, sticky="nsew")
         #create instance data path entry
-        ins_data_path_entry = tk.Entry(self.concepts_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        ins_data_path_entry = tk.Entry(self.concepts_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
         ins_data_path_entry.grid(row=6 + (len(self.concept_labels)*6), column=1, sticky="nsew")
         if inst_data_path_val != None:
             ins_data_path_entry.insert(0, inst_data_path_val)
@@ -1357,7 +1358,7 @@ class App(tk.Frame):
         class_data_path_file_dialog_button.configure(border=4, relief='flat')
         class_data_path_file_dialog_button.grid(row=7 + (len(self.concept_labels)*6), column=2, sticky="nsew")
         #create class data path entry
-        class_data_path_entry = tk.Entry(self.concepts_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        class_data_path_entry = tk.Entry(self.concepts_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
         class_data_path_entry.grid(row=7 + (len(self.concept_labels)*6), column=1, sticky="nsew")
         if class_data_path_val != None:
             class_data_path_entry.insert(0, class_data_path_val)
@@ -1467,7 +1468,7 @@ class App(tk.Frame):
         self.controlled_seed_sample_labels.append(tk.Label(self.sample_tab, text="Controlled Seed Sample " + str(len(self.controlled_seed_sample_labels)),fg=self.dark_mode_text_var, bg=self.dark_mode_var))
         self.controlled_seed_sample_labels[-1].grid(row=self.controlled_sample_row + len(self.sample_prompts) + len(self.controlled_seed_sample_labels), column=0, sticky="nsew")
         #create entry
-        self.controlled_seed_sample_entries.append(tk.Entry(self.sample_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var))
+        self.controlled_seed_sample_entries.append(tk.Entry(self.sample_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white"))
         self.controlled_seed_sample_entries[-1].grid(row=self.controlled_sample_row + len(self.sample_prompts) + len(self.controlled_seed_sample_entries), column=1, sticky="nsew")
         if value != "":
             self.controlled_seed_sample_entries[-1].insert(0, value)
@@ -1503,7 +1504,7 @@ class App(tk.Frame):
         #add a new label and entry
         self.sample_prompt_labels.append(tk.Label(self.sample_tab, text="Sample Prompt " + str(len(self.sample_prompt_labels)),fg=self.dark_mode_text_var, bg=self.dark_mode_var))
         self.sample_prompt_labels[-1].grid(row=self.sample_prompt_row + len(self.sample_prompt_labels) - 1, column=0, sticky="nsew")
-        self.sample_prompt_entries.append(tk.Entry(self.sample_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var))
+        self.sample_prompt_entries.append(tk.Entry(self.sample_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white"))
         self.sample_prompt_entries[-1].grid(row=self.sample_prompt_row + len(self.sample_prompt_labels) - 1, column=1, sticky="nsew")
         if value != "":
             self.sample_prompt_entries[-1].insert(0, value)
