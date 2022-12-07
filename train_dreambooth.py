@@ -876,7 +876,7 @@ class DreamBoothDataset(Dataset):
         self._length = self.num_instance_images
         self.num_class_images = len(self.class_images_path)
         self._length = max(self.num_class_images, self.num_instance_images)
-        print (f" ** Dataset length: {self._length}, {self.num_instance_images / repeats} images using {repeats} repeats")
+        print (f" ** Dataset length: {self._length}, {int(self.num_instance_images / repeats)} images using {repeats} repeats")
         self.image_transforms = transforms.Compose(
             [
                 transforms.Resize(size, interpolation=transforms.InterpolationMode.BILINEAR),
@@ -1616,7 +1616,7 @@ def main():
         raise
     except KeyboardInterrupt:
         send_telegram_message("Training stopped", args.telegram_chat_id, args.telegram_token)
-    save_weights(global_step,'checkpoint')
+    save_weights(args.num_train_epochs,'epoch')
     try:
         send_telegram_message("Training finished!", args.telegram_chat_id, args.telegram_token)
     except:

@@ -9,6 +9,7 @@ import tkinter.filedialog as fd
 import json
 from tkinter import messagebox
 from PIL import Image, ImageTk
+import glob
 #from scripts import converters
 #work in progress code, not finished, credits will be added at a later date.
 
@@ -202,8 +203,12 @@ class App(tk.Frame):
         if os.path.exists("stabletune_last_run.json"):
             try:
                 self.load_config(file_name="stabletune_last_run.json")
+                #try loading the latest generated model to playground entry
+                self.playground_find_latest_generated_model()
             except:
                 print("Error loading config file")
+                #system sep
+            #self.play_model_entry.insert(0, self.output_path_entry.get()+os.sep+self.train_epochs_entry.get())
         else:
             #self.load_config()
             pass
@@ -814,6 +819,38 @@ class App(tk.Frame):
         self.generate_btn["text"] = "Start Training!"
         self.generate_btn["command"] = self.process_inputs
         self.generate_btn.grid(row=100, column=0,columnspan=2, sticky="nsew")
+    def playground_find_latest_generated_model(self):
+        last_output_path = self.output_path_entry.get()
+        last_num_epochs = self.train_epochs_entry.get()
+        last_model_path = last_output_path + os.sep + last_num_epochs
+        #convert last_model_path seperators to the correct ones for the os
+        last_model_path = last_model_path.replace("/", os.sep)
+        last_model_path = last_model_path.replace("\\", os.sep)
+        #check if the output path is valid
+        if last_output_path != "":
+            #check if the output path exists
+            if os.path.exists(last_output_path):
+                #check if the output path has a model in it
+                if os.path.exists(last_model_path):
+                    #check if the model is a ckpt
+                    self.play_model_entry.delete(0, tk.END)
+                    self.play_model_entry.insert(0, last_model_path)
+                else:
+                    #find the newest directory in the output path
+                    
+                    newest_dir = max(glob.iglob(last_output_path + os.sep + '*'), key=os.path.getctime)
+                    #convert newest_dir seperators to the correct ones for the os
+                    newest_dir = newest_dir.replace("/", os.sep)
+                    newest_dir = newest_dir.replace("\\", os.sep)
+                    last_model_path = newest_dir
+                    self.play_model_entry.delete(0, tk.END)
+                    self.play_model_entry.insert(0, last_model_path)
+            else:
+                return
+        else:
+            return
+                    
+    
     def convert_ckpt_to_diffusers(self):
         #get the model path
         model_path = fd.askopenfilename(title="Select Model", filetypes=(("Model", "*.ckpt"), ("All Files", "*.*")))
@@ -1642,6 +1679,7 @@ class App(tk.Frame):
         self.seed_entry.insert(0, config["seed"])
         self.dataset_repeats_entry.delete(0, tk.END)
         self.dataset_repeats_entry.insert(0, config["dataset_repeats"])
+        
         #self.update_controlled_seed_sample()
         #self.update_sample_prompts()
         self.master.update()
@@ -1791,11 +1829,12 @@ class App(tk.Frame):
         if train == 0:
             root = tk.Tk()
             app = App(master=root)
-            app.mainloop()
-            #get the output path
-            self.play_model_entry.insert(0, self.output_path_entry.get() / self.train_epochs_entry.get())
+            #self.play_model_entry.insert(0, self.output_path_entry.get()+os.sep+self.train_epochs_entry.get())
             #switch to the play tab
-            self.notebook.select(5)
+            #self.notebook.select(5)
+            #self.master.update()
+            app.mainloop()
+
             
         else:
             os.system("pause")
