@@ -71,6 +71,8 @@ class App(tk.Frame):
     def __init__(self, master=None):
         super().__init__(master)
         #define some colors
+        self.stableTune_icon =PhotoImage(file = "resources/stableTuner_icon.png")
+        self.master.iconphoto(False, self.stableTune_icon)
         self.dark_mode_var = "#1e2124"
         self.dark_purple_mode_var = "#1B0F1B"
         self.dark_mode_title_var = "#7289da"
@@ -866,6 +868,8 @@ class App(tk.Frame):
     def caption_buddy(self):
         import scripts.captionBuddy
         cb_root = tk.Tk()
+        cb_icon =PhotoImage(master=cb_root,file = "resources/stableTuner_icon.png")
+        cb_root.iconphoto(False, cb_icon)
         app2 = scripts.captionBuddy.ImageBrowser(cb_root)
         cb_root.mainloop()
     def convert_ckpt_to_diffusers(self):

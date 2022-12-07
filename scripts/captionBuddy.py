@@ -1,4 +1,5 @@
 import tkinter as tk
+
 import os
 import subprocess
 from PIL import Image, ImageTk
@@ -23,12 +24,13 @@ class ImageBrowser(tk.Frame):
         blip_path = "scripts/BLIP"
         sys.path.append(blip_path)
         
+
         self.captioner_folder = os.path.dirname(os.path.realpath(__file__))
         self.master = master
         #make not user resizable
         self.master.title("Caption Buddy")
         self.master.resizable(False, False)
-        self.master.geometry("800x800")
+        self.master.geometry("820x820")
         self.top_frame = tk.Frame(self.master)
         self.top_frame.pack(side="top")
         self.tip_frame = tk.Frame(self.master)
@@ -40,7 +42,7 @@ class ImageBrowser(tk.Frame):
         self.dark_mode_button_var = "#8ea0e1"
         self.dark_mode_text_var = "#c6c7c8"
         self.master.configure(bg=self.dark_mode_var)
-        self.canvas = tk.Canvas(self.master, width=700, height=700, bg=self.dark_mode_var, highlightthickness=0, relief='flat', borderwidth=0)
+        self.canvas = tk.Canvas(self.master, width=750, height=750, bg=self.dark_mode_var, highlightthickness=0, relief='flat', borderwidth=0)
         self.canvas.configure(bg=self.dark_mode_var)
         #create temporary image for canvas
         self.canvas.pack()
@@ -56,11 +58,23 @@ class ImageBrowser(tk.Frame):
         self.frame.grid_columnconfigure(1, weight=100)
         self.frame.grid_columnconfigure(2, weight=1)
         self.frame.grid_rowconfigure(0, weight=1)
-        self.frame.grid_rowconfigure(1, weight=1)
-        self.frame.grid_rowconfigure(2, weight=1)
         
         #show the frame
-        self.frame.pack(side="bottom", fill="x")
+        self.frame.pack(side="top", fill="x")
+        #bottom frame
+        self.bottom_frame = tk.Frame(self.master)
+        self.bottom_frame.configure(bg=self.dark_mode_var)
+        #make grid
+        self.bottom_frame.grid_columnconfigure(0, weight=0)
+        self.bottom_frame.grid_columnconfigure(1, weight=2)
+        self.bottom_frame.grid_columnconfigure(2, weight=0)
+        self.bottom_frame.grid_columnconfigure(3, weight=2)
+        self.bottom_frame.grid_columnconfigure(4, weight=0)
+        self.bottom_frame.grid_columnconfigure(5, weight=2)
+        self.bottom_frame.grid_rowconfigure(0, weight=1)
+        #show the frame
+        self.bottom_frame.pack(side="bottom", fill="x")
+
         self.image_index = 0
         self.image_list = []
         self.caption = ''
@@ -132,6 +146,30 @@ class ImageBrowser(tk.Frame):
         self.next_button["text"] = "Next"
         #grid
         self.next_button.grid(row=1, column=2, sticky="e")
+        #add two entry boxes and labels in the style of :replace _ with _
+        #create replace string variable
+        self.replace_label = tk.Label(self.bottom_frame, text="Replace:", fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        self.replace_label.grid(row=0, column=0, sticky="w")
+        self.replace_entry = tk.Entry(self.bottom_frame, fg=self.dark_mode_text_var, bg=self.dark_mode_var, relief='flat', highlightthickness=2, highlightbackground=self.dark_mode_button_var,insertbackground=self.dark_mode_text_var)
+        self.replace_entry.grid(row=0, column=1, sticky="nsew")
+        self.replace_entry.bind("<Return>", self.save_caption)
+        #self.replace_entry.bind("<Tab>", self.replace)
+        #with label
+        #create with string variable
+        self.with_label = tk.Label(self.bottom_frame, text="With:", fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        self.with_label.grid(row=0, column=2, sticky="w")
+        self.with_entry = tk.Entry(self.bottom_frame, fg=self.dark_mode_text_var, bg=self.dark_mode_var, relief='flat', highlightthickness=2, highlightbackground=self.dark_mode_button_var,insertbackground=self.dark_mode_text_var)
+        self.with_entry.grid(row=0, column=3,  sticky="nswe")
+        self.with_entry.bind("<Return>", self.save_caption)
+        #add another entry with label, add suffix
+        #create suffix string var
+        self.suffix_entry = tk.Entry(self.bottom_frame, fg=self.dark_mode_text_var, bg=self.dark_mode_var, relief='flat', highlightthickness=2, highlightbackground=self.dark_mode_button_var,insertbackground=self.dark_mode_text_var)
+        self.suffix_entry.grid(row=0, column=5, sticky="nsew")
+        self.suffix_label = tk.Label(self.bottom_frame, text="Add Token/Artist:", fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        self.suffix_label.grid(row=0, column=4, sticky="w")
+
+        self.suffix_entry.bind("<Return>", self.save_caption)
+    
     def batch_folder(self):
         #show imgs in folder askdirectory
         #ask user if to batch current folder or select folder
@@ -242,9 +280,14 @@ class ImageBrowser(tk.Frame):
         
     def open_folder(self):
         self.folder = fd.askdirectory()
+        if self.folder == '':
+            return
         self.image_list = [os.path.join(self.folder, f) for f in os.listdir(self.folder) if f.endswith('.jpg') or f.endswith('.png') or f.endswith('.jpeg')]
         self.image_list.sort()
         self.image_count = len(self.image_list)
+        if self.image_count == 0:
+            tk.messagebox.showinfo("No Images", "No images found in the selected folder")
+            return
         #update the image count label
         
         self.image_index = 0
@@ -306,6 +349,16 @@ class ImageBrowser(tk.Frame):
             
     def save_caption(self, event):
         self.caption = self.caption_entry.get()
+        self.replace = self.replace_entry.get()
+        self.replace_with = self.with_entry.get()
+        self.suffix_var = self.suffix_entry.get()
+        #prepare the caption
+        self.caption = self.caption.replace(self.replace, self.replace_with)
+        if self.caption.endswith(',') or self.caption.endswith('.'):
+            self.caption = self.caption[:-1]
+            self.caption = self.caption +', ' + self.suffix_var
+        else:
+            self.caption = self.caption + self.suffix_var
         if self.output_folder != self.folder:
             outputFolder = self.output_folder
         else:
@@ -322,6 +375,8 @@ class ImageBrowser(tk.Frame):
         elif self.output_format == 'filename':
             #duplicate image with caption as file name
             self.PILimage.save(os.path.join(outputFolder, self.caption+'.png'))
+        self.caption_entry.delete(0, tk.END)
+        self.caption_entry.insert(0, self.caption)
         self.caption_entry.configure(fg='green')
 
         self.canvas.focus_force()
