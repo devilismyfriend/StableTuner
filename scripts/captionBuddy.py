@@ -104,20 +104,13 @@ class ImageBrowser(tk.Frame):
         self.generate_caption_button.pack(side="right")
         
         #add a label for tips under the buttons
-                
         self.tips_label = tk.Label(self.tip_frame, text="Use the left and right arrow keys to navigate images, enter to save the caption.", fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         self.tips_label.pack(side="top")
         #add image count label
         self.image_count_label = tk.Label(self.tip_frame, text=f"Image {self.cur_img_index} of {self.image_count}", fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         self.image_count_label.pack(side="top")
-        
 
-        #self.options_button.grid(row=0, column=2)
-        #self.quit = tk.Button(self.canvas, text="QUIT", fg="red",
-        #                      command=self.master.destroy)
-        #self.quit.pack(side="bottom")
         self.image_label = tk.Label(self.canvas, bg=self.dark_mode_var)
-        #print(self.image_label)
         self.image_label.pack(side="top")
         #previous button
         self.prev_button = tk.Button(self.frame,activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var, border=0, relief='flat', fg=self.dark_mode_title_var, bg=self.dark_mode_var, highlightthickness=2, highlightbackground=self.dark_mode_button_var)
@@ -133,15 +126,12 @@ class ImageBrowser(tk.Frame):
         #bind to enter key
         self.caption_entry.bind("<Return>", self.save_caption)
         self.canvas.bind("<Return>", self.save_caption)
-        #self.caption_entry.pack(side="top", fill="x")
         #next button
-        #self.next_button = tk.Button(self.canvas, command= lambda event: self.next_image)
-        #next button that triggers self.next_image when clicked with event=None
+
         self.next_button = tk.Button(self.frame, command= lambda event=None: self.next_image(event),activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var, border=0, relief='flat', fg=self.dark_mode_title_var, bg=self.dark_mode_var, highlightthickness=2, highlightbackground=self.dark_mode_button_var)
         self.next_button["text"] = "Next"
         #grid
         self.next_button.grid(row=1, column=2, sticky="e")
-        #self.next_button.pack(side="right")
     def batch_folder(self):
         #show imgs in folder askdirectory
         #ask user if to batch current folder or select folder
@@ -173,7 +163,6 @@ class ImageBrowser(tk.Frame):
             self.image_index = i
             img = Image.open(self.image_list[i]).convert("RGB")
             tensor = transforms.Compose([
-                        #transforms.CenterCrop(SIZE),
                         transforms.Resize((self.blipSize, self.blipSize), interpolation=InterpolationMode.BICUBIC),
                         transforms.ToTensor(),
                         transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
@@ -188,8 +177,6 @@ class ImageBrowser(tk.Frame):
             #saving the captioned image
             if self.output_format == 'text':
                 #text file with same name as image
-                #image name
-                #print('test')
                 imgName = os.path.basename(self.image_list[self.image_index])
                 imgName = imgName[:imgName.rfind('.')]
                 caption_file = os.path.join(batch_output_dir, imgName + '.txt')
@@ -198,7 +185,6 @@ class ImageBrowser(tk.Frame):
             elif self.output_format == 'filename':
                 #duplicate image with caption as file name
                 img.save(os.path.join(batch_output_dir, caption+'.png'))
-                #self.caption_file = os.path.join(self.folder, self.caption + self.caption_file_ext)
         #show message box when done
         tk.messagebox.showinfo("Batch Folder", "Batching complete!")
     def generate_caption(self):
@@ -229,7 +215,6 @@ class ImageBrowser(tk.Frame):
                 self.nucleus_sampling = json.load(f)['nucleus_sampling']
                 self.q_factor = json.load(f)['q_factor']
                 self.min_length = json.load(f)['min_length']
-                #self.output_folder = json.load(f)['output_folder']
         else:
             self.nucleus_sampling = False
             self.q_factor = 1.0
@@ -240,8 +225,6 @@ class ImageBrowser(tk.Frame):
         if not os.path.exists(cache_folder):
             os.makedirs(cache_folder)
     
-        #if not os.path.exists(self.output_folder):
-        #    os.makedirs(self.output_folder)
         if not os.path.exists(model_path):
             print(f"Downloading BLIP to {cache_folder}")
             with requests.get(blip_model_url, stream=True) as session:
@@ -304,7 +287,6 @@ class ImageBrowser(tk.Frame):
             return
         if self.use_blip:
             tensor = transforms.Compose([
-                        #transforms.CenterCrop(SIZE),
                         transforms.Resize((self.blipSize, self.blipSize), interpolation=InterpolationMode.BICUBIC),
                         transforms.ToTensor(),
                         transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
@@ -324,8 +306,6 @@ class ImageBrowser(tk.Frame):
             
     def save_caption(self, event):
         self.caption = self.caption_entry.get()
-        #print(self.output_format)
-        #self.output_format_var = self.output_format.get()
         if self.output_folder != self.folder:
             outputFolder = self.output_folder
         else:
@@ -342,7 +322,6 @@ class ImageBrowser(tk.Frame):
         elif self.output_format == 'filename':
             #duplicate image with caption as file name
             self.PILimage.save(os.path.join(outputFolder, self.caption+'.png'))
-            #self.caption_file = os.path.join(self.folder, self.caption + self.caption_file_ext)
         self.caption_entry.configure(fg='green')
 
         self.canvas.focus_force()
@@ -353,7 +332,6 @@ class ImageBrowser(tk.Frame):
             self.load_image()
             self.canvas.focus_force()
     def next_image(self, event):
-        #print('next image')
         if self.image_index < len(self.image_list) - 1:
             self.image_index += 1
             self.image_count_label.configure(text=f'Image {self.image_index+1} of {self.image_count}')
@@ -411,8 +389,6 @@ class ImageBrowser(tk.Frame):
         #add a save button
         self.save_button = tk.Button(self.options_window, text="Save", command=self.save_options,fg=self.dark_mode_text_var, bg=self.dark_mode_title_var, activebackground=self.dark_mode_button_var, activeforeground="white", relief="flat")
         self.save_button.pack(side="top")
-        #load options from a a file if it exists
-        #path where script is located
         
         self.options_file = os.path.join(self.captioner_folder, 'captioner_options.json')
         if os.path.isfile(self.options_file):
