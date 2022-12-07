@@ -26,3 +26,6 @@ data/soda_stream/
 data/ans_huh/
 *.pyc
 train_dreambooth2.py
+parequet_reader.md
+parequet_reader.py
+train-00000-of-00001-82570684cbf189a9.parquet

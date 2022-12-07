@@ -1094,9 +1094,9 @@ def main():
 
                     pipeline = DiffusionPipeline.from_pretrained(
                         args.pretrained_model_name_or_path,
-                        vae=AutoencoderKL.from_pretrained(args.pretrained_vae_name_or_path or args.pretrained_model_name_or_path,subfolder=None if args.pretrained_vae_name_or_path else "vae", use_auth_token=True),
+                        vae=AutoencoderKL.from_pretrained(args.pretrained_vae_name_or_path or args.pretrained_model_name_or_path,subfolder=None if args.pretrained_vae_name_or_path else "vae" ),
                         torch_dtype=torch_dtype,
-                        use_auth_token=True
+                         
                     )
                     pipeline.set_progress_bar_config(disable=True)
                     pipeline.to(accelerator.device)
@@ -1133,15 +1133,15 @@ def main():
 
     # Load the tokenizer
     if args.tokenizer_name:
-        tokenizer = CLIPTokenizer.from_pretrained(args.tokenizer_name,use_auth_token=True)
+        tokenizer = CLIPTokenizer.from_pretrained(args.tokenizer_name )
     elif args.pretrained_model_name_or_path:
         print(os.getcwd())
-        tokenizer = CLIPTokenizer.from_pretrained(args.pretrained_model_name_or_path, subfolder="tokenizer", use_auth_token=True)
+        tokenizer = CLIPTokenizer.from_pretrained(args.pretrained_model_name_or_path, subfolder="tokenizer" )
 
     # Load models and create wrapper for stable diffusion
-    text_encoder = CLIPTextModel.from_pretrained(args.pretrained_model_name_or_path, subfolder="text_encoder", use_auth_token=True)
-    vae = AutoencoderKL.from_pretrained(args.pretrained_model_name_or_path, subfolder="vae", use_auth_token=True)
-    unet = UNet2DConditionModel.from_pretrained(args.pretrained_model_name_or_path, subfolder="unet", use_auth_token=True)
+    text_encoder = CLIPTextModel.from_pretrained(args.pretrained_model_name_or_path, subfolder="text_encoder" )
+    vae = AutoencoderKL.from_pretrained(args.pretrained_model_name_or_path, subfolder="vae" )
+    unet = UNet2DConditionModel.from_pretrained(args.pretrained_model_name_or_path, subfolder="unet" )
 
     vae.requires_grad_(False)
     #vae.enable_slicing()
@@ -1419,7 +1419,7 @@ def main():
             if args.train_text_encoder:
                 text_enc_model = accelerator.unwrap_model(text_encoder,True)
             else:
-                text_enc_model = CLIPTextModel.from_pretrained(args.pretrained_model_name_or_path, subfolder="text_encoder", use_auth_token=True)
+                text_enc_model = CLIPTextModel.from_pretrained(args.pretrained_model_name_or_path, subfolder="text_encoder" )
             #scheduler = DDIMScheduler(beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear", clip_sample=False, set_alpha_to_one=False)
             #scheduler = EulerDiscreteScheduler.from_pretrained(args.pretrained_model_name_or_path, subfolder="scheduler", prediction_type="v_prediction")
             scheduler = DPMSolverMultistepScheduler.from_pretrained(args.pretrained_model_name_or_path, subfolder="scheduler")
@@ -1428,10 +1428,9 @@ def main():
                 args.pretrained_model_name_or_path,
                 unet=accelerator.unwrap_model(unet,True),
                 text_encoder=text_enc_model,
-                vae=AutoencoderKL.from_pretrained(args.pretrained_vae_name_or_path or args.pretrained_model_name_or_path,subfolder=None if args.pretrained_vae_name_or_path else "vae", use_auth_token=True),
+                vae=AutoencoderKL.from_pretrained(args.pretrained_vae_name_or_path or args.pretrained_model_name_or_path,subfolder=None if args.pretrained_vae_name_or_path else "vae" ),
                 safety_checker=None,
-                torch_dtype=torch.float16,
-                use_auth_token=True
+                torch_dtype=torch.float16
             )
             pipeline.scheduler = scheduler
             save_dir = os.path.join(args.output_dir, f"{step}")
