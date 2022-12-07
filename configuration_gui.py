@@ -803,6 +803,13 @@ class App(tk.Frame):
         #add a label dataset tools title
         self.dataset_tools_label = tk.Label(self.tools_tab, text="Dataset Tools",  font=("Helvetica", 12, "bold"),fg=self.dark_mode_title_var, bg=self.dark_mode_var)
         self.dataset_tools_label.grid(row=7, column=0,columnspan=3, sticky="nsew")
+
+        #add a button for Caption Buddy
+        self.caption_buddy_button = tk.Button(self.tools_tab, text="Launch Caption Buddy",font=("Helvetica", 10, "bold"), command=lambda:self.caption_buddy(),fg=self.dark_mode_title_var, bg=self.dark_mode_var,activebackground=self.dark_mode_title_var)
+        self.caption_buddy_button.configure(border=4, relief='flat')
+        self.caption_buddy_button.grid(row=8, column=0, columnspan=3, sticky="nsew")
+
+
         self.download_dataset_label = tk.Label(self.tools_tab, text="Download Dataset from HF",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         download_dataset_label_ttp = CreateToolTip(self.download_dataset_label, "Will git clone a HF dataset repo")
         self.download_dataset_label.grid(row=9, column=0, sticky="nsew")
@@ -850,7 +857,11 @@ class App(tk.Frame):
         else:
             return
                     
-    
+    def caption_buddy(self):
+        import scripts.captionBuddy
+        cb_root = tk.Tk()
+        app2 = scripts.captionBuddy.ImageBrowser(cb_root)
+        cb_root.mainloop()
     def convert_ckpt_to_diffusers(self):
         #get the model path
         model_path = fd.askopenfilename(title="Select Model", filetypes=(("Model", "*.ckpt"), ("All Files", "*.*")))
