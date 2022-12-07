@@ -6,7 +6,6 @@ import tkinter.filedialog as fd
 import json
 import sys
 import os
-from PIL import Image
 import sys
 from torchvision import transforms
 from torchvision.transforms.functional import InterpolationMode
