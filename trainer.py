@@ -874,12 +874,12 @@ class DreamBoothDataset(Dataset):
 
         for concept in concepts_list:
             for i in range(repeats):
-                inst_img_path = [(x, concept["instance_prompt"]) for x in Path(concept["instance_data_dir"]).iterdir() if x.is_file() and x.suffix == ".jpg" or x.suffix == ".png"]
+                inst_img_path = [(x, concept["instance_prompt"]) for x in Path(concept["instance_data_dir"]).iterdir() if x.is_file() and x.suffix == ".jpg" or x.suffix == ".png" or x.suffix == ".jpeg"]
                 self.instance_images_path.extend(inst_img_path)
 
             if with_prior_preservation:
                 for i in range(repeats):
-                    class_img_path = [(x, concept["class_prompt"]) for x in Path(concept["class_data_dir"]).iterdir() if x.is_file() and x.suffix == ".jpg" or x.suffix == ".png"]
+                    class_img_path = [(x, concept["class_prompt"]) for x in Path(concept["class_data_dir"]).iterdir() if x.is_file() and x.suffix == ".jpg" or x.suffix == ".png" or x.suffix == ".jpeg"]
                     self.class_images_path.extend(class_img_path[:num_class_images])
         random.shuffle(self.instance_images_path)
 
@@ -1118,6 +1118,7 @@ def main():
 
                     sample_dataset = PromptDataset(concept["class_prompt"], num_new_images)
                     sample_dataloader = torch.utils.data.DataLoader(sample_dataset, batch_size=args.sample_batch_size)
+                    sample_dataloader = accelerator.prepare(sample_dataloader)
                 else:
                     #create class images that match up to the concept target buckets
                     instance_images_dir = Path(concept["instance_data_dir"])
@@ -1125,7 +1126,7 @@ def main():
                     #target_wh = min(self.aspects, key=lambda aspects:abs(aspects[0]/aspects[1] - image_aspect))
                     num_new_images = cur_instance_images - cur_class_images
                 
-                sample_dataloader = accelerator.prepare(sample_dataloader)
+                
 
                 with torch.autocast("cuda"):
                     for example in tqdm(
