@@ -1470,6 +1470,9 @@ def main():
                 pipeline = pipeline.to(accelerator.device)
                 pipeline.set_progress_bar_config(disable=True)
                 sample_dir = os.path.join(save_dir, "samples")
+                #if sample_dir exists, delete it
+                if os.path.exists(sample_dir):
+                    shutil.rmtree(sample_dir)
                 os.makedirs(sample_dir, exist_ok=True)
                 with torch.autocast("cuda"), torch.inference_mode():
                     if args.send_telegram_updates:
