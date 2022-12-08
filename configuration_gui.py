@@ -606,10 +606,10 @@ class App(tk.Frame):
         #create label
         self.use_aspect_ratio_bucketing_label = tk.Label(self.dataset_tab, text="Use Aspect Ratio Bucketing",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         use_aspect_ratio_bucketing_label_ttp = CreateToolTip(self.use_aspect_ratio_bucketing_label, "Will use aspect ratio bucketing, may improve aspect ratio generations.")
-        self.use_aspect_ratio_bucketing_label.grid(row=6, column=0, sticky="nsew")
+        self.use_aspect_ratio_bucketing_label.grid(row=7, column=0, sticky="nsew")
         #create checkbox
         self.use_aspect_ratio_bucketing_checkbox = tk.Checkbutton(self.dataset_tab, variable=self.use_aspect_ratio_bucketing_var,fg=self.dark_mode_text_var, bg=self.dark_mode_var, activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var, selectcolor=self.dark_mode_var)
-        self.use_aspect_ratio_bucketing_checkbox.grid(row=6, column=1, sticky="nsew")
+        self.use_aspect_ratio_bucketing_checkbox.grid(row=7, column=1, sticky="nsew")
         #do something on checkbox click
         self.use_aspect_ratio_bucketing_checkbox.bind("<Button-1>", self.disable_with_prior_loss)
         #add download dataset entry
@@ -1819,12 +1819,16 @@ class App(tk.Frame):
             if self.regenerate_latent_cache == False:
                 if self.last_run["concepts"] == self.concepts:
                     #check if resolution is the same
-                    if self.last_run["resolution"] != self.resolution or self.use_text_files_as_captions != self.last_run['use_text_files_as_captions'] or self.last_run['dataset_repeats'] != self.dataset_repeats or self.last_run["batch_size"] != self.batch_size or self.last_run["train_text_encoder"] != self.train_text_encoder or self.last_run["use_image_names_as_captions"] != self.use_image_names_as_captions or self.last_run["auto_balance_concept_datasets"] != self.auto_balance_concept_datasets or self.last_run["add_class_images_to_dataset"] != self.add_class_images_to_dataset or self.last_run["number_of_class_images"] != self.number_of_class_images or self.last_run["aspect_ratio_bucketing"] != self.use_aspect_ratio_bucketing:
-                        self.regenerate_latent_cache = True
-                        #show message
-                        
-                        messagebox.showinfo("StableTune", "Configuration changed, regenerating latent cache")
-                
+                    try:
+                        #try because I keep adding stuff to the json file and it may error out for peeps
+                        if self.last_run["resolution"] != self.resolution or self.use_text_files_as_captions != self.last_run['use_text_files_as_captions'] or self.last_run['dataset_repeats'] != self.dataset_repeats or self.last_run["batch_size"] != self.batch_size or self.last_run["train_text_encoder"] != self.train_text_encoder or self.last_run["use_image_names_as_captions"] != self.use_image_names_as_captions or self.last_run["auto_balance_concept_datasets"] != self.auto_balance_concept_datasets or self.last_run["add_class_images_to_dataset"] != self.add_class_images_to_dataset or self.last_run["number_of_class_images"] != self.number_of_class_images or self.last_run["aspect_ratio_bucketing"] != self.use_aspect_ratio_bucketing:
+                            self.regenerate_latent_cache = True
+                            #show message
+                            
+                            messagebox.showinfo("StableTune", "Configuration changed, regenerating latent cache")
+                    except:
+                        print("Error trying to see if regenerating latent cache is needed, this means it probably needs to be regenerated and ST was updated recently.")
+                        pass
                 
 
         #create a bat file to run the training
@@ -1836,13 +1840,11 @@ class App(tk.Frame):
         if self.use_text_files_as_captions == True:
             batBase += ' "--use_text_files_as_captions" '
 
-        if '%' in self.limit_text_encoder:
+        if '%' in self.limit_text_encoder or self.limit_text_encoder != 0 and len(self.limit_text_encoder) > 0:
             #calculate the epoch number from the percentage and set the limit_text_encoder to the epoch number
             self.limit_text_encoder = int(self.limit_text_encoder.replace('%','')) * int(self.train_epocs) / 100
             #round the number to the nearest whole number
             self.limit_text_encoder = round(self.limit_text_encoder)
-            batBase += f' "--stop_text_encoder_training={self.limit_text_encoder}" '
-        elif self.limit_text_encoder != '' or self.limit_text_encoder != '0':
             batBase += f' "--stop_text_encoder_training={self.limit_text_encoder}" '
         batBase += f' "--pretrained_model_name_or_path={self.model_path}" '
         batBase += f' "--pretrained_vae_name_or_path={self.vae_path}" '
