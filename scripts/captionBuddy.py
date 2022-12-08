@@ -136,6 +136,7 @@ class ImageBrowser(tk.Frame):
         self.prev_button.grid(row=1, column=0, sticky="w")
 
         self.prev_button["text"] = "Previous"
+        self.prev_button["command"] = self.prev_image
         #self.prev_button.pack(side="left")
         #self.prev_button.bind("<Left>", self.prev_image)
         self.caption_entry = tk.Entry(self.frame,fg=self.dark_mode_text_var, bg=self.dark_mode_var, relief='flat', highlightthickness=2, highlightbackground=self.dark_mode_button_var,insertbackground=self.dark_mode_text_var)
