@@ -906,8 +906,8 @@ class DreamBoothDataset(Dataset):
         instance_image = Image.open(instance_path)
         if self.use_image_names_as_captions == True:
             instance_prompt = str(instance_path).split("/")[-1].split(".")[0]
-            if '(' in instance_prompt:
-                instance_prompt = instance_prompt.split('(')[0]
+            if '_' in instance_prompt:
+                instance_prompt = instance_prompt.split('_')[0]
         #else if there's a txt file with the same name as the image, read the caption from there
         if self.use_text_files_as_captions == True:
             #if there's a txt file with the same name as the image, read the caption from there
