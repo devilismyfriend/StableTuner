@@ -1815,9 +1815,9 @@ class App(tk.Frame):
 
         #create a bat file to run the training
         if self.mixed_precision == 'fp16':
-            batBase = 'accelerate "launch" "--mixed_precision=fp16" "train_dreambooth.py"'
+            batBase = 'accelerate "launch" "--mixed_precision=fp16" "trainer.py"'
         else:
-            batBase = 'accelerate "launch" "train_dreambooth.py"'
+            batBase = 'accelerate "launch" "trainer.py"'
         
         if '%' in self.limit_text_encoder:
             #calculate the epoch number from the percentage and set the limit_text_encoder to the epoch number
