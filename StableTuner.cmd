@@ -61,5 +61,15 @@ IF "%v_conda_path%"=="" (
 echo Starting conda environment %v_conda_env_name% from %v_conda_path%
 
 call "%v_conda_path%\Scripts\activate.bat" "%v_conda_env_name%"
+
+::call git pull | findstr /r /c:"changed" && set "HasChanges=1"
+::IF "%HasChanges%" == "0" GOTO START_GUI
+::echo StableTuner updated, running installer!
+::call conda env create --name "%v_conda_env_name%" -f environment.yaml
+::call conda env update --name "%v_conda_env_name%" -f environment.yaml
+::python windows_install.py
+:START_GUI
+::set HasChanges=0
 python configuration_gui.py
+
 ::cmd /k

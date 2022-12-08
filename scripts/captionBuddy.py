@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, Menu
 import os
 import subprocess
 from PIL import Image, ImageTk
@@ -173,7 +173,10 @@ class ImageBrowser(tk.Frame):
         self.suffix_label.grid(row=0, column=4, sticky="w")
 
         self.suffix_entry.bind("<Return>", self.save_caption)
-    
+        self.all_entries = [self.replace_entry, self.with_entry, self.suffix_entry, self.caption_entry]
+        #bind right click menu to all entries
+        for entry in self.all_entries:
+            entry.bind("<Button-3>", self.create_right_click_menu)
     def batch_folder(self):
         #show imgs in folder askdirectory
         #ask user if to batch current folder or select folder
@@ -478,7 +481,11 @@ class ImageBrowser(tk.Frame):
         #add a save button
         self.save_button = tk.Button(self.options_window, text="Save", command=self.save_options,fg=self.dark_mode_text_var, bg=self.dark_mode_title_var, activebackground=self.dark_mode_button_var, activeforeground="white", relief="flat")
         self.save_button.pack(side="top")
-        
+        #all entries list
+        entries = [self.output_folder_entry, self.q_factor_entry, self.min_length_entry]
+        #bind the right click to all entries
+        for entry in entries:
+            entry.bind("<Button-3>", self.create_right_click_menu)
         self.options_file = os.path.join(self.captioner_folder, 'captioner_options.json')
         if os.path.isfile(self.options_file):
             with open(self.options_file, 'r') as f:
@@ -527,7 +534,20 @@ class ImageBrowser(tk.Frame):
     def close_options(self):
         self.options_window.destroy()
         self.canvas.focus_force()
-    
+    def create_right_click_menu(self, event):
+        #create a menu
+        self.menu = Menu(self.master, tearoff=0)
+        #add commands to the menu
+        self.menu.add_command(label="Cut", command=lambda: self.master.focus_get().event_generate("<<Cut>>"))
+        self.menu.add_command(label="Copy", command=lambda: self.master.focus_get().event_generate("<<Copy>>"))
+        self.menu.add_command(label="Paste", command=lambda: self.master.focus_get().event_generate("<<Paste>>"))
+        self.menu.add_command(label="Select All", command=lambda: self.master.focus_get().event_generate("<<SelectAll>>"))
+        #display the menu
+        try:
+            self.menu.tk_popup(event.x_root, event.y_root)
+        finally:
+            #make sure to release the grab (Tk 8.0a1 only)
+            self.menu.grab_release()
 
 
 #progress bar class with cancel button

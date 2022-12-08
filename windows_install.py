@@ -44,6 +44,7 @@ def check_versions():
                 if "diffusers" in key:
                     key = "diffusers"
                 reqs_dict[key] = splits[1].replace("\n", "").strip()
+    
     if os.name == "nt":
         reqs_dict["torch"] = "1.12.1+cu116"
         reqs_dict["torchvision"] = "0.13.1+cu116"
@@ -176,6 +177,6 @@ if os.name == "nt":
     diffusers_cmd = "git+https://github.com/huggingface/diffusers.git@8e74efa#egg=diffusers --force-reinstall"
     run(f'"{python}" -m pip install {diffusers_cmd}', "Installing particular diffusers commit", "Couldn't install diffusers")
     #install requirements file
-    req_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "requirements.txt")
-    run(f'"{python}" -m pip install -r "{req_file}"', "Updating requirements", "Couldn't install requirements")
+    #req_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "requirements.txt")
+    #run(f'"{python}" -m pip install -r "{req_file}"', "Updating requirements", "Couldn't install requirements")
             
