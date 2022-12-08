@@ -58,6 +58,7 @@ from PIL.Image import Resampling
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Simple example of a training script.")
+    parser.add_argument('--use_text_files_as_captions', default=False, action="store_true")
     parser.add_argument(
             "--stop_text_encoder_training",
             type=int,
@@ -483,6 +484,7 @@ class AutoBucketing(Dataset):
                  balance_datasets=False,
                  crop_jitter=20,
                  with_prior_loss=False,
+                 use_text_files_as_captions=False
                  ):
         self.debug_level = debug_level
         self.resolution = resolution
@@ -499,6 +501,7 @@ class AutoBucketing(Dataset):
         self.balance_datasets = balance_datasets
         self.crop_jitter = crop_jitter
         self.with_prior_loss = with_prior_loss
+        self.use_text_files_as_captions = use_text_files_as_captions
         self.image_transforms = transforms.Compose(
             [
                 transforms.ToTensor(),
@@ -507,7 +510,7 @@ class AutoBucketing(Dataset):
         )
         #shared_dataloader = None
         print("Creating new dataloader singleton")
-        shared_dataloader = DataLoaderMultiAspect(concepts_list, debug_level=debug_level,resolution=self.resolution, batch_size=self.batch_size, flip_p=flip_p,use_image_names_as_captions=self.use_image_names_as_captions,add_class_images_to_dataset=self.add_class_images_to_dataset,balance_datasets=self.balance_datasets,with_prior_loss=self.with_prior_loss)
+        shared_dataloader = DataLoaderMultiAspect(concepts_list, debug_level=debug_level,resolution=self.resolution, batch_size=self.batch_size, flip_p=flip_p,use_image_names_as_captions=self.use_image_names_as_captions,add_class_images_to_dataset=self.add_class_images_to_dataset,balance_datasets=self.balance_datasets,with_prior_loss=self.with_prior_loss,use_text_files_as_captions=self.use_text_files_as_captions)
         
         #print(self.image_train_items)
         if self.with_prior_loss and self.add_class_images_to_dataset == False:
@@ -681,7 +684,7 @@ class DataLoaderMultiAspect():
     batch_size: number of images per batch
     flip_p: probability of flipping image horizontally (i.e. 0-0.5)
     """
-    def __init__(self,concept_list, seed=555, debug_level=0,resolution=512, batch_size=1, flip_p=0.0,use_image_names_as_captions=True,add_class_images_to_dataset=False,balance_datasets=False,with_prior_loss=False):
+    def __init__(self,concept_list, seed=555, debug_level=0,resolution=512, batch_size=1, flip_p=0.0,use_image_names_as_captions=True,add_class_images_to_dataset=False,balance_datasets=False,with_prior_loss=False,use_text_files_as_captions=False):
         self.resolution = resolution
         self.debug_level = debug_level
         self.flip_p = flip_p
@@ -689,6 +692,7 @@ class DataLoaderMultiAspect():
         self.balance_datasets = balance_datasets
         self.with_prior_loss = with_prior_loss
         self.add_class_images_to_dataset = add_class_images_to_dataset
+        self.use_text_files_as_captions = use_text_files_as_captions
         prepared_train_data = []
         
         self.aspects = get_aspect_buckets(resolution)
@@ -723,13 +727,13 @@ class DataLoaderMultiAspect():
             concept_class_prompt = concept['class_prompt']
             self.__recurse_data_root(self=self, recurse_root=data_root)
             random.Random(seed).shuffle(self.image_paths)
-            prepared_train_data.extend(self.__prescan_images(debug_level, self.image_paths, flip_p,use_image_names_as_captions,concept_prompt)[0:min_concept_num_images]) # ImageTrainItem[]
+            prepared_train_data.extend(self.__prescan_images(debug_level, self.image_paths, flip_p,use_image_names_as_captions,concept_prompt,use_text_files_as_captions=self.use_text_files_as_captions)[0:min_concept_num_images]) # ImageTrainItem[]
             if add_class_images_to_dataset:
                 self.image_paths = []
                 self.__recurse_data_root(self=self, recurse_root=data_root_class)
                 random.Random(seed).shuffle(self.image_paths)
                 use_image_names_as_captions = False
-                prepared_train_data.extend(self.__prescan_images(debug_level, self.image_paths, flip_p,use_image_names_as_captions,concept_class_prompt)) # ImageTrainItem[]
+                prepared_train_data.extend(self.__prescan_images(debug_level, self.image_paths, flip_p,use_image_names_as_captions,concept_class_prompt,use_text_files_as_captions=self.use_text_files_as_captions)) # ImageTrainItem[]
             
         self.image_caption_pairs = self.__bucketize_images(prepared_train_data, batch_size=batch_size, debug_level=debug_level)
         if self.with_prior_loss and add_class_images_to_dataset == False:
@@ -741,7 +745,7 @@ class DataLoaderMultiAspect():
                 self.__recurse_data_root(self=self, recurse_root=data_root_class)
                 random.Random(seed).shuffle(self.image_paths)
                 use_image_names_as_captions = False
-                self.class_image_caption_pairs.extend(self.__prescan_images(debug_level, self.image_paths, flip_p,use_image_names_as_captions,concept_class_prompt))
+                self.class_image_caption_pairs.extend(self.__prescan_images(debug_level, self.image_paths, flip_p,use_image_names_as_captions,concept_class_prompt,use_text_files_as_captions=self.use_text_files_as_captions))
             self.class_image_caption_pairs = self.__bucketize_images(self.class_image_caption_pairs, batch_size=batch_size, debug_level=debug_level)
         if debug_level > 0: print(f" * DLMA Example: {self.image_caption_pairs[0]} images")
         #print the length of image_caption_pairs
@@ -751,17 +755,17 @@ class DataLoaderMultiAspect():
             return self.image_caption_pairs
         else:
             return self.image_caption_pairs, self.class_image_caption_pairs
-    def __prescan_images(self,debug_level: int, image_paths: list, flip_p=0.0,use_image_names_as_captions=True,concept=None):
+    def __prescan_images(self,debug_level: int, image_paths: list, flip_p=0.0,use_image_names_as_captions=True,concept=None,use_text_files_as_captions=False):
         """
         Create ImageTrainItem objects with metadata for hydration later 
         """
         decorated_image_train_items = []
-
+        
         for pathname in image_paths:
             if use_image_names_as_captions:
                 caption_from_filename = os.path.splitext(os.path.basename(pathname))[0].split("_")[0]
                 identifier = caption_from_filename
-            else:
+            if use_text_files_as_captions:
                 txt_file_path = os.path.splitext(pathname)[0] + ".txt"
 
                 if os.path.exists(txt_file_path):
@@ -775,8 +779,8 @@ class DataLoaderMultiAspect():
                         print(f" *** Error reading {txt_file_path} to get caption, falling back to filename")
                         identifier = caption_from_filename
                         pass
-                else:
-                    identifier = concept 
+            elif use_image_names_as_captions == False and use_text_files_as_captions == False:
+                identifier = concept 
             image = Image.open(pathname)
             width, height = image.size
             image_aspect = width / height
@@ -856,12 +860,14 @@ class DreamBoothDataset(Dataset):
         num_class_images=None,
         use_image_names_as_captions=False,
         repeats=1,
+        use_text_files_as_captions=False
     ):
         self.use_image_names_as_captions = use_image_names_as_captions
         self.size = size
         self.center_crop = center_crop
         self.tokenizer = tokenizer
         self.with_prior_preservation = with_prior_preservation
+        self.use_text_files_as_captions = use_text_files_as_captions
 
         self.instance_images_path = []
         self.class_images_path = []
@@ -903,7 +909,7 @@ class DreamBoothDataset(Dataset):
             if '(' in instance_prompt:
                 instance_prompt = instance_prompt.split('(')[0]
         #else if there's a txt file with the same name as the image, read the caption from there
-        else:
+        if self.use_text_files_as_captions == True:
             #if there's a txt file with the same name as the image, read the caption from there
             txt_path = instance_path.with_suffix('.txt')
             #if txt_path exists, read the caption from there
@@ -1219,6 +1225,7 @@ def main():
             resolution=args.resolution,
             with_prior_loss=False,#args.with_prior_preservation,
             repeats=args.dataset_repeats,
+            use_text_files_as_captions=args.use_text_files_as_captions,
         )
     else:
         train_dataset = DreamBoothDataset(
@@ -1230,6 +1237,7 @@ def main():
         num_class_images=args.num_class_images,
         use_image_names_as_captions=args.use_image_names_as_captions,
         repeats=args.dataset_repeats,
+        use_text_files_as_captions=args.use_text_files_as_captions,
     )
     def collate_fn(examples):
         #print(examples)

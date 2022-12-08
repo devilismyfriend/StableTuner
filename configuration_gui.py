@@ -199,6 +199,7 @@ class App(tk.Frame):
         self.play_save_image_button = None
         self.dataset_repeats = 1
         self.limit_text_encoder = 0
+        self.use_text_files_as_captions = False
         self.create_widgets()
  
         width = self.notebook.winfo_reqwidth()
@@ -544,49 +545,59 @@ class App(tk.Frame):
         self.dataset_settings_label = tk.Label(self.dataset_tab, text="Dataset Settings", font=("Arial", 12, "bold"),fg=self.dark_mode_title_var, bg=self.dark_mode_var)
         self.dataset_settings_label.grid(row=0, column=0, sticky="nsew")
         
+        #create use text files as captions checkbox
+        self.use_text_files_as_captions_var = tk.IntVar()
+        self.use_text_files_as_captions_var.set(self.use_text_files_as_captions)
+        #create label
+        self.use_text_files_as_captions_label = tk.Label(self.dataset_tab, text="Use Text Files as Captions",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        use_text_files_as_captions_label_ttp = CreateToolTip(self.use_text_files_as_captions_label, "Use the text files as captions for training, text files must have same name as image, instance prompt/token will be ignored.")
+        self.use_text_files_as_captions_label.grid(row=1, column=0, sticky="nsew")
+        #create checkbox
+        self.use_text_files_as_captions_checkbox = tk.Checkbutton(self.dataset_tab, variable=self.use_text_files_as_captions_var,fg=self.dark_mode_text_var, bg=self.dark_mode_var, activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var, selectcolor=self.dark_mode_var)
+        self.use_text_files_as_captions_checkbox.grid(row=1, column=1, sticky="nsew")
         # create use image names as captions checkbox
         self.use_image_names_as_captions_var = tk.IntVar()
         self.use_image_names_as_captions_var.set(self.use_image_names_as_captions)
         # create label
         self.use_image_names_as_captions_label = tk.Label(self.dataset_tab, text="Use Image Names as Captions",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         use_image_names_as_captions_label_ttp = CreateToolTip(self.use_image_names_as_captions_label, "Use the image names as captions for training, instance prompt/token will be ignored.")
-        self.use_image_names_as_captions_label.grid(row=1, column=0, sticky="nsew")
+        self.use_image_names_as_captions_label.grid(row=2, column=0, sticky="nsew")
         # create checkbox
         self.use_image_names_as_captions_checkbox = tk.Checkbutton(self.dataset_tab, variable=self.use_image_names_as_captions_var,fg=self.dark_mode_text_var, bg=self.dark_mode_var, activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var, selectcolor=self.dark_mode_var)
-        self.use_image_names_as_captions_checkbox.grid(row=1, column=1, sticky="nsew")
+        self.use_image_names_as_captions_checkbox.grid(row=2, column=1, sticky="nsew")
         # create auto balance dataset checkbox
         self.auto_balance_dataset_var = tk.IntVar()
         self.auto_balance_dataset_var.set(self.auto_balance_concept_datasets)
         # create label
         self.auto_balance_dataset_label = tk.Label(self.dataset_tab, text="Auto Balance Dataset",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         auto_balance_dataset_label_ttp = CreateToolTip(self.auto_balance_dataset_label, "Will use the concept with the least amount of images to balance the dataset by removing images from the other concepts.")
-        self.auto_balance_dataset_label.grid(row=2, column=0, sticky="nsew")
+        self.auto_balance_dataset_label.grid(row=3, column=0, sticky="nsew")
         # create checkbox
         self.auto_balance_dataset_checkbox = tk.Checkbutton(self.dataset_tab, variable=self.auto_balance_dataset_var,fg=self.dark_mode_text_var, bg=self.dark_mode_var, activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var, selectcolor=self.dark_mode_var)
-        self.auto_balance_dataset_checkbox.grid(row=2, column=1, sticky="nsew")
+        self.auto_balance_dataset_checkbox.grid(row=3, column=1, sticky="nsew")
         #create add class images to dataset checkbox
         self.add_class_images_to_dataset_var = tk.IntVar()
         self.add_class_images_to_dataset_var.set(self.add_class_images_to_training)
         #create label
         self.add_class_images_to_dataset_label = tk.Label(self.dataset_tab, text="Add Class Images to Dataset",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         add_class_images_to_dataset_label_ttp = CreateToolTip(self.add_class_images_to_dataset_label, "Will add class images without prior preservation to the dataset.")
-        self.add_class_images_to_dataset_label.grid(row=3, column=0, sticky="nsew")
+        self.add_class_images_to_dataset_label.grid(row=4, column=0, sticky="nsew")
         #create checkbox
         self.add_class_images_to_dataset_checkbox = tk.Checkbutton(self.dataset_tab, variable=self.add_class_images_to_dataset_var,fg=self.dark_mode_text_var, bg=self.dark_mode_var, activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var, selectcolor=self.dark_mode_var)
-        self.add_class_images_to_dataset_checkbox.grid(row=3, column=1, sticky="nsew")
+        self.add_class_images_to_dataset_checkbox.grid(row=4, column=1, sticky="nsew")
         #create number of class images entry
         self.number_of_class_images_label = tk.Label(self.dataset_tab, text="Number of Class Images",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         number_of_class_images_label_ttp = CreateToolTip(self.number_of_class_images_label, "The number of class images to add to the dataset, if they don't exist in the class directory they will be generated.")
-        self.number_of_class_images_label.grid(row=4, column=0, sticky="nsew")
+        self.number_of_class_images_label.grid(row=5, column=0, sticky="nsew")
         self.number_of_class_images_entry = tk.Entry(self.dataset_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
-        self.number_of_class_images_entry.grid(row=4, column=1, sticky="nsew")
+        self.number_of_class_images_entry.grid(row=5, column=1, sticky="nsew")
         self.number_of_class_images_entry.insert(0, self.num_class_images)
         #create dataset repeat entry
         self.dataset_repeats_label = tk.Label(self.dataset_tab, text="Dataset Repeats",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         dataset_repeat_label_ttp = CreateToolTip(self.dataset_repeats_label, "The number of times to repeat the dataset, this will increase the number of images in the dataset.")
-        self.dataset_repeats_label.grid(row=5, column=0, sticky="nsew")
+        self.dataset_repeats_label.grid(row=6, column=0, sticky="nsew")
         self.dataset_repeats_entry = tk.Entry(self.dataset_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
-        self.dataset_repeats_entry.grid(row=5, column=1, sticky="nsew")
+        self.dataset_repeats_entry.grid(row=6, column=1, sticky="nsew")
         self.dataset_repeats_entry.insert(0, self.dataset_repeats)
 
         #add use_aspect_ratio_bucketing checkbox
@@ -1638,6 +1649,7 @@ class App(tk.Frame):
         config['seed'] = self.seed_entry.get()
         config['dataset_repeats'] = self.dataset_repeats_entry.get()
         config['limit_text_encoder_training'] = self.limit_text_encoder_entry.get()
+        config['use_text_files_as_captions'] = self.use_text_files_as_captions_var.get()
         #save the config file
         #if the file exists, delete it
         if os.path.exists(file_name):
@@ -1745,6 +1757,7 @@ class App(tk.Frame):
         self.dataset_repeats_entry.insert(0, config["dataset_repeats"])
         self.limit_text_encoder_entry.delete(0, tk.END)
         self.limit_text_encoder_entry.insert(0, config["limit_text_encoder_training"])
+        self.use_text_files_as_captions_var.set(config["use_text_files_as_captions"])
         #self.update_controlled_seed_sample()
         #self.update_sample_prompts()
         self.master.update()
@@ -1798,6 +1811,7 @@ class App(tk.Frame):
         self.seed_number = self.seed_entry.get()
         self.dataset_repeats = self.dataset_repeats_entry.get()
         self.limit_text_encoder = self.limit_text_encoder_entry.get()
+        self.use_text_files_as_captions = self.use_text_files_as_captions_var.get()
         #open stabletune_concept_list.json
         if os.path.exists('stabletune_last_run.json'):
             with open('stabletune_last_run.json') as f:
@@ -1805,7 +1819,7 @@ class App(tk.Frame):
             if self.regenerate_latent_cache == False:
                 if self.last_run["concepts"] == self.concepts:
                     #check if resolution is the same
-                    if self.last_run["resolution"] != self.resolution or self.last_run['dataset_repeats'] != self.dataset_repeats or self.last_run["batch_size"] != self.batch_size or self.last_run["train_text_encoder"] != self.train_text_encoder or self.last_run["use_image_names_as_captions"] != self.use_image_names_as_captions or self.last_run["auto_balance_concept_datasets"] != self.auto_balance_concept_datasets or self.last_run["add_class_images_to_dataset"] != self.add_class_images_to_dataset or self.last_run["number_of_class_images"] != self.number_of_class_images or self.last_run["aspect_ratio_bucketing"] != self.use_aspect_ratio_bucketing:
+                    if self.last_run["resolution"] != self.resolution or self.use_text_files_as_captions != self.last_run['use_text_files_as_captions'] or self.last_run['dataset_repeats'] != self.dataset_repeats or self.last_run["batch_size"] != self.batch_size or self.last_run["train_text_encoder"] != self.train_text_encoder or self.last_run["use_image_names_as_captions"] != self.use_image_names_as_captions or self.last_run["auto_balance_concept_datasets"] != self.auto_balance_concept_datasets or self.last_run["add_class_images_to_dataset"] != self.add_class_images_to_dataset or self.last_run["number_of_class_images"] != self.number_of_class_images or self.last_run["aspect_ratio_bucketing"] != self.use_aspect_ratio_bucketing:
                         self.regenerate_latent_cache = True
                         #show message
                         
@@ -1819,6 +1833,9 @@ class App(tk.Frame):
         else:
             batBase = 'accelerate "launch" "trainer.py"'
         
+        if self.use_text_files_as_captions == True:
+            batBase += ' "--use_text_files_as_captions" '
+
         if '%' in self.limit_text_encoder:
             #calculate the epoch number from the percentage and set the limit_text_encoder to the epoch number
             self.limit_text_encoder = int(self.limit_text_encoder.replace('%','')) * int(self.train_epocs) / 100
