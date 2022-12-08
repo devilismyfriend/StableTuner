@@ -1,5 +1,5 @@
 import tkinter as tk
-
+from tkinter import ttk
 import os
 import subprocess
 from PIL import Image, ImageTk
@@ -14,6 +14,9 @@ import torch
 import subprocess
 import numpy as np
 import requests
+import random
+#main class
+
 
 class ImageBrowser(tk.Frame):
     def __init__(self, master=None):
@@ -60,7 +63,7 @@ class ImageBrowser(tk.Frame):
         self.frame.grid_rowconfigure(0, weight=1)
         
         #show the frame
-        self.frame.pack(side="top", fill="x")
+        self.frame.pack(side="bottom", fill="x")
         #bottom frame
         self.bottom_frame = tk.Frame(self.master)
         self.bottom_frame.configure(bg=self.dark_mode_var)
@@ -84,6 +87,7 @@ class ImageBrowser(tk.Frame):
         self.caption_file_ext = ''
         self.caption_file_name_no_ext = ''
         self.use_blip = True
+        self.debug = False
         self.create_widgets()
         self.load_blip_model()
         self.open_folder()
@@ -194,11 +198,28 @@ class ImageBrowser(tk.Frame):
             if file.endswith(".jpg") or file.endswith(".png") or file.endswith(".jpeg"):
                 self.image_list.append(os.path.join(batch_input_dir, file))
         self.image_index = 0
+        #use progress bar class
+        pba = tk.Tk()
+        pba.title("Batch Processing")
+        #remove icon
+        pba.wm_attributes('-toolwindow','True')
+        pb = ProgressbarWithCancel(pba)
+        pb.set_max(len(self.image_list))
+        pb.set_progress(0)
+        
         #if batch_output_dir doesn't exist, create it
         if not os.path.exists(batch_output_dir):
             os.makedirs(batch_output_dir)
         for i in range(len(self.image_list)):
+            radnom_chance = random.randint(0,25)
+            if radnom_chance == 0:
+                pb.set_random_label()
+            if pb.is_cancelled():
+                pba.destroy()
+                return
             self.image_index = i
+            pb.set_progress(i)
+            self.master.update()
             img = Image.open(self.image_list[i]).convert("RGB")
             tensor = transforms.Compose([
                         transforms.Resize((self.blipSize, self.blipSize), interpolation=InterpolationMode.BICUBIC),
@@ -234,7 +255,10 @@ class ImageBrowser(tk.Frame):
                 #duplicate image with caption as file name
                 img.save(os.path.join(batch_output_dir, caption+'.png'))
         #show message box when done
-        tk.messagebox.showinfo("Batch Folder", "Batching complete!")
+        pba.destroy()
+        donemsg = tk.messagebox.showinfo("Batch Folder", "Batching complete!",parent=self.master)
+        #focus on donemsg
+        #donemsg.focus_force()
     def generate_caption(self):
         #get the image
         tensor = transforms.Compose([
@@ -338,7 +362,7 @@ class ImageBrowser(tk.Frame):
         elif self.auto_generate_caption.get() == False:
             self.caption_entry.delete(0, tk.END)
             return
-        if self.use_blip:
+        if self.use_blip and self.debug==False:
             tensor = transforms.Compose([
                         transforms.Resize((self.blipSize, self.blipSize), interpolation=InterpolationMode.BICUBIC),
                         transforms.ToTensor(),
@@ -503,7 +527,46 @@ class ImageBrowser(tk.Frame):
     def close_options(self):
         self.options_window.destroy()
         self.canvas.focus_force()
+    
 
+
+#progress bar class with cancel button
+class ProgressbarWithCancel(ttk.Frame):
+    def __init__(self, master=None, **kw):
+        super().__init__(master, **kw)
+        
+        self.possibleLabels = ['Searching for answers...',"I'm working, I promise.",'ARE THOSE TENTACLES?!','Weird data man...','Another one bites the dust' ,"I think it's a cat?" ,'Looking for the meaning of life', 'Dreaming of captions']
+        
+        self.label = ttk.Label(self.master, text="Searching for answers...")
+        self.label.pack(side="top", fill="x", expand=True)
+        self.progress = ttk.Progressbar(self.master, orient="horizontal", length=200, mode="determinate")
+        self.progress.pack(side="left", fill="x", expand=True)
+        self.cancel_button = ttk.Button(self.master, text="Cancel", command=self.cancel)
+        self.cancel_button.pack(side="right")
+        self.cancelled = False
+        self.count_label = ttk.Label(self.master, text="0/{0}".format(self.get_max()))
+        self.count_label.pack(side="right")
+    def set_random_label(self):
+        import random
+        self.label["text"] = random.choice(self.possibleLabels)
+        #pop from list
+        #self.possibleLabels.remove(self.label["text"])
+    def cancel(self):
+        self.cancelled = True
+    def set_progress(self, value):
+        self.progress["value"] = value
+        self.count_label["text"] = "{0}/{1}".format(value, self.get_max())
+    def get_progress(self):
+        return self.progress["value"]
+    def set_max(self, value):
+        self.progress["maximum"] = value
+    def get_max(self):
+        return self.progress["maximum"]
+    def is_cancelled(self):
+        return self.cancelled
+    #quit the progress bar window
+        
+    
 #run when imported as a module
 if __name__ == "__main__":
 
