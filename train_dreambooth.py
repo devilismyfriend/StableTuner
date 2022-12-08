@@ -59,7 +59,12 @@ from PIL.Image import Resampling
 def parse_args():
     parser = argparse.ArgumentParser(description="Simple example of a training script.")
     parser.add_argument(
-
+            "--stop_text_encoder_training",
+            type=int,
+            default=999999999999999,
+            help=("The epoch at which the text_encoder is no longer trained"),
+        )
+    parser.add_argument(
         "--use_bucketing",
         default=False,
         action="store_true",
@@ -1416,10 +1421,16 @@ def main():
                     shutil.rmtree(oldest_folder_path)
         # Create the pipeline using using the trained modules and save it.
         if accelerator.is_main_process:
-            if args.train_text_encoder:
+            
+            if args.train_text_encoder and args.stop_text_encoder_training == True:
                 text_enc_model = accelerator.unwrap_model(text_encoder,True)
-            else:
+            elif args.train_text_encoder and args.stop_text_encoder_training > step:
+                text_enc_model = accelerator.unwrap_model(text_encoder,True)
+            elif args.train_text_encoder == False:
                 text_enc_model = CLIPTextModel.from_pretrained(args.pretrained_model_name_or_path, subfolder="text_encoder" )
+            elif args.train_text_encoder and args.stop_text_encoder_training < step:
+                text_enc_model = CLIPTextModel.from_pretrained(frozen_directory, subfolder="text_encoder" )
+                
             #scheduler = DDIMScheduler(beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear", clip_sample=False, set_alpha_to_one=False)
             #scheduler = EulerDiscreteScheduler.from_pretrained(args.pretrained_model_name_or_path, subfolder="scheduler", prediction_type="v_prediction")
             scheduler = DPMSolverMultistepScheduler.from_pretrained(args.pretrained_model_name_or_path, subfolder="scheduler")
@@ -1434,13 +1445,20 @@ def main():
             )
             pipeline.scheduler = scheduler
             save_dir = os.path.join(args.output_dir, f"{step}")
+            if args.stop_text_encoder_training == True:
+                save_dir = frozen_directory
             if step != 0:
                 
                 pipeline.save_pretrained(save_dir)
                 with open(os.path.join(save_dir, "args.json"), "w") as f:
                     json.dump(args.__dict__, f, indent=2)
+                if args.stop_text_encoder_training == True:
+                    #delete every folder in frozen_directory but the text encoder
+                    for folder in os.listdir(save_dir):
+                        if folder != "text_encoder" and os.path.isdir(os.path.join(save_dir, folder)):
+                            shutil.rmtree(os.path.join(save_dir, folder))
 
-            if args.add_sample_prompt is not None:
+            if args.add_sample_prompt is not None and args.stop_text_encoder_training != True:
                 pipeline = pipeline.to(accelerator.device)
                 pipeline.set_progress_bar_config(disable=True)
                 sample_dir = os.path.join(save_dir, "samples")
@@ -1504,7 +1522,26 @@ def main():
             #save initial weights
             if args.save_on_training_start==True and epoch==0:
                 save_weights(epoch,'epoch')
-                
+            
+            if args.train_text_encoder and args.stop_text_encoder_training == epoch:
+                args.stop_text_encoder_training = True
+                if accelerator.is_main_process:
+                    print(" Stopping text encoder training")   
+                    current_percentage = (epoch/args.num_train_epochs)*100
+                    #round to the nearest whole number
+                    current_percentage = round(current_percentage,0)
+                    try:
+                        send_telegram_message(f"Text encoder training stopped at epoch {epoch} which is {current_percentage}% of training. Freezing weights and saving.", args.telegram_chat_id, args.telegram_token)   
+                    except:
+                        pass        
+                    frozen_directory=args.output_dir + "/frozen_text_encoder"
+                    if os.path.exists(frozen_directory):
+                        #delete the folder if it already exists
+                        shutil.rmtree(frozen_directory)
+                    os.mkdir(frozen_directory)
+                    save_weights(epoch,'epoch')
+                    args.stop_text_encoder_training = epoch
+
             for step, batch in enumerate(train_dataloader):
                 with accelerator.accumulate(unet):
                     # Convert images to latent space
@@ -1573,16 +1610,16 @@ def main():
                         #loss = F.mse_loss(noise_pred.float(), noise.float(), reduction="mean")
                         loss = F.mse_loss(model_pred.float(), target.float(), reduction="mean")
                     accelerator.backward(loss)
-                    # if accelerator.sync_gradients:
-                    #     params_to_clip = (
-                    #         itertools.chain(unet.parameters(), text_encoder.parameters())
-                    #         if args.train_text_encoder
-                    #         else unet.parameters()
-                    #     )
-                    #     accelerator.clip_grad_norm_(params_to_clip, args.max_grad_norm)
+                    if accelerator.sync_gradients:
+                        params_to_clip = (
+                            itertools.chain(unet.parameters(), text_encoder.parameters())
+                            if args.train_text_encoder
+                            else unet.parameters()
+                        )
+                        accelerator.clip_grad_norm_(params_to_clip, args.max_grad_norm)
                     optimizer.step()
                     lr_scheduler.step()
-                    optimizer.zero_grad(set_to_none=True)
+                    optimizer.zero_grad()
                     loss_avg.update(loss.detach_(), bsz)
 
                 if not global_step % args.log_interval:

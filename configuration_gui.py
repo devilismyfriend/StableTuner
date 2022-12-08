@@ -198,6 +198,7 @@ class App(tk.Frame):
         self.current_model = None
         self.play_save_image_button = None
         self.dataset_repeats = 1
+        self.limit_text_encoder = 0
         self.create_widgets()
  
         width = self.notebook.winfo_reqwidth()
@@ -512,22 +513,32 @@ class App(tk.Frame):
         #create checkbox
         self.train_text_encoder_checkbox = tk.Checkbutton(self.training_tab, variable=self.train_text_encoder_var,fg=self.dark_mode_text_var, bg=self.dark_mode_var, activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var, selectcolor=self.dark_mode_var)
         self.train_text_encoder_checkbox.grid(row=15, column=1, sticky="nsew")
+        #create limit text encoder encoder entry
+        self.limit_text_encoder_var = tk.StringVar()
+        self.limit_text_encoder_var.set(self.limit_text_encoder)
+        #create label
+        self.limit_text_encoder_label = tk.Label(self.training_tab, text="Limit Text Encoder",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        limit_text_encoder_label_ttp = CreateToolTip(self.limit_text_encoder_label, "Stop training the text encoder after this many epochs, use % to train for a percentage of the total epochs.")
+        self.limit_text_encoder_label.grid(row=16, column=0, sticky="nsew")
+        #create entry
+        self.limit_text_encoder_entry = tk.Entry(self.training_tab, textvariable=self.limit_text_encoder_var,fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        self.limit_text_encoder_entry.grid(row=16, column=1, sticky="nsew")
         #create with prior loss preservation checkbox
         self.with_prior_loss_preservation_var = tk.IntVar()
         self.with_prior_loss_preservation_var.set(self.with_prior_reservation)
         #create label
         self.with_prior_loss_preservation_label = tk.Label(self.training_tab, text="With Prior Loss Preservation",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         with_prior_loss_preservation_label_ttp = CreateToolTip(self.with_prior_loss_preservation_label, "Use the prior loss preservation method. part of Dreambooth.")
-        self.with_prior_loss_preservation_label.grid(row=16, column=0, sticky="nsew")
+        self.with_prior_loss_preservation_label.grid(row=17, column=0, sticky="nsew")
         #create checkbox
         self.with_prior_loss_preservation_checkbox = tk.Checkbutton(self.training_tab, variable=self.with_prior_loss_preservation_var,fg=self.dark_mode_text_var, bg=self.dark_mode_var, activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var, selectcolor=self.dark_mode_var)
-        self.with_prior_loss_preservation_checkbox.grid(row=16, column=1, sticky="nsew")
+        self.with_prior_loss_preservation_checkbox.grid(row=17, column=1, sticky="nsew")
         #create prior loss preservation weight entry
         self.prior_loss_preservation_weight_label = tk.Label(self.training_tab, text="Weight",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         prior_loss_preservation_weight_label_ttp = CreateToolTip(self.prior_loss_preservation_weight_label, "The weight of the prior loss preservation loss.")
-        self.prior_loss_preservation_weight_label.grid(row=16, column=1, sticky="e")
+        self.prior_loss_preservation_weight_label.grid(row=17, column=1, sticky="e")
         self.prior_loss_preservation_weight_entry = tk.Entry(self.training_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
-        self.prior_loss_preservation_weight_entry.grid(row=16, column=3, sticky="w")
+        self.prior_loss_preservation_weight_entry.grid(row=17, column=3, sticky="w")
         self.prior_loss_preservation_weight_entry.insert(0, self.prior_loss_weight)
         #create Dataset Settings label like the model settings label
         self.dataset_settings_label = tk.Label(self.dataset_tab, text="Dataset Settings", font=("Arial", 12, "bold"),fg=self.dark_mode_title_var, bg=self.dark_mode_var)
@@ -1626,6 +1637,7 @@ class App(tk.Frame):
         config['aspect_ratio_bucketing'] = self.use_aspect_ratio_bucketing_var.get()
         config['seed'] = self.seed_entry.get()
         config['dataset_repeats'] = self.dataset_repeats_entry.get()
+        config['limit_text_encoder_training'] = self.limit_text_encoder_entry.get()
         #save the config file
         #if the file exists, delete it
         if os.path.exists(file_name):
@@ -1731,7 +1743,8 @@ class App(tk.Frame):
         self.seed_entry.insert(0, config["seed"])
         self.dataset_repeats_entry.delete(0, tk.END)
         self.dataset_repeats_entry.insert(0, config["dataset_repeats"])
-        
+        self.limit_text_encoder_entry.delete(0, tk.END)
+        self.limit_text_encoder_entry.insert(0, config["limit_text_encoder_training"])
         #self.update_controlled_seed_sample()
         #self.update_sample_prompts()
         self.master.update()
@@ -1784,6 +1797,7 @@ class App(tk.Frame):
         self.use_aspect_ratio_bucketing = self.use_aspect_ratio_bucketing_var.get()
         self.seed_number = self.seed_entry.get()
         self.dataset_repeats = self.dataset_repeats_entry.get()
+        self.limit_text_encoder = self.limit_text_encoder_entry.get()
         #open stabletune_concept_list.json
         if os.path.exists('stabletune_last_run.json'):
             with open('stabletune_last_run.json') as f:
@@ -1804,6 +1818,15 @@ class App(tk.Frame):
             batBase = 'accelerate "launch" "--mixed_precision=fp16" "train_dreambooth.py"'
         else:
             batBase = 'accelerate "launch" "train_dreambooth.py"'
+        
+        if '%' in self.limit_text_encoder:
+            #calculate the epoch number from the percentage and set the limit_text_encoder to the epoch number
+            self.limit_text_encoder = int(self.limit_text_encoder.replace('%','')) * int(self.train_epocs) / 100
+            #round the number to the nearest whole number
+            self.limit_text_encoder = round(self.limit_text_encoder)
+            batBase += f' "--stop_text_encoder_training={self.limit_text_encoder}" '
+        elif self.limit_text_encoder != '' or self.limit_text_encoder != '0':
+            batBase += f' "--stop_text_encoder_training={self.limit_text_encoder}" '
         batBase += f' "--pretrained_model_name_or_path={self.model_path}" '
         batBase += f' "--pretrained_vae_name_or_path={self.vae_path}" '
         batBase += f' "--output_dir={self.output_path}" '
