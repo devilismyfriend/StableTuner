@@ -1112,19 +1112,19 @@ def main():
                     pipeline.set_progress_bar_config(disable=True)
                     pipeline.to(accelerator.device)
                 
-                if args.use_bucketing == False:
-                    num_new_images = args.num_class_images - cur_class_images
-                    logger.info(f"Number of class images to sample: {num_new_images}.")
+                #if args.use_bucketing == False:
+                num_new_images = args.num_class_images - cur_class_images
+                logger.info(f"Number of class images to sample: {num_new_images}.")
 
-                    sample_dataset = PromptDataset(concept["class_prompt"], num_new_images)
-                    sample_dataloader = torch.utils.data.DataLoader(sample_dataset, batch_size=args.sample_batch_size)
-                    sample_dataloader = accelerator.prepare(sample_dataloader)
-                else:
+                sample_dataset = PromptDataset(concept["class_prompt"], num_new_images)
+                sample_dataloader = torch.utils.data.DataLoader(sample_dataset, batch_size=args.sample_batch_size)
+                sample_dataloader = accelerator.prepare(sample_dataloader)
+                #else:
                     #create class images that match up to the concept target buckets
-                    instance_images_dir = Path(concept["instance_data_dir"])
-                    cur_instance_images = len(list(instance_images_dir.iterdir()))
+                #    instance_images_dir = Path(concept["instance_data_dir"])
+                #    cur_instance_images = len(list(instance_images_dir.iterdir()))
                     #target_wh = min(self.aspects, key=lambda aspects:abs(aspects[0]/aspects[1] - image_aspect))
-                    num_new_images = cur_instance_images - cur_class_images
+                #    num_new_images = cur_instance_images - cur_class_images
                 
                 
 
