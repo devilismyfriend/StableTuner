@@ -1436,7 +1436,7 @@ def main():
                 text_enc_model = accelerator.unwrap_model(text_encoder,True)
             elif args.train_text_encoder == False:
                 text_enc_model = CLIPTextModel.from_pretrained(args.pretrained_model_name_or_path, subfolder="text_encoder" )
-            elif args.train_text_encoder and args.stop_text_encoder_training < step:
+            elif args.train_text_encoder and args.stop_text_encoder_training <= step:
                 text_enc_model = CLIPTextModel.from_pretrained(frozen_directory, subfolder="text_encoder" )
                 
             #scheduler = DDIMScheduler(beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear", clip_sample=False, set_alpha_to_one=False)
