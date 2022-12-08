@@ -830,7 +830,7 @@ class DataLoaderMultiAspect():
             current = os.path.join(recurse_root, f)
 
             if os.path.isfile(current):
-                ext = os.path.splitext(f)[1]
+                ext = os.path.splitext(f)[1].lower()
                 if ext in ['.jpg', '.jpeg', '.png', '.bmp', '.webp']:
                     self.image_paths.append(current)
 
@@ -874,12 +874,12 @@ class DreamBoothDataset(Dataset):
 
         for concept in concepts_list:
             for i in range(repeats):
-                inst_img_path = [(x, concept["instance_prompt"]) for x in Path(concept["instance_data_dir"]).iterdir() if x.is_file() and x.suffix == ".jpg" or x.suffix == ".png" or x.suffix == ".jpeg"]
+                inst_img_path = [(x, concept["instance_prompt"]) for x in Path(concept["instance_data_dir"]).iterdir() if x.is_file() and x.suffix.lower() == ".jpg" or x.suffix.lower() == ".png" or x.suffix.lower() == ".jpeg"]
                 self.instance_images_path.extend(inst_img_path)
 
             if with_prior_preservation:
                 for i in range(repeats):
-                    class_img_path = [(x, concept["class_prompt"]) for x in Path(concept["class_data_dir"]).iterdir() if x.is_file() and x.suffix == ".jpg" or x.suffix == ".png" or x.suffix == ".jpeg"]
+                    class_img_path = [(x, concept["class_prompt"]) for x in Path(concept["class_data_dir"]).iterdir() if x.is_file() and x.suffix.lower() == ".jpg" or x.suffix.lower() == ".png" or x.suffix.lower() == ".jpeg"]
                     self.class_images_path.extend(class_img_path[:num_class_images])
         random.shuffle(self.instance_images_path)
 
