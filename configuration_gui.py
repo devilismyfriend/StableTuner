@@ -95,9 +95,10 @@ class App(tk.Frame):
         self.canvas.bind('<Configure>', lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
         self.frame = tk.Frame(self.canvas)
         self.frame.pack(side="left", fill="both", expand=True)
+        self.configure(bg=self.dark_mode_var)
         
         self.canvas.create_window((0,0), window=self.frame, anchor="nw")
-
+        self.canvas.configure(bg=self.dark_mode_var)
         #create tabs
         self.notebook = ttk.Notebook(self.frame)
         self.notebook.grid(row=0, column=0, columnspan=2, sticky="nsew")
@@ -124,7 +125,16 @@ class App(tk.Frame):
         self.concepts_tab.configure(bg=self.dark_mode_var)
         self.play_tab.configure(bg=self.dark_mode_var)
         self.tools_tab.configure(bg=self.dark_mode_var)
-        
+        #make a bottom frame
+        self.bottom_frame = tk.Frame(self.canvas, bg=self.dark_mode_var)
+        self.bottom_frame.pack(side="bottom", fill="x")
+        #configure grid
+        self.bottom_frame.columnconfigure(0, weight=1)
+        self.bottom_frame.columnconfigure(1, weight=1)
+        self.bottom_frame.columnconfigure(2, weight=1)
+        #rowconfigure
+        self.bottom_frame.rowconfigure(0, weight=1)
+
         #notebook dark mode style
         self.notebook_style = ttk.Style()
         self.notebook_style.theme_use("clam")
@@ -134,15 +144,15 @@ class App(tk.Frame):
         self.notebook_style.map("TNotebook.Tab", background=[("selected", self.dark_mode_var)], foreground=[("selected", self.dark_mode_title_var), ("active", self.dark_mode_title_var)])
         
         #on tab change resize window
-        self.notebook.bind("<<NotebookTabChanged>>", self.resize_window)
+        self.notebook.bind("<<NotebookTabChanged>>", self.on_tab_changed)
 
         #variables
         
         self.sample_prompts = []
         self.number_of_sample_prompts = len(self.sample_prompts)
         self.sample_prompt_labels = []
-        self.diffusers_model_path = "stabilityai/stable-diffusion-2"
-        self.vae_model_path = "stabilityai/sd-vae-ft-mse"
+        self.diffusers_model_path = ""
+        self.vae_model_path = ""
         self.output_path = "models/model_name"
         self.send_telegram_updates = False
         self.telegram_token = "TOKEN"
@@ -236,16 +246,21 @@ class App(tk.Frame):
         finally:
             #make sure to release the grab (Tk 8.0a1 only)
             self.menu.grab_release()
-    def resize_window(self, event):
+    def on_tab_changed(self, event):
         #get the current selected notebook tab id
         tab_id = self.notebook.select()
         #get the tab index
         tab_index = self.notebook.index(tab_id)
-        tabsSizes = {0 : [715,280], 1 : [715,490], 2 : [715,230],3 : [715,400],4 : [715,400],5 : [715,360],6 : [715,490]}
+        tabsSizes = {0 : [715,320], 1 : [715,510], 2 : [715,230],3 : [715,400],4 : [715,500],5 : [715,360],6 : [715,490]}
         #get the tab size
         tab_size = tabsSizes[tab_index]
         #resize the window to fit the widgets
         self.master.geometry(f"{tab_size[0]}x{tab_size[1]}")
+        #hide self.start_training_btn if we are on the playground or tools tab
+        if tab_index == 5 or tab_index == 6:
+            self.start_training_btn.grid_remove()
+        else:
+            self.start_training_btn.grid()
         self.canvas.bind('<Configure>', lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
         self.master.update()
         
@@ -301,71 +316,73 @@ class App(tk.Frame):
         self.save_config_button.grid(row=0, column=1, sticky="ne")
         self.model_settings_label = tk.Label(self.general_tab, text="StableTune Settings",  font=("Arial", 12, "bold"), fg=self.dark_mode_title_var, bg=self.dark_mode_var)
         self.model_settings_label.grid(row=0, column=0, sticky="nsew")
-
+        #add tip label
+        self.tip_label = tk.Label(self.general_tab, text="Tip: Hover over settings for information ;)",  font=("Arial", 10), fg=self.dark_mode_title_var, bg=self.dark_mode_var)
+        self.tip_label.grid(row=1, column=0,columnspan=3, sticky="nsew",pady=(0,10))
         self.quick_select_label = tk.Label(self.general_tab, text="Quick Select Model",  font=("Arial", 10, "bold"),fg=self.dark_mode_title_var, bg=self.dark_mode_var)
         quick_select_label_ttp = CreateToolTip(self.quick_select_label, "Quick select another model to use.")
-        self.quick_select_label.grid(row=1, column=0, sticky="nsew")
+        self.quick_select_label.grid(row=2, column=0, sticky="nsew")
         self.quick_select_var = tk.StringVar()
         self.quick_select_var.set('Click to select')
         self.quick_select_dropdown = tk.OptionMenu(self.general_tab, self.quick_select_var, *self.quick_select_models, command=self.quick_select_model)
         self.quick_select_dropdown.config( activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var, border=0, relief='flat', fg=self.dark_mode_title_var, bg=self.dark_mode_var, highlightthickness=2, highlightbackground=self.dark_mode_button_var)
         self.quick_select_dropdown["menu"].config( activebackground=self.dark_mode_var, activeforeground=self.dark_mode_title_var, bg=self.dark_mode_var, fg=self.dark_mode_text_var)
-        self.quick_select_dropdown.grid(row=1, column=1, sticky="nsew")
+        self.quick_select_dropdown.grid(row=2, column=1, sticky="nsew")
         
         self.diffusers_model_path_label = tk.Label(self.general_tab, text="Diffusers model path / HuggingFace Repo",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         diffusers_model_path_label_ttp = CreateToolTip(self.diffusers_model_path_label, "The path to the diffusers model to use. Can be a local path or a HuggingFace repo path.")
-        self.diffusers_model_path_label.grid(row=2, column=0, sticky="nsew")
+        self.diffusers_model_path_label.grid(row=3, column=0, sticky="nsew")
         self.diffusers_model_path_entry = tk.Entry(self.general_tab,width=30,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
         
-        self.diffusers_model_path_entry.grid(row=2, column=1, sticky="nsew")
+        self.diffusers_model_path_entry.grid(row=3, column=1, sticky="nsew")
         self.diffusers_model_path_entry.insert(0, self.diffusers_model_path)
         #make a button to open a file dialog
         self.diffusers_model_path_button = tk.Button(self.general_tab, text="...", command=lambda: self.open_file_dialog(self.diffusers_model_path_entry),fg=self.dark_mode_text_var, bg=self.dark_mode_title_var, activebackground=self.dark_mode_button_var, activeforeground="white")
         self.diffusers_model_path_button.configure(border=4, relief='flat')
-        self.diffusers_model_path_button.grid(row=2, column=2, sticky="nwse")
+        self.diffusers_model_path_button.grid(row=3, column=2, sticky="nwse")
         #create vae model path dark mode
         self.vae_model_path_label = tk.Label(self.general_tab, text="VAE model path / HuggingFace Repo",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         vae_model_path_label_ttp = CreateToolTip(self.vae_model_path_label, "OPTINAL The path to the VAE model to use. Can be a local path or a HuggingFace repo path.")
-        self.vae_model_path_label.grid(row=3, column=0, sticky="nsew")
+        self.vae_model_path_label.grid(row=4, column=0, sticky="nsew")
         self.vae_model_path_entry = tk.Entry(self.general_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
-        self.vae_model_path_entry.grid(row=3, column=1, sticky="nsew")
+        self.vae_model_path_entry.grid(row=4, column=1, sticky="nsew")
         self.vae_model_path_entry.insert(0, self.vae_model_path)
         #make a button to open a file dialog
         self.vae_model_path_button = tk.Button(self.general_tab, text="...", command=lambda: self.open_file_dialog(self.vae_model_path_entry),fg=self.dark_mode_text_var, bg=self.dark_mode_title_var, activebackground=self.dark_mode_button_var, activeforeground="white")
         self.vae_model_path_button.configure(border=4, relief='flat')
-        self.vae_model_path_button.grid(row=3, column=2, sticky="nsew")
+        self.vae_model_path_button.grid(row=4, column=2, sticky="nsew")
         #create output path dark mode
         self.output_path_label = tk.Label(self.general_tab, text="Output Path",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         output_path_label_ttp = CreateToolTip(self.output_path_label, "The path to the output directory. If it doesn't exist, it will be created.")
-        self.output_path_label.grid(row=4, column=0, sticky="nsew")
+        self.output_path_label.grid(row=5, column=0, sticky="nsew")
         self.output_path_entry = tk.Entry(self.general_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
-        self.output_path_entry.grid(row=4, column=1, sticky="nsew")
+        self.output_path_entry.grid(row=5, column=1, sticky="nsew")
         self.output_path_entry.insert(0, self.output_path)
         #make a button to open a file dialog
         self.output_path_button = tk.Button(self.general_tab, text="...", command=lambda: self.open_file_dialog(self.output_path_entry),fg=self.dark_mode_text_var, bg=self.dark_mode_title_var, activebackground=self.dark_mode_button_var, activeforeground="white")
         self.output_path_button.configure(border=4, relief='flat')
-        self.output_path_button.grid(row=4, column=2, sticky="nsew")
+        self.output_path_button.grid(row=5, column=2, sticky="nsew")
         #use telegram updates dark mode
         self.send_telegram_updates_label = tk.Label(self.general_tab, text="Send Telegram Updates",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         send_telegram_updates_label_ttp = CreateToolTip(self.send_telegram_updates_label, "Use Telegram updates to monitor training progress, must have a Telegram bot set up.")
-        self.send_telegram_updates_label.grid(row=5, column=0, sticky="nsew")
+        self.send_telegram_updates_label.grid(row=6, column=0, sticky="nsew")
         #create checkbox to toggle telegram updates and show telegram token and chat id
         self.send_telegram_updates_var = tk.IntVar()
         self.send_telegram_updates_checkbox = tk.Checkbutton(self.general_tab,variable=self.send_telegram_updates_var, command=self.toggle_telegram_settings,fg=self.dark_mode_text_var, bg=self.dark_mode_var, activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var, selectcolor=self.dark_mode_var)
-        self.send_telegram_updates_checkbox.grid(row=5, column=1, sticky="nsew")
+        self.send_telegram_updates_checkbox.grid(row=6, column=1, sticky="nsew")
         #create telegram token dark mode
         self.telegram_token_label = tk.Label(self.general_tab, text="Telegram Token",  state="disabled",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         telegram_token_label_ttp = CreateToolTip(self.telegram_token_label, "The Telegram token for your bot.")
-        self.telegram_token_label.grid(row=6, column=0, sticky="nsew")
+        self.telegram_token_label.grid(row=7, column=0, sticky="nsew")
         self.telegram_token_entry = tk.Entry(self.general_tab,  state="disabled",fg=self.dark_mode_text_var, bg=self.dark_mode_var, disabledbackground=self.dark_mode_var,insertbackground="white")
-        self.telegram_token_entry.grid(row=6, column=1, sticky="nsew")
+        self.telegram_token_entry.grid(row=7, column=1, sticky="nsew")
         self.telegram_token_entry.insert(0, self.telegram_token)
         #create telegram chat id dark mode
         self.telegram_chat_id_label = tk.Label(self.general_tab, text="Telegram Chat ID",  state="disabled",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         telegram_chat_id_label_ttp = CreateToolTip(self.telegram_chat_id_label, "The Telegram chat ID to send updates to.")
-        self.telegram_chat_id_label.grid(row=7, column=0, sticky="nsew")
+        self.telegram_chat_id_label.grid(row=8, column=0, sticky="nsew")
         self.telegram_chat_id_entry = tk.Entry(self.general_tab,  state="disabled",fg=self.dark_mode_text_var, bg=self.dark_mode_var, disabledbackground=self.dark_mode_var,insertbackground="white")
-        self.telegram_chat_id_entry.grid(row=7, column=1, sticky="nsew")
+        self.telegram_chat_id_entry.grid(row=8, column=1, sticky="nsew")
         self.telegram_chat_id_entry.insert(0, self.telegram_chat_id)
 
         #Training settings label in bold
@@ -874,12 +891,12 @@ class App(tk.Frame):
         self.all_entries_list = [self.diffusers_model_path_entry, self.seed_entry,self.play_seed_entry,self.play_model_entry,self.output_path_entry,self.play_prompt_entry,self.sample_width_entry,self.train_epochs_entry,self.learning_rate_entry,self.sample_height_entry,self.telegram_token_entry,self.vae_model_path_entry,self.dataset_repeats_entry,self.download_dataset_entry,self.num_warmup_steps_entry,self.download_dataset_entry,self.telegram_chat_id_entry,self.save_every_n_epochs_entry,self.play_negative_prompt_entry,self.number_of_class_images_entry,self.number_of_samples_to_generate_entry,self.prior_loss_preservation_weight_entry]
         for entry in self.all_entries_list:
             entry.bind("<Button-3>", self.create_right_click_menu)
-        self.generate_btn = tk.Button(self.general_tab)
-        
-        self.generate_btn.configure(border=4, relief='flat',fg=self.dark_mode_title_var, bg=self.dark_mode_var,activebackground=self.dark_mode_title_var, font=("Helvetica", 12, "bold"))
-        self.generate_btn["text"] = "Start Training!"
-        self.generate_btn["command"] = self.process_inputs
-        self.generate_btn.grid(row=100, column=0,columnspan=2, sticky="nsew")
+        self.start_training_btn = tk.Button(self.bottom_frame)
+        #self.start_training_btn.pack(side="bottom", fill="both")
+        self.start_training_btn.configure(border=4, relief='flat',fg=self.dark_mode_title_var, bg=self.dark_mode_var,activebackground=self.dark_mode_title_var, font=("Helvetica", 12, "bold"))
+        self.start_training_btn["text"] = "Start Training!"
+        self.start_training_btn["command"] = self.process_inputs
+        self.start_training_btn.grid(row=0, column=1,columnspan=1, sticky="nsew")
     def playground_find_latest_generated_model(self):
         last_output_path = self.output_path_entry.get()
         last_num_epochs = self.train_epochs_entry.get()
@@ -1369,7 +1386,7 @@ class App(tk.Frame):
         concept_title = tk.Label(self.concepts_tab, text="Concept " + str(len(self.concept_labels)+1), font=("Helvetica", 10, "bold"),fg=self.dark_mode_title_var, bg=self.dark_mode_var)
         concept_title.grid(row=3 + (len(self.concept_labels)*6), column=0, sticky="nsew")
         #create instance prompt label
-        ins_prompt_label = tk.Label(self.concepts_tab, text="Instance Prompt",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        ins_prompt_label = tk.Label(self.concepts_tab, text="Token/Prompt",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         ins_prompt_label_ttp = CreateToolTip(ins_prompt_label, "The token for the concept, will be ignored if use image names as captions is checked.")
         ins_prompt_label.grid(row=4 + (len(self.concept_labels)*6), column=0, sticky="nsew")
         #create instance prompt entry
@@ -1387,7 +1404,7 @@ class App(tk.Frame):
         if class_prompt_val != None:
             class_prompt_entry.insert(0, class_prompt_val)
         #create instance data path label
-        ins_data_path_label = tk.Label(self.concepts_tab, text="Instance Data Path",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        ins_data_path_label = tk.Label(self.concepts_tab, text="Training Data Directory",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         ins_data_path_label_ttp = CreateToolTip(ins_data_path_label, "The path to the folder containing the concept's images.")
         ins_data_path_label.grid(row=6 + (len(self.concept_labels)*6), column=0, sticky="nsew")
         #create instance data path entry
@@ -1400,7 +1417,7 @@ class App(tk.Frame):
         ins_data_path_file_dialog_button.configure(border=4, relief='flat')
         ins_data_path_file_dialog_button.grid(row=6 + (len(self.concept_labels)*6), column=2, sticky="nsew")
         #create class data path label
-        class_data_path_label = tk.Label(self.concepts_tab, text="Class Data Path",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        class_data_path_label = tk.Label(self.concepts_tab, text="Class Data Directory",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         class_data_path_label_ttp = CreateToolTip(class_data_path_label, "The path to the folder containing the concept's class images.")
         class_data_path_label.grid(row=7 + (len(self.concept_labels)*6), column=0, sticky="nsew")
         #add a button to open a file dialog to select the class data path
