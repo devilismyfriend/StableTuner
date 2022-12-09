@@ -11,3 +11,4 @@ gitpython
 fairscale
 timm
 OmegaConf
+safetensors

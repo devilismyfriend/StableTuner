@@ -11,6 +11,8 @@ from tkinter import messagebox
 from PIL import Image, ImageTk
 import glob
 from scripts import converters
+import shutil
+
 #from scripts import converters
 #work in progress code, not finished, credits will be added at a later date.
 
@@ -240,7 +242,7 @@ class App(tk.Frame):
                     dt_string = now.strftime("%m-%d-%H-%M")
                     #construct name
                     name = name_of_model+'_'+res+"_e"+epoch+"_"+dt_string
-                    print(self.play_model_entry.get())
+                    #print(self.play_model_entry.get())
                     self.convert_to_ckpt(model_path=self.play_model_entry.get(), output_path=self.output_path_entry.get(),name=name)
                     #open stabletune_last_run.json and change convert_to_ckpt_after_training to False
                     with open("stabletune_last_run.json", "r") as f:
@@ -1095,27 +1097,7 @@ class App(tk.Frame):
         if output_path is None:
             #file dialog to save diffusers model
             output_path = fd.askdirectory(initialdir=os.getcwd(), title="Select where to save Diffusers Model Directory")
-        def get_sd_version(file_path):
-            import torch
-            checkpoint = torch.load(file_path)
-            if 'global_step' not in checkpoint.keys():
-                answer = messagebox.askyesno("Error", "Was this model trained on 512 resolution (1.4/1.5/2-base)?")
-                print(answer)
-                if answer == True:
-                    res = 512
-                elif answer == False:
-                    res = 768
-            else:
-                res = None
-            key_name = "model.diffusion_model.input_blocks.2.1.transformer_blocks.0.attn2.to_k.weight"
-            checkpoint = checkpoint["state_dict"]
-            if key_name in checkpoint and checkpoint[key_name].shape[-1] == 1024:
-                version = "v2"
-            else:
-                version = "v1"
-            del checkpoint
-            return version, res
-        version, res = get_sd_version(ckpt_path)
+        version, prediction = self.get_sd_version(ckpt_path)
         self.convert_model_dialog = tk.Toplevel(self)
         self.convert_model_dialog.title("Converting model")
         #label
@@ -1128,7 +1110,7 @@ class App(tk.Frame):
         self.convert_model_dialog.grab_set()
         self.convert_model_dialog.focus_set()
         self.master.update()
-        convert = converters.Convert_SD_to_Diffusers(ckpt_path,output_path,img_size=res)
+        convert = converters.Convert_SD_to_Diffusers(ckpt_path,output_path,prediction_type=prediction,version=version)
         self.convert_model_dialog.destroy()
 
     def convert_to_ckpt(self,model_path=None, output_path=None,name=None):
@@ -1237,27 +1219,24 @@ class App(tk.Frame):
         self.concept_file_dialog_buttons.append([ins_data_path_file_dialog_button, class_data_path_file_dialog_button])
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
     
-    
-    def choose_model(self):
-        def get_sd_version(file_path):
+    def get_sd_version(self,file_path):
             import torch
             checkpoint = torch.load(file_path)
-            if 'global_step' not in checkpoint.keys():
-                answer = messagebox.askyesno("Error", "Was this model trained on 512 resolution (1.4/1.5/2-base)?")
-                print(answer)
-                if answer == True:
-                    res = 512
-                elif answer == False:
-                    res = 768
+            answer = messagebox.askyesno("V-Model?", "Is this model using V-Predicition? (based on SD2.x 768 model)")
+            if answer == True:
+                prediction = "vprediction"
             else:
-                res = None
+                prediction = "epsilon"
             key_name = "model.diffusion_model.input_blocks.2.1.transformer_blocks.0.attn2.to_k.weight"
             checkpoint = checkpoint["state_dict"]
             if key_name in checkpoint and checkpoint[key_name].shape[-1] == 1024:
                 version = "v2"
             else:
                 version = "v1"
-            return version, res
+            del checkpoint
+            return version, prediction
+    def choose_model(self):
+        
             
         """Opens a file dialog and to choose either a model or a model folder."""
         #open file dialog and show only ckpt and json files and folders
@@ -1284,8 +1263,8 @@ class App(tk.Frame):
                 messagebox.showerror("Error", "The selected file is not a diffusers model index file.")
                 return
         if file_path.endswith(".ckpt"):
-            self.ckpt_sd_version, res = get_sd_version(file_path)
-            print(res)
+            sd_file = file_path
+            version, prediction = self.get_sd_version(sd_file)
             #create a directory under the models folder with the name of the ckpt file
             model_name = os.path.basename(file_path).split(".")[0]
             #get the path of the script
@@ -1295,10 +1274,12 @@ class App(tk.Frame):
             #create the path of the new model folder
             model_path = os.path.join(models_path, model_name)
             #check if the model folder already exists
-            if os.path.isdir(model_path):
+            if os.path.isdir(model_path) and os.path.isfile(os.path.join(model_path, "model_index.json")):
                 file_path = model_path
             else:
                 #create the model folder
+                if os.path.isdir(model_path):
+                    shutil.rmtree(model_path)
                 os.mkdir(model_path)
                 #converter
                 #show a dialog to inform the user that the model is being converted
@@ -1314,12 +1295,7 @@ class App(tk.Frame):
                 self.convert_model_dialog.grab_set()
                 self.convert_model_dialog.focus_set()
                 self.master.update()
-                if res == 512:
-                    converters.Convert_SD_to_Diffusers(checkpoint_path=file_path, output_path=model_path,img_size=512)
-                elif res == 768:
-                    converters.Convert_SD_to_Diffusers(checkpoint_path=file_path, output_path=model_path,img_size=768)
-                else:
-                    converters.Convert_SD_to_Diffusers(checkpoint_path=file_path, output_path=model_path)
+                convert = converters.Convert_SD_to_Diffusers(sd_file,model_path,prediction_type=prediction,version=version)
                 self.convert_model_dialog.destroy()
 
                 file_path = model_path
@@ -1738,10 +1714,10 @@ class App(tk.Frame):
                 
 
         #create a bat file to run the training
-        if self.mixed_precision == 'fp16':
-            batBase = 'accelerate "launch" "--mixed_precision=fp16" "trainer.py"'
+        if self.mixed_precision == 'fp16' or self.mixed_precision == 'bf16':
+            batBase = f'accelerate "launch" "--mixed_precision={self.mixed_precision}" "trainer.py"'
         else:
-            batBase = 'accelerate "launch" "trainer.py"'
+            batBase = 'accelerate "launch" "--mixed_precision=no" "trainer.py"'
         
         if self.use_text_files_as_captions == True:
             batBase += ' "--use_text_files_as_captions" '
@@ -1759,7 +1735,8 @@ class App(tk.Frame):
         batBase += f' "--resolution={self.resolution}" '
         batBase += f' "--train_batch_size={self.batch_size}" '
         batBase += f' "--num_train_epochs={self.train_epocs}" '
-        batBase += f' "--mixed_precision={self.mixed_precision}" '
+        if self.mixed_precision == 'fp16' or self.mixed_precision == 'bf16':
+            batBase += f' "--mixed_precision={self.mixed_precision}" '
         if self.use_aspect_ratio_bucketing:
             batBase += f' "--use_bucketing" '
         if self.use_8bit_adam == True:
@@ -1833,10 +1810,14 @@ class App(tk.Frame):
             #switch to the play tab
             #self.notebook.select(5)
             #self.master.update()
-            app.mainloop()
-
-            
+            app.mainloop() 
         else:
+            #cancel conversion on restart
+            with open('stabletune_last_run.json', 'r') as f:
+                data = json.load(f)
+            data['execute_post_conversion'] = False
+            with open('stabletune_last_run.json', 'w') as f:
+                json.dump(data, f)
             os.system("pause")
         #restart the app
         

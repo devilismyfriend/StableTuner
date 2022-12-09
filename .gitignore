@@ -2372,3 +2372,5 @@ test/output/xcasweqs.png
 v2-inference-v.yaml
 v1-inference.yaml
 *.ckpt
+v2-inference.yaml
+scripts/convert_diffusers20_original_sd.py

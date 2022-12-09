@@ -1105,6 +1105,7 @@ def main():
 
                     pipeline = DiffusionPipeline.from_pretrained(
                         args.pretrained_model_name_or_path,
+                        safety_checker=None,
                         vae=AutoencoderKL.from_pretrained(args.pretrained_vae_name_or_path or args.pretrained_model_name_or_path,subfolder=None if args.pretrained_vae_name_or_path else "vae" ),
                         torch_dtype=torch_dtype,
                          
