@@ -174,8 +174,9 @@ if os.name == "nt":
                 if os.path.exists(dest_file):
                     shutil.copy2(src_file, cudnn_dest)
             print("Copied CUDNN 8.6 files to destination")
-    diffusers_cmd = "git+https://github.com/huggingface/diffusers.git@8e74efa#egg=diffusers --force-reinstall"
-    run(f'"{python}" -m pip install {diffusers_cmd}', "Installing particular diffusers commit", "Couldn't install diffusers")
+    d_commit = 'ff65c2d'
+    diffusers_cmd = f"git+https://github.com/huggingface/diffusers.git@{d_commit}#egg=diffusers --force-reinstall"
+    run(f'"{python}" -m pip install {diffusers_cmd}', f"Installing diffusers {d_commit} commit", "Couldn't install diffusers")
     #install requirements file
     #req_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "requirements.txt")
     #run(f'"{python}" -m pip install -r "{req_file}"', "Updating requirements", "Couldn't install requirements")

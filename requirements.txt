@@ -11,3 +11,4 @@ tensorboard
 gitpython
 fairscale
 timm
+OmegaConf
