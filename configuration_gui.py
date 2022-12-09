@@ -1222,7 +1222,7 @@ class App(tk.Frame):
     def get_sd_version(self,file_path):
             import torch
             checkpoint = torch.load(file_path)
-            answer = messagebox.askyesno("V-Model?", "Is this model using V-Predicition? (based on SD2.x 768 model)")
+            answer = messagebox.askyesno("V-Model?", "Is this model using V-Parameterization? (based on SD2.x 768 model)")
             if answer == True:
                 prediction = "vprediction"
             else:
