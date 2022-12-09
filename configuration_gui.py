@@ -10,6 +10,7 @@ import json
 from tkinter import messagebox
 from PIL import Image, ImageTk
 import glob
+from scripts import converters
 #from scripts import converters
 #work in progress code, not finished, credits will be added at a later date.
 
@@ -151,7 +152,7 @@ class App(tk.Frame):
         self.sample_prompts = []
         self.number_of_sample_prompts = len(self.sample_prompts)
         self.sample_prompt_labels = []
-        self.diffusers_model_path = ""
+        self.input_model_path = ""
         self.vae_model_path = ""
         self.output_path = "models/model_name"
         self.send_telegram_updates = False
@@ -192,7 +193,7 @@ class App(tk.Frame):
         self.save_on_training_start = False
         self.concept_template = {'instance_prompt': 'subject', 'class_prompt': 'a photo of class', 'instance_data_dir':'./data/subject','class_data_dir':'./data/subject_class'}
         self.concepts = []
-        self.play_diffusers_model_path = ""
+        self.play_input_model_path = ""
         self.play_postive_prompt = ""
         self.play_negative_prompt = ""
         self.play_seed = -1
@@ -210,6 +211,9 @@ class App(tk.Frame):
         self.dataset_repeats = 1
         self.limit_text_encoder = 0
         self.use_text_files_as_captions = False
+        self.ckpt_sd_version = None
+        self.convert_to_ckpt_after_training = False
+        self.execute_post_conversion = False
         self.create_widgets()
  
         width = self.notebook.winfo_reqwidth()
@@ -223,9 +227,30 @@ class App(tk.Frame):
                 self.load_config(file_name="stabletune_last_run.json")
                 #try loading the latest generated model to playground entry
                 self.playground_find_latest_generated_model()
-            except:
-                print("Error loading config file")
-                #system sep
+                #convert to ckpt if option is wanted
+                if self.execute_post_conversion == True:
+                    #construct unique name
+                    epoch = self.play_model_entry.get().split(os.sep)[-1]
+                    name_of_model = self.play_model_entry.get().split(os.sep)[-2]
+                    res = self.resolution_var.get()
+                    #time and date
+                    from datetime import datetime
+                    #format time and date to %month%day%hour%minute
+                    now = datetime.now()
+                    dt_string = now.strftime("%m-%d-%H-%M")
+                    #construct name
+                    name = name_of_model+'_'+res+"_e"+epoch+"_"+dt_string
+                    print(self.play_model_entry.get())
+                    self.convert_to_ckpt(model_path=self.play_model_entry.get(), output_path=self.output_path_entry.get(),name=name)
+                    #open stabletune_last_run.json and change convert_to_ckpt_after_training to False
+                    with open("stabletune_last_run.json", "r") as f:
+                        data = json.load(f)
+                    data["execute_post_conversion"] = False
+                    with open("stabletune_last_run.json", "w") as f:
+                        json.dump(data, f, indent=4)
+            except Exception as e:
+                print(e)
+                pass
             #self.play_model_entry.insert(0, self.output_path_entry.get()+os.sep+self.train_epochs_entry.get())
         else:
             #self.load_config()
@@ -284,21 +309,21 @@ class App(tk.Frame):
     def quick_select_model(self,*args):
         val = self.quick_select_var.get()
         if val != "Click to select model":
-            #clear diffusers_model_path_entry
-            self.diffusers_model_path_entry.delete(0, tk.END)
+            #clear input_model_path_entry
+            self.input_model_path_entry.delete(0, tk.END)
             if val == 'Stable Diffusion 1.4':
-                self.diffusers_model_path_entry.insert(0,"CompVis/stable-diffusion-v1-4")
+                self.input_model_path_entry.insert(0,"CompVis/stable-diffusion-v1-4")
             elif val == 'Stable Diffusion 1.5':
-                self.diffusers_model_path_entry.insert(0,"runwayml/stable-diffusion-v1-5")
+                self.input_model_path_entry.insert(0,"runwayml/stable-diffusion-v1-5")
             elif val == 'Stable Diffusion 2 Base (512)':
-                self.diffusers_model_path_entry.insert(0,"stabilityai/stable-diffusion-2-base")
+                self.input_model_path_entry.insert(0,"stabilityai/stable-diffusion-2-base")
             elif val == 'Stable Diffusion 2 (768)':
-                self.diffusers_model_path_entry.insert(0,"stabilityai/stable-diffusion-2")
+                self.input_model_path_entry.insert(0,"stabilityai/stable-diffusion-2")
                 self.resolution_var.set("768")
             elif val == 'Stable Diffusion 2.1 Base (512)':
-                self.diffusers_model_path_entry.insert(0,"stabilityai/stable-diffusion-2-1-base")
+                self.input_model_path_entry.insert(0,"stabilityai/stable-diffusion-2-1-base")
             elif val == 'Stable Diffusion 2.1 (768)':
-                self.diffusers_model_path_entry.insert(0,"stabilityai/stable-diffusion-2-1")
+                self.input_model_path_entry.insert(0,"stabilityai/stable-diffusion-2-1")
                 self.resolution_var.set("768")
             self.master.update()
     def create_widgets(self):
@@ -329,17 +354,17 @@ class App(tk.Frame):
         self.quick_select_dropdown["menu"].config( activebackground=self.dark_mode_var, activeforeground=self.dark_mode_title_var, bg=self.dark_mode_var, fg=self.dark_mode_text_var)
         self.quick_select_dropdown.grid(row=2, column=1, sticky="nsew")
         
-        self.diffusers_model_path_label = tk.Label(self.general_tab, text="Diffusers model path / HuggingFace Repo",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
-        diffusers_model_path_label_ttp = CreateToolTip(self.diffusers_model_path_label, "The path to the diffusers model to use. Can be a local path or a HuggingFace repo path.")
-        self.diffusers_model_path_label.grid(row=3, column=0, sticky="nsew")
-        self.diffusers_model_path_entry = tk.Entry(self.general_tab,width=30,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
+        self.input_model_path_label = tk.Label(self.general_tab, text="Input Model / HuggingFace Repo",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        input_model_path_label_ttp = CreateToolTip(self.input_model_path_label, "The path to the diffusers model to use. Can be a local path or a HuggingFace repo path.")
+        self.input_model_path_label.grid(row=3, column=0, sticky="nsew")
+        self.input_model_path_entry = tk.Entry(self.general_tab,width=30,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
         
-        self.diffusers_model_path_entry.grid(row=3, column=1, sticky="nsew")
-        self.diffusers_model_path_entry.insert(0, self.diffusers_model_path)
+        self.input_model_path_entry.grid(row=3, column=1, sticky="nsew")
+        self.input_model_path_entry.insert(0, self.input_model_path)
         #make a button to open a file dialog
-        self.diffusers_model_path_button = tk.Button(self.general_tab, text="...", command=lambda: self.open_file_dialog(self.diffusers_model_path_entry),fg=self.dark_mode_text_var, bg=self.dark_mode_title_var, activebackground=self.dark_mode_button_var, activeforeground="white")
-        self.diffusers_model_path_button.configure(border=4, relief='flat')
-        self.diffusers_model_path_button.grid(row=3, column=2, sticky="nwse")
+        self.input_model_path_button = tk.Button(self.general_tab, text="...", command=self.choose_model,fg=self.dark_mode_text_var, bg=self.dark_mode_title_var, activebackground=self.dark_mode_button_var, activeforeground="white")
+        self.input_model_path_button.configure(border=4, relief='flat')
+        self.input_model_path_button.grid(row=3, column=2, sticky="nwse")
         #create vae model path dark mode
         self.vae_model_path_label = tk.Label(self.general_tab, text="VAE model path / HuggingFace Repo",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         vae_model_path_label_ttp = CreateToolTip(self.vae_model_path_label, "OPTINAL The path to the VAE model to use. Can be a local path or a HuggingFace repo path.")
@@ -362,27 +387,34 @@ class App(tk.Frame):
         self.output_path_button = tk.Button(self.general_tab, text="...", command=lambda: self.open_file_dialog(self.output_path_entry),fg=self.dark_mode_text_var, bg=self.dark_mode_title_var, activebackground=self.dark_mode_button_var, activeforeground="white")
         self.output_path_button.configure(border=4, relief='flat')
         self.output_path_button.grid(row=5, column=2, sticky="nsew")
+        #create a checkbox wether to convert to ckpt after training
+        self.convert_to_ckpt_after_training_label = tk.Label(self.general_tab, text="Convert to CKPT after training?",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        convert_to_ckpt_label_ttp = CreateToolTip(self.convert_to_ckpt_after_training_label, "Convert the model to a tensorflow checkpoint after training.")
+        self.convert_to_ckpt_after_training_label.grid(row=6, column=0, sticky="nsew")
+        self.convert_to_ckpt_after_training_var = tk.IntVar()
+        self.convert_to_ckpt_after_training_checkbox = tk.Checkbutton(self.general_tab,variable=self.convert_to_ckpt_after_training_var,fg=self.dark_mode_text_var, bg=self.dark_mode_var, activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var, selectcolor=self.dark_mode_var)
+        self.convert_to_ckpt_after_training_checkbox.grid(row=6, column=1, sticky="nsew")
         #use telegram updates dark mode
         self.send_telegram_updates_label = tk.Label(self.general_tab, text="Send Telegram Updates",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         send_telegram_updates_label_ttp = CreateToolTip(self.send_telegram_updates_label, "Use Telegram updates to monitor training progress, must have a Telegram bot set up.")
-        self.send_telegram_updates_label.grid(row=6, column=0, sticky="nsew")
+        self.send_telegram_updates_label.grid(row=7, column=0, sticky="nsew")
         #create checkbox to toggle telegram updates and show telegram token and chat id
         self.send_telegram_updates_var = tk.IntVar()
         self.send_telegram_updates_checkbox = tk.Checkbutton(self.general_tab,variable=self.send_telegram_updates_var, command=self.toggle_telegram_settings,fg=self.dark_mode_text_var, bg=self.dark_mode_var, activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var, selectcolor=self.dark_mode_var)
-        self.send_telegram_updates_checkbox.grid(row=6, column=1, sticky="nsew")
+        self.send_telegram_updates_checkbox.grid(row=7, column=1, sticky="nsew")
         #create telegram token dark mode
         self.telegram_token_label = tk.Label(self.general_tab, text="Telegram Token",  state="disabled",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         telegram_token_label_ttp = CreateToolTip(self.telegram_token_label, "The Telegram token for your bot.")
-        self.telegram_token_label.grid(row=7, column=0, sticky="nsew")
+        self.telegram_token_label.grid(row=8, column=0, sticky="nsew")
         self.telegram_token_entry = tk.Entry(self.general_tab,  state="disabled",fg=self.dark_mode_text_var, bg=self.dark_mode_var, disabledbackground=self.dark_mode_var,insertbackground="white")
-        self.telegram_token_entry.grid(row=7, column=1, sticky="nsew")
+        self.telegram_token_entry.grid(row=8, column=1, sticky="nsew")
         self.telegram_token_entry.insert(0, self.telegram_token)
         #create telegram chat id dark mode
         self.telegram_chat_id_label = tk.Label(self.general_tab, text="Telegram Chat ID",  state="disabled",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         telegram_chat_id_label_ttp = CreateToolTip(self.telegram_chat_id_label, "The Telegram chat ID to send updates to.")
-        self.telegram_chat_id_label.grid(row=8, column=0, sticky="nsew")
+        self.telegram_chat_id_label.grid(row=9, column=0, sticky="nsew")
         self.telegram_chat_id_entry = tk.Entry(self.general_tab,  state="disabled",fg=self.dark_mode_text_var, bg=self.dark_mode_var, disabledbackground=self.dark_mode_var,insertbackground="white")
-        self.telegram_chat_id_entry.grid(row=8, column=1, sticky="nsew")
+        self.telegram_chat_id_entry.grid(row=9, column=1, sticky="nsew")
         self.telegram_chat_id_entry.insert(0, self.telegram_chat_id)
 
         #Training settings label in bold
@@ -765,7 +797,7 @@ class App(tk.Frame):
         self.play_model_label.grid(row=0, column=0, sticky="nsew")
         self.play_model_entry = tk.Entry(self.play_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
         self.play_model_entry.grid(row=0, column=1, sticky="nsew")
-        self.play_model_entry.insert(0, self.play_diffusers_model_path)
+        self.play_model_entry.insert(0, self.play_input_model_path)
         self.play_model_file_dialog_button = tk.Button(self.play_tab, text="...",width=5, command=lambda: self.open_file_dialog(self.play_model_entry),fg=self.dark_mode_text_var, bg=self.dark_mode_title_var, activebackground=self.dark_mode_button_var, activeforeground="white")
         self.play_model_file_dialog_button.configure(border=4, relief='flat')
         self.play_model_file_dialog_button.grid(row=0, column=2, sticky="w")
@@ -839,7 +871,7 @@ class App(tk.Frame):
         self.play_negative_prompt_entry.bind("<Return>", lambda event: self.play_generate_image(self.play_model_entry.get(), self.play_prompt_entry.get(), self.play_negative_prompt_entry.get(), self.play_seed_entry.get(), self.play_scheduler_variable.get(), self.play_resolution_slider_height.get(), self.play_resolution_slider_width.get(), self.play_cfg_slider.get(), self.play_steps_slider.get()))
         
         #add convert to ckpt button
-        self.play_convert_to_ckpt_button = tk.Button(self.play_tab, text="Convert To CKPT", command=lambda:self.convert_ckpt(model_path=self.play_model_entry.get()),fg=self.dark_mode_title_var, bg=self.dark_mode_var,activebackground=self.dark_mode_title_var)
+        self.play_convert_to_ckpt_button = tk.Button(self.play_tab, text="Convert To CKPT", command=lambda:self.convert_to_ckpt(model_path=self.play_model_entry.get()),fg=self.dark_mode_title_var, bg=self.dark_mode_var,activebackground=self.dark_mode_title_var)
         self.play_convert_to_ckpt_button.configure(border=4, relief='flat')
         self.play_convert_to_ckpt_button.grid(row=9, column=1, columnspan=1, sticky="e")
         #add interative generation button to act as a toggle
@@ -859,13 +891,13 @@ class App(tk.Frame):
         self.model_tools_label = tk.Label(self.tools_tab, text="Model Tools",  font=("Helvetica", 12, "bold"),fg=self.dark_mode_title_var, bg=self.dark_mode_var)
         self.model_tools_label.grid(row=2, column=0,columnspan=3, sticky="nsew")
         #add a button to convert to ckpt
-        self.convert_to_ckpt_button = tk.Button(self.tools_tab, text="Convert Diffusers To CKPT", command=lambda:self.convert_ckpt(),fg=self.dark_mode_title_var, bg=self.dark_mode_var,activebackground=self.dark_mode_title_var)
+        self.convert_to_ckpt_button = tk.Button(self.tools_tab, text="Convert Diffusers To CKPT", command=lambda:self.convert_to_ckpt(),fg=self.dark_mode_title_var, bg=self.dark_mode_var,activebackground=self.dark_mode_title_var)
         self.convert_to_ckpt_button.configure(border=4, relief='flat')
         self.convert_to_ckpt_button.grid(row=3, column=0, columnspan=1, sticky="nsew")
         #add a button to convert ckpt to diffusers
         self.convert_ckpt_to_diffusers_button = tk.Button(self.tools_tab, text="Convert CKPT To Diffusers", command=lambda:self.convert_ckpt_to_diffusers(),fg=self.dark_mode_title_var, bg=self.dark_mode_var,activebackground=self.dark_mode_title_var)
-        self.convert_ckpt_to_diffusers_button.configure(border=4, relief='flat',state="disabled")
-        self.convert_ckpt_to_diffusers_button.grid(row=3, column=1, columnspan=1, sticky="nsew")
+        self.convert_ckpt_to_diffusers_button.configure(border=4, relief='flat')
+        self.convert_ckpt_to_diffusers_button.grid(row=3, column=2, columnspan=1, sticky="nsew")
         #empty row
         self.empty_row = tk.Label(self.tools_tab, text="",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         self.empty_row.grid(row=6, column=0, sticky="nsew")
@@ -888,7 +920,7 @@ class App(tk.Frame):
         self.download_dataset_button = tk.Button(self.tools_tab, text="Download Dataset", command=self.download_dataset,fg=self.dark_mode_text_var, bg=self.dark_mode_var, activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var)
         self.download_dataset_button.grid(row=9, column=2, sticky="nsew")
         
-        self.all_entries_list = [self.diffusers_model_path_entry, self.seed_entry,self.play_seed_entry,self.play_model_entry,self.output_path_entry,self.play_prompt_entry,self.sample_width_entry,self.train_epochs_entry,self.learning_rate_entry,self.sample_height_entry,self.telegram_token_entry,self.vae_model_path_entry,self.dataset_repeats_entry,self.download_dataset_entry,self.num_warmup_steps_entry,self.download_dataset_entry,self.telegram_chat_id_entry,self.save_every_n_epochs_entry,self.play_negative_prompt_entry,self.number_of_class_images_entry,self.number_of_samples_to_generate_entry,self.prior_loss_preservation_weight_entry]
+        self.all_entries_list = [self.input_model_path_entry, self.seed_entry,self.play_seed_entry,self.play_model_entry,self.output_path_entry,self.play_prompt_entry,self.sample_width_entry,self.train_epochs_entry,self.learning_rate_entry,self.sample_height_entry,self.telegram_token_entry,self.vae_model_path_entry,self.dataset_repeats_entry,self.download_dataset_entry,self.num_warmup_steps_entry,self.download_dataset_entry,self.telegram_chat_id_entry,self.save_every_n_epochs_entry,self.play_negative_prompt_entry,self.number_of_class_images_entry,self.number_of_samples_to_generate_entry,self.prior_loss_preservation_weight_entry]
         for entry in self.all_entries_list:
             entry.bind("<Button-3>", self.create_right_click_menu)
         self.start_training_btn = tk.Button(self.bottom_frame)
@@ -935,13 +967,6 @@ class App(tk.Frame):
         cb_root.iconphoto(False, cb_icon)
         app2 = scripts.captionBuddy.ImageBrowser(cb_root)
         cb_root.mainloop()
-    def convert_ckpt_to_diffusers(self):
-        #get the model path
-        model_path = fd.askopenfilename(title="Select Model", filetypes=(("Model", "*.ckpt"), ("All Files", "*.*")))
-        #get the output path
-        output_path = fd.askdirectory()
-        #run the command
-        os.system("python3 /content/CLIP/convert_ckpt_to_diffusers.py --model_path " + model_path + " --output_path " + output_path)
     def disable_with_prior_loss(self, *args):
         if self.use_aspect_ratio_bucketing_var.get() == 1:
             self.with_prior_loss_preservation_var.set(0)
@@ -1005,17 +1030,17 @@ class App(tk.Frame):
             self.pipe = diffusers.DiffusionPipeline.from_pretrained(model,torch_dtype=torch.float16)
             self.pipe.to('cuda')
             self.current_model = model
-        if scheduler == 'DPMSolverMultistepScheduler':
-            scheduler = diffusers.DPMSolverMultistepScheduler.from_config(self.pipe.scheduler.config)
-        elif scheduler == 'PNDMScheduler':
-            scheduler = diffusers.PNDMScheduler.from_config(self.pipe.scheduler.config)
-        elif scheduler == 'DDIMScheduler':
-            scheduler = diffusers.DDIMScheduler.from_config(self.pipe.scheduler.config)
-        elif scheduler == 'EulerAncestralDiscreteScheduler':
-            scheduler = diffusers.EulerAncestralDiscreteScheduler.from_config(self.pipe.scheduler.config)
-        elif scheduler == 'EulerDiscreteScheduler':
-            scheduler = diffusers.EulerDiscreteScheduler.from_config(self.pipe.scheduler.config)
-        self.pipe.scheduler = scheduler
+            if scheduler == 'DPMSolverMultistepScheduler':
+                scheduler = diffusers.DPMSolverMultistepScheduler.from_config(self.pipe.scheduler.config)
+            elif scheduler == 'PNDMScheduler':
+                scheduler = diffusers.PNDMScheduler.from_config(self.pipe.scheduler.config)
+            elif scheduler == 'DDIMScheduler':
+                scheduler = diffusers.DDIMScheduler.from_config(self.pipe.scheduler.config)
+            elif scheduler == 'EulerAncestralDiscreteScheduler':
+                scheduler = diffusers.EulerAncestralDiscreteScheduler.from_config(self.pipe.scheduler.config)
+            elif scheduler == 'EulerDiscreteScheduler':
+                scheduler = diffusers.EulerDiscreteScheduler.from_config(self.pipe.scheduler.config)
+            self.pipe.scheduler = scheduler
         
         def displayInterImg(step: int, timestep: int, latents: torch.FloatTensor):
             #tensor to image
@@ -1064,321 +1089,81 @@ class App(tk.Frame):
             self.play_generate_image_button["text"] = "Generate Image"
             #normal text
             self.play_generate_image_button.configure(fg=self.dark_mode_text_var)
-        
-    def convert_ckpt(self,model_path=None, output_path=None):
-        # Script for converting a HF Diffusers saved pipeline to a Stable Diffusion checkpoint.
-        # *Only* converts the UNet, VAE, and Text Encoder.
-        # Does not convert optimizer state or any other thing.
+    def convert_ckpt_to_diffusers(self,ckpt_path=None, output_path=None):
+        if ckpt_path is None:
+            ckpt_path = fd.askopenfilename(initialdir=os.getcwd(),title = "Select CKPT file",filetypes = (("ckpt files","*.ckpt"),("all files","*.*")))
+        if output_path is None:
+            #file dialog to save diffusers model
+            output_path = fd.askdirectory(initialdir=os.getcwd(), title="Select where to save Diffusers Model Directory")
+        def get_sd_version(file_path):
+            import torch
+            checkpoint = torch.load(file_path)
+            if 'global_step' not in checkpoint.keys():
+                answer = messagebox.askyesno("Error", "Was this model trained on 512 resolution (1.4/1.5/2-base)?")
+                print(answer)
+                if answer == True:
+                    res = 512
+                elif answer == False:
+                    res = 768
+            else:
+                res = None
+            key_name = "model.diffusion_model.input_blocks.2.1.transformer_blocks.0.attn2.to_k.weight"
+            checkpoint = checkpoint["state_dict"]
+            if key_name in checkpoint and checkpoint[key_name].shape[-1] == 1024:
+                version = "v2"
+            else:
+                version = "v1"
+            del checkpoint
+            return version, res
+        version, res = get_sd_version(ckpt_path)
+        self.convert_model_dialog = tk.Toplevel(self)
+        self.convert_model_dialog.title("Converting model")
+        #label
+        empty_label = tk.Label(self.convert_model_dialog, text="")
+        empty_label.pack()
+        label = tk.Label(self.convert_model_dialog, text="Converting CKPT to Diffusers. Please wait...")
+        label.pack()
+        self.convert_model_dialog.geometry("300x70")
+        self.convert_model_dialog.resizable(False, False)
+        self.convert_model_dialog.grab_set()
+        self.convert_model_dialog.focus_set()
+        self.master.update()
+        convert = converters.Convert_SD_to_Diffusers(ckpt_path,output_path,img_size=res)
+        self.convert_model_dialog.destroy()
 
-        import argparse
-        import os.path as osp
-
-        import torch
-
-
-        # =================#
-        # UNet Conversion #
-        # =================#
-
-        unet_conversion_map = [
-            # (stable-diffusion, HF Diffusers)
-            ("time_embed.0.weight", "time_embedding.linear_1.weight"),
-            ("time_embed.0.bias", "time_embedding.linear_1.bias"),
-            ("time_embed.2.weight", "time_embedding.linear_2.weight"),
-            ("time_embed.2.bias", "time_embedding.linear_2.bias"),
-            ("input_blocks.0.0.weight", "conv_in.weight"),
-            ("input_blocks.0.0.bias", "conv_in.bias"),
-            ("out.0.weight", "conv_norm_out.weight"),
-            ("out.0.bias", "conv_norm_out.bias"),
-            ("out.2.weight", "conv_out.weight"),
-            ("out.2.bias", "conv_out.bias"),
-        ]
-
-        unet_conversion_map_resnet = [
-            # (stable-diffusion, HF Diffusers)
-            ("in_layers.0", "norm1"),
-            ("in_layers.2", "conv1"),
-            ("out_layers.0", "norm2"),
-            ("out_layers.3", "conv2"),
-            ("emb_layers.1", "time_emb_proj"),
-            ("skip_connection", "conv_shortcut"),
-        ]
-
-        unet_conversion_map_layer = []
-        # hardcoded number of downblocks and resnets/attentions...
-        # would need smarter logic for other networks.
-        for i in range(4):
-            # loop over downblocks/upblocks
-
-            for j in range(2):
-                # loop over resnets/attentions for downblocks
-                hf_down_res_prefix = f"down_blocks.{i}.resnets.{j}."
-                sd_down_res_prefix = f"input_blocks.{3*i + j + 1}.0."
-                unet_conversion_map_layer.append((sd_down_res_prefix, hf_down_res_prefix))
-
-                if i < 3:
-                    # no attention layers in down_blocks.3
-                    hf_down_atn_prefix = f"down_blocks.{i}.attentions.{j}."
-                    sd_down_atn_prefix = f"input_blocks.{3*i + j + 1}.1."
-                    unet_conversion_map_layer.append((sd_down_atn_prefix, hf_down_atn_prefix))
-
-            for j in range(3):
-                # loop over resnets/attentions for upblocks
-                hf_up_res_prefix = f"up_blocks.{i}.resnets.{j}."
-                sd_up_res_prefix = f"output_blocks.{3*i + j}.0."
-                unet_conversion_map_layer.append((sd_up_res_prefix, hf_up_res_prefix))
-
-                if i > 0:
-                    # no attention layers in up_blocks.0
-                    hf_up_atn_prefix = f"up_blocks.{i}.attentions.{j}."
-                    sd_up_atn_prefix = f"output_blocks.{3*i + j}.1."
-                    unet_conversion_map_layer.append((sd_up_atn_prefix, hf_up_atn_prefix))
-
-            if i < 3:
-                # no downsample in down_blocks.3
-                hf_downsample_prefix = f"down_blocks.{i}.downsamplers.0.conv."
-                sd_downsample_prefix = f"input_blocks.{3*(i+1)}.0.op."
-                unet_conversion_map_layer.append((sd_downsample_prefix, hf_downsample_prefix))
-
-                # no upsample in up_blocks.3
-                hf_upsample_prefix = f"up_blocks.{i}.upsamplers.0."
-                sd_upsample_prefix = f"output_blocks.{3*i + 2}.{1 if i == 0 else 2}."
-                unet_conversion_map_layer.append((sd_upsample_prefix, hf_upsample_prefix))
-
-        hf_mid_atn_prefix = "mid_block.attentions.0."
-        sd_mid_atn_prefix = "middle_block.1."
-        unet_conversion_map_layer.append((sd_mid_atn_prefix, hf_mid_atn_prefix))
-
-        for j in range(2):
-            hf_mid_res_prefix = f"mid_block.resnets.{j}."
-            sd_mid_res_prefix = f"middle_block.{2*j}."
-            unet_conversion_map_layer.append((sd_mid_res_prefix, hf_mid_res_prefix))
-
-
-        def convert_unet_state_dict(unet_state_dict):
-            # buyer beware: this is a *brittle* function,
-            # and correct output requires that all of these pieces interact in
-            # the exact order in which I have arranged them.
-            mapping = {k: k for k in unet_state_dict.keys()}
-            for sd_name, hf_name in unet_conversion_map:
-                mapping[hf_name] = sd_name
-            for k, v in mapping.items():
-                if "resnets" in k:
-                    for sd_part, hf_part in unet_conversion_map_resnet:
-                        v = v.replace(hf_part, sd_part)
-                    mapping[k] = v
-            for k, v in mapping.items():
-                for sd_part, hf_part in unet_conversion_map_layer:
-                    v = v.replace(hf_part, sd_part)
-                mapping[k] = v
-            new_state_dict = {v: unet_state_dict[k] for k, v in mapping.items()}
-            return new_state_dict
-
-
-        # ================#
-        # VAE Conversion #
-        # ================#
-
-        vae_conversion_map = [
-            # (stable-diffusion, HF Diffusers)
-            ("nin_shortcut", "conv_shortcut"),
-            ("norm_out", "conv_norm_out"),
-            ("mid.attn_1.", "mid_block.attentions.0."),
-        ]
-
-        for i in range(4):
-            # down_blocks have two resnets
-            for j in range(2):
-                hf_down_prefix = f"encoder.down_blocks.{i}.resnets.{j}."
-                sd_down_prefix = f"encoder.down.{i}.block.{j}."
-                vae_conversion_map.append((sd_down_prefix, hf_down_prefix))
-
-            if i < 3:
-                hf_downsample_prefix = f"down_blocks.{i}.downsamplers.0."
-                sd_downsample_prefix = f"down.{i}.downsample."
-                vae_conversion_map.append((sd_downsample_prefix, hf_downsample_prefix))
-
-                hf_upsample_prefix = f"up_blocks.{i}.upsamplers.0."
-                sd_upsample_prefix = f"up.{3-i}.upsample."
-                vae_conversion_map.append((sd_upsample_prefix, hf_upsample_prefix))
-
-            # up_blocks have three resnets
-            # also, up blocks in hf are numbered in reverse from sd
-            for j in range(3):
-                hf_up_prefix = f"decoder.up_blocks.{i}.resnets.{j}."
-                sd_up_prefix = f"decoder.up.{3-i}.block.{j}."
-                vae_conversion_map.append((sd_up_prefix, hf_up_prefix))
-
-        # this part accounts for mid blocks in both the encoder and the decoder
-        for i in range(2):
-            hf_mid_res_prefix = f"mid_block.resnets.{i}."
-            sd_mid_res_prefix = f"mid.block_{i+1}."
-            vae_conversion_map.append((sd_mid_res_prefix, hf_mid_res_prefix))
-
-
-        vae_conversion_map_attn = [
-            # (stable-diffusion, HF Diffusers)
-            ("norm.", "group_norm."),
-            ("q.", "query."),
-            ("k.", "key."),
-            ("v.", "value."),
-            ("proj_out.", "proj_attn."),
-        ]
-
-
-        def reshape_weight_for_sd(w):
-            # convert HF linear weights to SD conv2d weights
-            return w.reshape(*w.shape, 1, 1)
-
-
-        def convert_vae_state_dict(vae_state_dict):
-            mapping = {k: k for k in vae_state_dict.keys()}
-            for k, v in mapping.items():
-                for sd_part, hf_part in vae_conversion_map:
-                    v = v.replace(hf_part, sd_part)
-                mapping[k] = v
-            for k, v in mapping.items():
-                if "attentions" in k:
-                    for sd_part, hf_part in vae_conversion_map_attn:
-                        v = v.replace(hf_part, sd_part)
-                    mapping[k] = v
-            new_state_dict = {v: vae_state_dict[k] for k, v in mapping.items()}
-            weights_to_convert = ["q", "k", "v", "proj_out"]
-            for k, v in new_state_dict.items():
-                for weight_name in weights_to_convert:
-                    if f"mid.attn_1.{weight_name}.weight" in k:
-                        print(f"Reshaping {k} for SD format")
-                        new_state_dict[k] = reshape_weight_for_sd(v)
-            return new_state_dict
-
-
-        # =========================#
-        # Text Encoder Conversion #
-        # =========================#
-
-        import re
-        textenc_conversion_lst = [
-            # (stable-diffusion, HF Diffusers)
-            ('resblocks.','text_model.encoder.layers.'),
-            ('ln_1','layer_norm1'),
-            ('ln_2','layer_norm2'),
-            ('.c_fc.','.fc1.'),
-            ('.c_proj.','.fc2.'),
-            ('.attn','.self_attn'),
-            ('ln_final.','transformer.text_model.final_layer_norm.'),
-            ('token_embedding.weight','transformer.text_model.embeddings.token_embedding.weight'),
-            ('positional_embedding','transformer.text_model.embeddings.position_embedding.weight')
-        ]
-        protected = {re.escape(x[1]):x[0] for x in textenc_conversion_lst}
-        textenc_pattern = re.compile("|".join(protected.keys()))
-
-        # Ordering is from https://github.com/pytorch/pytorch/blob/master/test/cpp/api/modules.cpp
-        code2idx = {'q':0,'k':1,'v':2}
-
-        def convert_text_enc_state_dict_v20(text_enc_dict:dict[str, torch.Tensor]):
-            new_state_dict = {}
-            capture_qkv_weight = {}
-            capture_qkv_bias = {}
-            for k,v in text_enc_dict.items():
-                if k.endswith('.self_attn.q_proj.weight') or k.endswith('.self_attn.k_proj.weight') or k.endswith('.self_attn.v_proj.weight'):
-                    k_pre = k[:-len('.q_proj.weight')]
-                    k_code = k[-len('q_proj.weight')]
-                    if k_pre not in capture_qkv_weight:
-                        capture_qkv_weight[k_pre] = [None,None,None]
-                    capture_qkv_weight[k_pre][code2idx[k_code]] = v
-                    continue
-
-                if k.endswith('.self_attn.q_proj.bias') or k.endswith('.self_attn.k_proj.bias') or k.endswith('.self_attn.v_proj.bias'):
-                    k_pre = k[:-len('.q_proj.bias')]
-                    k_code = k[-len('q_proj.bias')]
-                    if k_pre not in capture_qkv_bias:
-                        capture_qkv_bias[k_pre] = [None,None,None]
-                    capture_qkv_bias[k_pre][code2idx[k_code]] = v
-                    continue
-
-                relabelled_key = textenc_pattern.sub(lambda m: protected[re.escape(m.group(0))], k)
-                #        if relabelled_key != k:
-                #            print(f"{k} -> {relabelled_key}")
-
-                new_state_dict[relabelled_key] = v
-
-            for k_pre,tensors in capture_qkv_weight.items():
-                if None in tensors:
-                    raise Exception("CORRUPTED MODEL: one of the q-k-v values for the text encoder was missing")
-                relabelled_key = textenc_pattern.sub(lambda m: protected[re.escape(m.group(0))], k_pre)
-                new_state_dict[relabelled_key+'.in_proj_weight'] = torch.cat(tensors)
-
-            for k_pre,tensors in capture_qkv_bias.items():
-                if None in tensors:
-                    raise Exception("CORRUPTED MODEL: one of the q-k-v values for the text encoder was missing")
-                relabelled_key = textenc_pattern.sub(lambda m: protected[re.escape(m.group(0))], k_pre)
-                new_state_dict[relabelled_key+'.in_proj_bias'] = torch.cat(tensors)
-
-            return new_state_dict
-
-
-        def convert_text_enc_state_dict(text_enc_dict:dict[str, torch.Tensor]):
-            return text_enc_dict
-        
-        #IS_V20_MODEL = True
-        #model_path = self.diffusers_model_path_entry.get()
+    def convert_to_ckpt(self,model_path=None, output_path=None,name=None):
         if model_path is None:
             model_path = fd.askdirectory(initialdir=self.output_path_entry.get(), title="Select Diffusers Model Directory")
         #check if model path has vae,unet,text_encoder,tokenizer,scheduler and args.json and model_index.json
         if output_path is None:
             output_path = fd.asksaveasfilename(initialdir=os.getcwd(),title = "Save CKPT file",filetypes = (("ckpt files","*.ckpt"),("all files","*.*")))
         if not os.path.exists(model_path) and not os.path.exists(os.path.join(model_path,"vae")) and not os.path.exists(os.path.join(model_path,"unet")) and not os.path.exists(os.path.join(model_path,"text_encoder")) and not os.path.exists(os.path.join(model_path,"tokenizer")) and not os.path.exists(os.path.join(model_path,"scheduler")) and not os.path.exists(os.path.join(model_path,"args.json")) and not os.path.exists(os.path.join(model_path,"model_index.json")):
-            messagebox.showerror("Error", "Couldn't find model in path")
+            messagebox.showerror("Error", "Couldn't find model structure in path")
             return
             #check if ckpt in output path
+        if name != None:
+            output_path = os.path.join(output_path,name+".ckpt")
         if not output_path.endswith(".ckpt") and output_path != "":
             #add ckpt to output path
             output_path = output_path + ".ckpt"
         if not output_path or output_path == "":
             return
-        assert model_path is not None, "Must provide a model path!"
 
-        assert output_path is not None, "Must provide a checkpoint path!"
-        #create a progress bar
-        progress = 0
-        #tk inter progress bar
-        # load the model
-        unet_path = osp.join(model_path, "unet", "diffusion_pytorch_model.bin")
-        vae_path = osp.join(model_path, "vae", "diffusion_pytorch_model.bin")
-        text_enc_path = osp.join(model_path, "text_encoder", "pytorch_model.bin")
-
-        # Convert the UNet model
-        unet_state_dict = torch.load(unet_path, map_location="cpu")
-        unet_state_dict = convert_unet_state_dict(unet_state_dict)
-        unet_state_dict = {"model.diffusion_model." + k: v for k, v in unet_state_dict.items()}
-
-        # Convert the VAE model
-        vae_state_dict = torch.load(vae_path, map_location="cpu")
-        vae_state_dict = convert_vae_state_dict(vae_state_dict)
-        vae_state_dict = {"first_stage_model." + k: v for k, v in vae_state_dict.items()}
-
-        # Convert the text encoder model
-        text_enc_dict = torch.load(text_enc_path, map_location="cpu")
-
-    # Easiest way to identify v2.0 model seems to be that the text encoder (OpenCLIP) is deeper
-        is_v20_model = "text_model.encoder.layers.22.layer_norm2.bias" in text_enc_dict
-
-        if is_v20_model:
-            # Need to add the tag 'transformer' in advance so we can knock it out from the final layer-norm
-            text_enc_dict = {"transformer." + k: v for k, v in text_enc_dict.items()} 
-            text_enc_dict = convert_text_enc_state_dict_v20(text_enc_dict)
-            text_enc_dict = {"cond_stage_model.model." + k: v for k, v in text_enc_dict.items()}
-        else:
-            text_enc_dict = convert_text_enc_state_dict(text_enc_dict)
-            text_enc_dict = {"cond_stage_model.transformer." + k: v for k, v in text_enc_dict.items()}
-
-        # Put together new checkpoint
-        state_dict = {**unet_state_dict, **vae_state_dict, **text_enc_dict}
-        #if args.half:
-        #    state_dict = {k: v.half() for k, v in state_dict.items()}
-        state_dict = {"state_dict": state_dict}
-        torch.save(state_dict, output_path)
-        messagebox.showinfo("Conversion Complete", "Conversion Complete")
+        self.convert_model_dialog = tk.Toplevel(self)
+        self.convert_model_dialog.title("Converting model")
+        #label
+        empty_label = tk.Label(self.convert_model_dialog, text="")
+        empty_label.pack()
+        label = tk.Label(self.convert_model_dialog, text="Converting Diffusers to CKPT. Please wait...")
+        label.pack()
+        self.convert_model_dialog.geometry("300x70")
+        self.convert_model_dialog.resizable(False, False)
+        self.convert_model_dialog.grab_set()
+        self.convert_model_dialog.focus_set()
+        self.master.update()
+        converters.Convert_Diffusers_to_SD(model_path, output_path)
+        self.convert_model_dialog.destroy()
+        #messagebox.showinfo("Conversion Complete", "Conversion Complete")
 
 
     def add_concept(self, inst_prompt_val=None, class_prompt_val=None, inst_data_path_val=None, class_data_path_val=None, do_not_balance_val=False):
@@ -1451,6 +1236,100 @@ class App(tk.Frame):
         self.concepts.append({"instance_prompt": ins_prompt_entry, "class_prompt": class_prompt_entry, "instance_data_dir": ins_data_path_entry, "class_data_dir": class_data_path_entry,'do_not_balance': do_not_balance_dataset_var})
         self.concept_file_dialog_buttons.append([ins_data_path_file_dialog_button, class_data_path_file_dialog_button])
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+    
+    
+    def choose_model(self):
+        def get_sd_version(file_path):
+            import torch
+            checkpoint = torch.load(file_path)
+            if 'global_step' not in checkpoint.keys():
+                answer = messagebox.askyesno("Error", "Was this model trained on 512 resolution (1.4/1.5/2-base)?")
+                print(answer)
+                if answer == True:
+                    res = 512
+                elif answer == False:
+                    res = 768
+            else:
+                res = None
+            key_name = "model.diffusion_model.input_blocks.2.1.transformer_blocks.0.attn2.to_k.weight"
+            checkpoint = checkpoint["state_dict"]
+            if key_name in checkpoint and checkpoint[key_name].shape[-1] == 1024:
+                version = "v2"
+            else:
+                version = "v1"
+            return version, res
+            
+        """Opens a file dialog and to choose either a model or a model folder."""
+        #open file dialog and show only ckpt and json files and folders
+        file_path = fd.askopenfilename(filetypes=[("Model", "*.ckpt"), ("Model", "*.json"), ("Model", "*.safetensors")])
+        #file_path = fd.askopenfilename() model_index.json
+        if file_path == "":
+            return
+        #check if the file is a json file
+        if file_path.endswith(".json"):
+            #check if the file is a model index file
+            file_path = os.path.dirname(file_path)
+            if "model_index.json" in file_path:
+                #check if folder has folders for: vae, unet, tokenizer, text_encoder
+                required_folders = ["vae", "unet", "tokenizer", "text_encoder"]
+                for folder in required_folders:
+                    if not os.path.isdir(os.path.join(file_path, folder)):
+                        #show error message
+                        messagebox.showerror("Error", "The selected model is missing the {} folder.".format(folder))
+                        return
+                file_path = os.path.dirname(file_path)
+            #if the file is not a model index file
+            else:
+                #show error message
+                messagebox.showerror("Error", "The selected file is not a diffusers model index file.")
+                return
+        if file_path.endswith(".ckpt"):
+            self.ckpt_sd_version, res = get_sd_version(file_path)
+            print(res)
+            #create a directory under the models folder with the name of the ckpt file
+            model_name = os.path.basename(file_path).split(".")[0]
+            #get the path of the script
+            script_path = os.path.dirname(os.path.realpath(__file__))
+            #get the path of the models folder
+            models_path = os.path.join(script_path, "models")
+            #create the path of the new model folder
+            model_path = os.path.join(models_path, model_name)
+            #check if the model folder already exists
+            if os.path.isdir(model_path):
+                file_path = model_path
+            else:
+                #create the model folder
+                os.mkdir(model_path)
+                #converter
+                #show a dialog to inform the user that the model is being converted
+                self.convert_model_dialog = tk.Toplevel(self)
+                self.convert_model_dialog.title("Converting model")
+                #label
+                empty_label = tk.Label(self.convert_model_dialog, text="")
+                empty_label.pack()
+                label = tk.Label(self.convert_model_dialog, text="Converting CKPT to Diffusers. Please wait...")
+                label.pack()
+                self.convert_model_dialog.geometry("300x70")
+                self.convert_model_dialog.resizable(False, False)
+                self.convert_model_dialog.grab_set()
+                self.convert_model_dialog.focus_set()
+                self.master.update()
+                if res == 512:
+                    converters.Convert_SD_to_Diffusers(checkpoint_path=file_path, output_path=model_path,img_size=512)
+                elif res == 768:
+                    converters.Convert_SD_to_Diffusers(checkpoint_path=file_path, output_path=model_path,img_size=768)
+                else:
+                    converters.Convert_SD_to_Diffusers(checkpoint_path=file_path, output_path=model_path)
+                self.convert_model_dialog.destroy()
+
+                file_path = model_path
+        if file_path.endswith(".safetensors"):
+            #raise not implemented error
+            raise NotImplementedError("The selected file is a safetensors file. This file type is not supported yet.")
+            file_path = ''
+        self.input_model_path_entry.delete(0, tk.END)
+        self.input_model_path_entry.insert(0, file_path)
+    
     def open_file_dialog(self, entry):
         """Opens a file dialog and sets the entry to the selected file."""
         file_path = fd.askdirectory()
@@ -1629,7 +1508,7 @@ class App(tk.Frame):
         config["concepts"] = self.concepts
         config["sample_prompts"] = self.sample_prompts
         config['add_controlled_seed_to_sample'] = self.add_controlled_seed_to_sample
-        config["model_path"] = self.diffusers_model_path_entry.get()
+        config["model_path"] = self.input_model_path_entry.get()
         config["vae_path"] = self.vae_model_path_entry.get()
         config["output_path"] = self.output_path_entry.get()
         config["send_telegram_updates"] = self.send_telegram_updates_var.get()
@@ -1667,6 +1546,9 @@ class App(tk.Frame):
         config['dataset_repeats'] = self.dataset_repeats_entry.get()
         config['limit_text_encoder_training'] = self.limit_text_encoder_entry.get()
         config['use_text_files_as_captions'] = self.use_text_files_as_captions_var.get()
+        config['ckpt_version'] = self.ckpt_sd_version
+        config['convert_to_ckpt_after_training'] = self.convert_to_ckpt_after_training_var.get()
+        config['execute_post_conversion'] = self.convert_to_ckpt_after_training_var.get()
         #save the config file
         #if the file exists, delete it
         if os.path.exists(file_name):
@@ -1714,8 +1596,8 @@ class App(tk.Frame):
         for i in range(len(config['add_controlled_seed_to_sample'])):
             self.add_controlled_seed_sample(value=config['add_controlled_seed_to_sample'][i])
             
-        self.diffusers_model_path_entry.delete(0, tk.END)
-        self.diffusers_model_path_entry.insert(0, config["model_path"])
+        self.input_model_path_entry.delete(0, tk.END)
+        self.input_model_path_entry.insert(0, config["model_path"])
         self.vae_model_path_entry.delete(0, tk.END)
         self.vae_model_path_entry.insert(0, config["vae_path"])
         self.output_path_entry.delete(0, tk.END)
@@ -1775,11 +1657,16 @@ class App(tk.Frame):
         self.limit_text_encoder_entry.delete(0, tk.END)
         self.limit_text_encoder_entry.insert(0, config["limit_text_encoder_training"])
         self.use_text_files_as_captions_var.set(config["use_text_files_as_captions"])
+        self.convert_to_ckpt_after_training_var.set(config["convert_to_ckpt_after_training"])
+        if config["execute_post_conversion"]:
+            self.execute_post_conversion = True
+            
+
         #self.update_controlled_seed_sample()
         #self.update_sample_prompts()
         self.master.update()
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
-
+    
     def process_inputs(self):
         #collect and process all the inputs
         self.update_controlled_seed_sample()
@@ -1791,7 +1678,7 @@ class App(tk.Frame):
             self.sample_prompts.append(self.sample_prompts[i])
         for i in range(len(self.add_controlled_seed_to_sample)):
             self.add_controlled_seed_to_sample.append(self.add_controlled_seed_to_sample[i])
-        self.model_path = self.diffusers_model_path_entry.get()
+        self.model_path = self.input_model_path_entry.get()
         self.vae_path = self.vae_model_path_entry.get()
         self.output_path = self.output_path_entry.get()
         self.send_telegram_updates = self.send_telegram_updates_var.get()
@@ -1829,6 +1716,8 @@ class App(tk.Frame):
         self.dataset_repeats = self.dataset_repeats_entry.get()
         self.limit_text_encoder = self.limit_text_encoder_entry.get()
         self.use_text_files_as_captions = self.use_text_files_as_captions_var.get()
+        self.convert_to_ckpt_after_training = self.convert_to_ckpt_after_training_var.get()
+        
         #open stabletune_concept_list.json
         if os.path.exists('stabletune_last_run.json'):
             with open('stabletune_last_run.json') as f:

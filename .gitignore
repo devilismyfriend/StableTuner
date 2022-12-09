@@ -8,7 +8,6 @@ cudnn_windows/cudnn_ops_infer64_8.dll
 cudnn_windows/cudnn_ops_train64_8.dll
 cudnn_windows.rar
 cudnn_windows.zip
-scripts/converters.py
 stabletune_last_run.json
 StableTuner_concept_list.json
 stabletune_concept_list.json
@@ -2370,3 +2369,6 @@ test/output/painting of ship in the ocean surrounded best of reddit, with city i
 test/output/painting of yellow building on cliff best of reddit, best of reddit (2).png
 test/output/xcasweqs.png
 *.png
+v2-inference-v.yaml
+v1-inference.yaml
+*.ckpt
