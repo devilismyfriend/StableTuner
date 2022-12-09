@@ -781,6 +781,7 @@ class DataLoaderMultiAspect():
                         pass
             elif use_image_names_as_captions == False and use_text_files_as_captions == False:
                 identifier = concept 
+            #print("identifier: ",identifier)
             image = Image.open(pathname)
             width, height = image.size
             image_aspect = width / height
@@ -905,9 +906,7 @@ class DreamBoothDataset(Dataset):
         instance_path, instance_prompt = self.instance_images_path[index % self.num_instance_images]
         instance_image = Image.open(instance_path)
         if self.use_image_names_as_captions == True:
-            instance_prompt = str(instance_path).split("/")[-1].split(".")[0]
-            if '_' in instance_prompt:
-                instance_prompt = instance_prompt.split('_')[0]
+            instance_prompt = os.path.splitext(os.path.basename(instance_prompt))[0].split("_")[0]
         #else if there's a txt file with the same name as the image, read the caption from there
         if self.use_text_files_as_captions == True:
             #if there's a txt file with the same name as the image, read the caption from there
@@ -916,7 +915,8 @@ class DreamBoothDataset(Dataset):
             if os.path.exists(txt_path):
                 with open(txt_path, encoding='utf-8') as f:
                     instance_prompt = f.readline().rstrip()
-
+        
+        #print('identifier: ' + instance_prompt)
         instance_image = instance_image.convert("RGB")
         example["instance_images"] = self.image_transforms(instance_image)
         example["instance_prompt_ids"] = self.tokenizer(
