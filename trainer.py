@@ -1324,6 +1324,9 @@ def main():
         if not os.path.exists(latent_cache_dir):
             os.makedirs(latent_cache_dir)
         if not os.path.exists(os.path.join(latent_cache_dir, "latents_cache.pt")) or args.regenerate_latent_cache:
+            if os.path.exists(os.path.join(latent_cache_dir, "latents_cache.pt")):
+                #if it exists, delete it
+                os.remove(os.path.join(latent_cache_dir, "latents_cache.pt"))
             print("Generating latents cache...")
             latents_cache = []
             text_encoder_cache = []
