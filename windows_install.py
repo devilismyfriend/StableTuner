@@ -178,6 +178,6 @@ if os.name == "nt":
     diffusers_cmd = f"git+https://github.com/huggingface/diffusers.git@{d_commit}#egg=diffusers --force-reinstall"
     run(f'"{python}" -m pip install {diffusers_cmd}', f"Installing diffusers {d_commit} commit", "Couldn't install diffusers")
     #install requirements file
-    #req_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "requirements.txt")
-    #run(f'"{python}" -m pip install -r "{req_file}"', "Updating requirements", "Couldn't install requirements")
+    req_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "requirements.txt")
+    run(f'"{python}" -m pip install -r "{req_file}"', "Updating requirements", "Couldn't install requirements")
             
