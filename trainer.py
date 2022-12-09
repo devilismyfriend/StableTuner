@@ -1644,8 +1644,8 @@ def main():
                 
                 
 
-                if global_step > 0 and not global_step % args.save_interval:
-                    save_weights(global_step,'checkpoint')
+                #if global_step > 0 and not global_step % args.save_interval:
+                #    save_weights(global_step,'checkpoint')
 
                 progress_bar.update(1)
                 global_step += 1
