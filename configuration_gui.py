@@ -18,6 +18,7 @@ import shutil
 
 #class to make popup right click menu with select all, copy, paste, cut, and delete when right clicked on an entry box
 
+#class to make a title bar for the window instead of the default one with the minimize, maximize, and close buttons
 
 class CreateToolTip(object):
     """
@@ -27,6 +28,9 @@ class CreateToolTip(object):
         self.waittime = 500     #miliseconds
         self.wraplength = 180   #pixels
         self.widget = widget
+        #parent of the widget
+        #hack to get the master of the app
+        self.parent = widget.master.master.master.master.master
         self.text = text
         self.widget.bind("<Enter>", self.enter)
         self.widget.bind("<Leave>", self.leave)
@@ -58,9 +62,13 @@ class CreateToolTip(object):
         y += self.widget.winfo_rooty() + 20
         # creates a toplevel window
         self.tw = tk.Toplevel(self.widget)
+        self.tw.wm_attributes("-topmost", 1)
+        self.parent.wm_attributes("-topmost", 0)
         # Leaves only the label and removes the app window
         self.tw.wm_overrideredirect(True)
         self.tw.wm_geometry("+%d+%d" % (x, y))
+        #top most 
+        
         label = tk.Label(self.tw, text=self.text, justify='left',
                        background="#ffffff", relief='solid', borderwidth=1,
                        wraplength = self.wraplength)
@@ -71,11 +79,81 @@ class CreateToolTip(object):
         self.tw= None
         if tw:
             tw.destroy()
-
+class TitleBar(tk.Frame):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.parent = parent
+        self.title_bar = tk.Frame(self.parent, bg="#1e2124", relief="raised", bd=0)
+        #width and height of the title bar
+        self.title_bar.config(width=1000, height=30)
+        self.title_bar.pack(expand=False, fill="x")
+        self.close_button = tk.Button(self.title_bar, text="X", command=self.parent.destroy, bg="#1e2124", fg="#7289da", bd=0, activebackground="#1e2124", activeforeground="#7289da", highlightthickness=0)
+        self.close_button.pack(side="right")
+        self.minimize_button = tk.Button(self.title_bar, text="-", command=self.minimize_window, bg="#1e2124", fg="#7289da", bd=0, activebackground="#1e2124", activeforeground="#7289da", highlightthickness=0)
+        self.minimize_button.pack(side="right")
+        #add icon to the title bar
+        self.icon = tk.PhotoImage(file="resources/stableTuner_icon.png")
+        self.icon = self.icon.subsample(6, 6)
+        self.icon_label = tk.Label(self.title_bar, image=self.icon, bg="#1e2124")
+        self.icon_label.pack(side="left")
+        self.title_label = tk.Label(self.title_bar, text="StableTuner", bg="#1e2124", fg="#7289da", font=("Arial", 10, "bold"))
+        self.title_label.pack(side="left")
+        self.title_bar.bind("<B1-Motion>", self.move_window)
+        self.title_bar.bind("<Button-1>", self.click_window)
+        self.title_bar.bind("<Double-Button-1>", self.double_click)
+        self.parent.bind("<Map>", self.on_resume)
+        self.x = self.y = 0
+        self.log_size = 0
+        self.log_pos = 0
+    def minimize_window(self):
+        self.parent.overrideredirect(False)
+        #self.parent.state("iconic")
+        self.parent.iconify()
+    def move_window(self, event):
+        #get the current x and y coordinates of the mouse in relation to screen coordinates
+        x = self.parent.winfo_pointerx() - self.x
+        y = self.parent.winfo_pointery() - self.y
+        #move the window to the new coordinates
+        self.parent.geometry("+{}+{}".format(x, y))
+    def double_click(self, event):
+        if self.parent.state() == "normal":
+            #self.parent.overrideredirect(False)
+            #resize the window to the screen size
+            self.log_size = self.parent.winfo_width(), self.parent.winfo_height()
+            self.log_pos = self.parent.winfo_x(), self.parent.winfo_y()
+            self.parent.geometry("{0}x{1}+0+0".format(self.parent.winfo_screenwidth(), self.parent.winfo_screenheight()))
+            self.parent.state("zoomed")
+        else:
+            #self.parent.overrideredirect(True)
+            #resize the window to the original size
+            self.parent.geometry("{0}x{1}+0+0".format(self.log_size[0], self.log_size[1]))\
+            #move the window to the original position
+            self.parent.geometry("+{0}+{1}".format(self.log_pos[0], self.log_pos[1]))
+            self.parent.state("normal")
+    def click_window(self, event):
+        self.x = event.x
+        self.y = event.y
+    def on_resume(self, event):
+        if self.parent.state() == "normal":
+            self.parent.overrideredirect(True)
+            self.parent.state("normal")
+            self.parent.deiconify()
 class App(tk.Frame):
     
     def __init__(self, master=None):
         super().__init__(master)
+        #deiconify event
+        #self.master.bind("<Map>", self.on_resume)
+        #remove the default title bar
+        self.master.overrideredirect(True)
+        #force keep window on top
+        self.master.wm_attributes("-topmost", 1)
+        #create gui at center of screen
+        self.master.geometry("1000x600+{}+{}".format(int(self.master.winfo_screenwidth()/2-1000/2), int(self.master.winfo_screenheight()/2-600/2)))
+        #create a title bar
+        self.title_bar = TitleBar(self.master)
+        self.title_bar.pack(side="top", fill="x",)
+        #self.master.configure(bg="#1e2124")
         #define some colors
         self.stableTune_icon =PhotoImage(file = "resources/stableTuner_icon.png")
         self.master.iconphoto(False, self.stableTune_icon)
@@ -91,18 +169,24 @@ class App(tk.Frame):
         self.master.resizable(True, True)
         #master canvas
         self.canvas = tk.Canvas(self.master)
-        self.canvas.pack(side="left", fill="both", expand=True)
-        self.scrollbar = tk.Scrollbar(self.master, orient="vertical", command=self.canvas.yview)
+        self.canvas.configure(highlightthickness=0)
+        self.canvas.pack(side="top", fill="both", expand=True)
+        self.scrollbar = tk.Scrollbar(self.canvas, orient="vertical", command=self.canvas.yview)
+        #create dark mdoe style for vertical scrollbar
         self.scrollbar.pack(side="right", fill="y")
+        #bind mousewheel to scroll
+        self.canvas.bind_all("<MouseWheel>", lambda event: self.canvas.yview_scroll(int(-1*(event.delta/120)), "units"))
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
         self.canvas.bind('<Configure>', lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
         self.frame = tk.Frame(self.canvas)
-        self.frame.pack(side="left", fill="both", expand=True)
+        self.frame.configure(highlightthickness=0)
+        self.frame.pack(side="top", fill="both", expand=True)
         self.configure(bg=self.dark_mode_var)
         
         self.canvas.create_window((0,0), window=self.frame, anchor="nw")
         self.canvas.configure(bg=self.dark_mode_var)
         #create tabs
+        self.tabsSizes = {0 : [715,400], 1 : [715,550], 2 : [715,300],3 : [715,400],4 : [715,500],5 : [715,360],6 : [715,490]}
         self.notebook = ttk.Notebook(self.frame)
         self.notebook.grid(row=0, column=0, columnspan=2, sticky="nsew")
         
@@ -130,7 +214,7 @@ class App(tk.Frame):
         self.tools_tab.configure(bg=self.dark_mode_var)
         #make a bottom frame
         self.bottom_frame = tk.Frame(self.canvas, bg=self.dark_mode_var)
-        self.bottom_frame.pack(side="bottom", fill="x")
+        self.bottom_frame.pack(side="bottom", fill="x", expand=False)
         #configure grid
         self.bottom_frame.columnconfigure(0, weight=1)
         self.bottom_frame.columnconfigure(1, weight=1)
@@ -258,6 +342,12 @@ class App(tk.Frame):
             #self.load_config()
             pass
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+    def on_resume(self, event):
+        #if state is deiconified, then window is restored
+        
+        self.master.update()
+        self.master.overrideredirect(True)
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
     #create a right click menu for entry widgets
     def create_right_click_menu(self, event):
         #create a menu
@@ -278,9 +368,9 @@ class App(tk.Frame):
         tab_id = self.notebook.select()
         #get the tab index
         tab_index = self.notebook.index(tab_id)
-        tabsSizes = {0 : [715,340], 1 : [715,510], 2 : [715,230],3 : [715,400],4 : [715,500],5 : [715,360],6 : [715,490]}
+        
         #get the tab size
-        tab_size = tabsSizes[tab_index]
+        tab_size = self.tabsSizes[tab_index]
         #resize the window to fit the widgets
         self.master.geometry(f"{tab_size[0]}x{tab_size[1]}")
         #hide self.start_training_btn if we are on the playground or tools tab

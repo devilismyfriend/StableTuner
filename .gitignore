@@ -2374,3 +2374,9 @@ v1-inference.yaml
 *.ckpt
 v2-inference.yaml
 scripts/convert_diffusers20_original_sd.py
+src/azure.tcl
+src/example.py
+src/LICENSE
+src/README.md
+src/theme/dark.tcl
+src/theme/light.tcl
