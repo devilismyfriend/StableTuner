@@ -10,7 +10,7 @@ import json
 from tkinter import messagebox
 from PIL import Image, ImageTk
 import glob
-from scripts import converters
+import converters
 import shutil
 
 #from scripts import converters
@@ -1053,11 +1053,11 @@ class App(tk.Frame):
             return
                     
     def caption_buddy(self):
-        import scripts.captionBuddy
+        import captionBuddy
         cb_root = tk.Tk()
         cb_icon =PhotoImage(master=cb_root,file = "resources/stableTuner_icon.png")
         cb_root.iconphoto(False, cb_icon)
-        app2 = scripts.captionBuddy.ImageBrowser(cb_root)
+        app2 = captionBuddy.ImageBrowser(cb_root)
         cb_root.mainloop()
     def disable_with_prior_loss(self, *args):
         if self.use_aspect_ratio_bucketing_var.get() == 1:
@@ -1358,7 +1358,7 @@ class App(tk.Frame):
             #create a directory under the models folder with the name of the ckpt file
             model_name = os.path.basename(file_path).split(".")[0]
             #get the path of the script
-            script_path = os.path.dirname(os.path.realpath(__file__))
+            script_path = os.path.dirname(os.getcwd())
             #get the path of the models folder
             models_path = os.path.join(script_path, "models")
             #create the path of the new model folder
@@ -1805,9 +1805,9 @@ class App(tk.Frame):
 
         #create a bat file to run the training
         if self.mixed_precision == 'fp16' or self.mixed_precision == 'bf16':
-            batBase = f'accelerate "launch" "--mixed_precision={self.mixed_precision}" "trainer.py"'
+            batBase = f'accelerate "launch" "--mixed_precision={self.mixed_precision}" "scripts/trainer.py"'
         else:
-            batBase = 'accelerate "launch" "--mixed_precision=no" "trainer.py"'
+            batBase = 'accelerate "launch" "--mixed_precision=no" "scripts/trainer.py"'
         
         if self.use_text_files_as_captions == True:
             batBase += ' "--use_text_files_as_captions" '
@@ -1884,14 +1884,14 @@ class App(tk.Frame):
         self.save_config('stabletune_last_run.json')
         
         #save the bat file
-        with open("train.bat", "w", encoding="utf-8") as f:
+        with open("scripts/train.bat", "w", encoding="utf-8") as f:
             f.write(batBase)
         #close the window
         self.destroy()
         self.master.destroy()
         #run the bat file
         self.master.quit()
-        train = os.system("train.bat")
+        train = os.system(r".\scripts\train.bat")
         #if exit code is 0, then the training was successful
         if train == 0:
             root = tk.Tk()

@@ -11,7 +11,7 @@ if sys.version_info < (3, 8):
 else:
     import importlib.metadata as importlib_metadata
 
-req_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "requirements.txt")
+req_file = os.path.join(os.getcwd(), "requirements.txt")
 
 def run(command, desc=None, errdesc=None, custom_env=None):
     if desc is not None:
@@ -131,7 +131,7 @@ if not dreambooth_skip_install:
 
 
 
-base_dir = os.path.dirname(os.path.realpath(__file__))
+base_dir = os.path.dirname(os.getcwd())
 #repo = git.Repo(base_dir)
 #revision = repo.rev_parse("HEAD")
 #print(f"Dreambooth revision is {revision}")
@@ -139,9 +139,9 @@ check_versions()
 # Check for "different" B&B Files and copy only if necessary
 if os.name == "nt":
     python = sys.executable
-    bnb_src = os.path.join(os.path.dirname(os.path.realpath(__file__)), "bitsandbytes_windows")
+    bnb_src = os.path.join(os.getcwd(), "bitsandbytes_windows")
     bnb_dest = os.path.join(sysconfig.get_paths()["purelib"], "bitsandbytes")
-    cudnn_src = os.path.join(os.path.dirname(os.path.realpath(__file__)), "cudnn_windows")
+    cudnn_src = os.path.join(os.getcwd(), "cudnn_windows")
     cudnn_dest = os.path.join(sysconfig.get_paths()["purelib"], "torch", "lib")
     print(f"Checking for B&B files in {bnb_dest}")
     if not os.path.exists(bnb_dest):
@@ -178,6 +178,6 @@ if os.name == "nt":
     diffusers_cmd = f"git+https://github.com/huggingface/diffusers.git@{d_commit}#egg=diffusers --force-reinstall"
     run(f'"{python}" -m pip install {diffusers_cmd}', f"Installing diffusers {d_commit} commit", "Couldn't install diffusers")
     #install requirements file
-    req_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "requirements.txt")
+    req_file = os.path.join(os.getcwd(), "requirements.txt")
     run(f'"{python}" -m pip install -r "{req_file}"', "Updating requirements", "Couldn't install requirements")
             

@@ -74,5 +74,5 @@ call conda env create --name "%v_conda_env_name%" -f environment.yaml
 call "%v_conda_path%\Scripts\activate.bat" "%v_conda_env_name%"
 
 :PROMPT
-python windows_install.py
+python scripts/windows_install.py
 pause

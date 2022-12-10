@@ -41,7 +41,7 @@ from diffusers.pipelines.latent_diffusion.pipeline_latent_diffusion import LDMBe
 #from diffusers.pipelines.paint_by_example import PaintByExampleImageEncoder, PaintByExamplePipeline
 from diffusers.pipelines.stable_diffusion import StableDiffusionSafetyChecker
 from transformers import AutoFeatureExtractor, BertTokenizerFast, CLIPTextModel, CLIPTokenizer, CLIPVisionConfig, CLIPTextConfig
-from . import model_util
+import model_util
 
 class Convert_SD_to_Diffusers():
 

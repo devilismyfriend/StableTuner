@@ -70,6 +70,6 @@ call "%v_conda_path%\Scripts\activate.bat" "%v_conda_env_name%"
 ::python windows_install.py
 :START_GUI
 ::set HasChanges=0
-python configuration_gui.py
+python scripts/configuration_gui.py
 
 ::cmd /k
