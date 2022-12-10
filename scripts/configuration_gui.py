@@ -309,6 +309,7 @@ class App(tk.Frame):
         self.ckpt_sd_version = None
         self.convert_to_ckpt_after_training = False
         self.execute_post_conversion = False
+        self.preview_images = []
         self.create_widgets()
  
         width = self.notebook.winfo_reqwidth()
@@ -1254,7 +1255,13 @@ class App(tk.Frame):
         converters.Convert_Diffusers_to_SD(model_path, output_path)
         self.convert_model_dialog.destroy()
         #messagebox.showinfo("Conversion Complete", "Conversion Complete")
-
+    
+    #function to act as a callback when the user adds a new concept data path to generate a new preview image
+    def update_preview_image(self, event):
+        #get the entry that was changed
+        entry = event.widget
+        #get the index of the entry
+        index = self.concept_data_path_entries.index(entry)
 
     def add_concept(self, inst_prompt_val=None, class_prompt_val=None, inst_data_path_val=None, class_data_path_val=None, do_not_balance_val=False):
         #create a title for the new concept
@@ -1317,22 +1324,68 @@ class App(tk.Frame):
         #create a preview of the images in the path on the right side of the concept
         #create a frame to hold the images
         #empty column to separate the images from the rest of the concept
-        #sep = tk.Label(self.concepts_tab,padx=3, text="",fg=self.dark_mode_text_var, bg=self.dark_mode_var).grid(row=4 + (len(self.concept_labels)*6), column=3, sticky="nsew")
+        '''
+        sep = tk.Label(self.concepts_tab,padx=3, text="",fg=self.dark_mode_text_var, bg=self.dark_mode_var).grid(row=4 + (len(self.concept_labels)*6), column=3, sticky="nsew")
 
-        #image_preview_frame = tk.Frame(self.concepts_tab, bg=self.dark_mode_var)
-        #image_preview_frame.grid(row=4 + (len(self.concept_labels)*6), column=4, rowspan=4, sticky="ne")
+        image_preview_frame = tk.Frame(self.concepts_tab, bg=self.dark_mode_var)
+        image_preview_frame.grid(row=4 + (len(self.concept_labels)*6), column=4, rowspan=4, sticky="ne")
         #create a label for the images
-        #image_preview_label = tk.Label(image_preview_frame, text="Image Preview",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
-        #image_preview_label.grid(row=0, column=0, sticky="nsew")
+        image_preview_label = tk.Label(image_preview_frame, text="Image Preview",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        image_preview_label.grid(row=0, column=0, sticky="nsew")
         #create a canvas to hold the images
-        #image_preview_canvas = tk.Canvas(image_preview_frame, bg=self.dark_mode_var)
+        image_preview_canvas = tk.Canvas(image_preview_frame, bg=self.dark_mode_var)
         #canvas size is 100x100
-        #image_preview_canvas.config(width=150, height=150)
-        #image_preview_canvas.grid(row=1, column=0, sticky="nsew")
+        image_preview_canvas.config(width=150, height=150)
+        image_preview_canvas.grid(row=0, column=0, sticky="nsew")
         #debug test, image preview just white
-        #self.image_preview = ImageTk.PhotoImage(Image.new("RGB", (150, 150), "white"))
-        #image_preview_canvas.create_image(0, 0, anchor="nw", image=self.image_preview)
+        #if there's a path in the entry, show the images in the path
+        image_preview = ImageTk.PhotoImage(Image.new("RGB", (150, 150), "white"), master=image_preview_frame)
+        if inst_data_path_val != None:
+            del image_preview
+            #get 4 images from the path
+            #create a host image 
+            image = Image.new("RGB", (150, 150), "white")
+            files = os.listdir(inst_data_path_val)
+            for i in range(4):
+                #get an image from the path
+                import random
+                
+                #filter files for images
+                files = [f for f in files if f.endswith(".jpg") or f.endswith(".png") or f.endswith(".jpeg")]
+                rand = random.choice(files)
+                image_path = os.path.join(inst_data_path_val,rand)
+                #remove image_path from files
+                if len(files) > 4:
+                    files.remove(rand)
+                #files.pop(image_path)
+                #open the image
+                print(image_path)
+                image_to_add = Image.open(image_path)
+                #resize the image to 38x38
+                #resize to 150x150 closest to the original aspect ratio
+                image_to_add.thumbnail((150, 150), Image.ANTIALIAS)
+                #decide where to put the image
+                if i == 0:
+                    #top left
+                    image.paste(image_to_add, (0, 0))
+                elif i == 1:
+                    #top right
+                    image.paste(image_to_add, (76, 0))
+                elif i == 2:
+                    #bottom left
+                    image.paste(image_to_add, (0, 76))
+                elif i == 3:
+                    #bottom right
+                    image.paste(image_to_add, (76, 76))
+            #convert the image to a photoimage
+            #image.show()
+            image_preview = ImageTk.PhotoImage(image, master=image_preview_frame)
+            #add the image to the canvas
 
+        self.preview_images.append(image_preview)
+        image_preview_canvas.create_image(0, 0, anchor="nw", image=image_preview)
+        image_preview_frame.update()
+        '''
         if do_not_balance_val != False:
             do_not_balance_dataset_var.set(1)
         #combine all the entries into a list
@@ -1342,7 +1395,7 @@ class App(tk.Frame):
         #add the list to the list of concept entries
         self.concept_entries.append(concept_entries)
         #add the title to the list of concept titles
-        self.concept_labels.append([concept_title, ins_prompt_label, class_prompt_label, ins_data_path_label, class_data_path_label,do_not_balance_dataset_label])
+        self.concept_labels.append([concept_title, ins_prompt_label, class_prompt_label, ins_data_path_label, class_data_path_label,do_not_balance_dataset_label,image_preview_frame])
         self.concepts.append({"instance_prompt": ins_prompt_entry, "class_prompt": class_prompt_entry, "instance_data_dir": ins_data_path_entry, "class_data_dir": class_data_path_entry,'do_not_balance': do_not_balance_dataset_var})
         self.concept_file_dialog_buttons.append([ins_data_path_file_dialog_button, class_data_path_file_dialog_button])
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
@@ -1364,8 +1417,6 @@ class App(tk.Frame):
             del checkpoint
             return version, prediction
     def choose_model(self):
-        
-            
         """Opens a file dialog and to choose either a model or a model folder."""
         #open file dialog and show only ckpt and json files and folders
         file_path = fd.askopenfilename(filetypes=[("Model", "*.ckpt"), ("Model", "*.json"), ("Model", "*.safetensors")])
@@ -1385,17 +1436,13 @@ class App(tk.Frame):
                     return
                 file_path = model_dir
             #if the file is not a model index file
-        else:
-            #show error message
-            messagebox.showerror("Error", "The selected file is not model_index.json.")
-            return
         if file_path.endswith(".ckpt"):
             sd_file = file_path
             version, prediction = self.get_sd_version(sd_file)
             #create a directory under the models folder with the name of the ckpt file
             model_name = os.path.basename(file_path).split(".")[0]
             #get the path of the script
-            script_path = os.path.dirname(os.getcwd())
+            script_path = os.getcwd()
             #get the path of the models folder
             models_path = os.path.join(script_path, "models")
             #create the path of the new model folder
