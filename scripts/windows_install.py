@@ -104,7 +104,7 @@ if not dreambooth_skip_install:
                 accelerate_dir = hf_dir / "accelerate"
                 if accelerate_dir.exists():
                     #print('test')
-                    src_file = 'accelerate_windows/accelerate_default_config.yaml'
+                    src_file = 'resources/accelerate_windows/accelerate_default_config.yaml'
                     dst_file = 'default_config.yaml'
                     #load from cwd
                     src = Path.cwd() / src_file
@@ -139,9 +139,15 @@ check_versions()
 # Check for "different" B&B Files and copy only if necessary
 if os.name == "nt":
     python = sys.executable
-    bnb_src = os.path.join(os.getcwd(), "bitsandbytes_windows")
+    bnb_src = os.path.join(os.getcwd(), "resources/bitsandbytes_windows")
     bnb_dest = os.path.join(sysconfig.get_paths()["purelib"], "bitsandbytes")
-    cudnn_src = os.path.join(os.getcwd(), "cudnn_windows")
+    cudnn_src = os.path.join(os.getcwd(), "resources/cudnn_windows")
+    #check if chudnn is in cwd
+    if not os.path.exists(cudnn_src):
+        print("Can't find cudnn in resources, trying main folder...")
+        cudnn_src = os.path.join(os.getcwd(), "cudnn_windows")
+        if not os.path.exists(cudnn_src):
+            print('Can\'t find CUDNN, please refer to the README for instructions on how to install it.')
     cudnn_dest = os.path.join(sysconfig.get_paths()["purelib"], "torch", "lib")
     print(f"Checking for B&B files in {bnb_dest}")
     if not os.path.exists(bnb_dest):
@@ -160,8 +166,9 @@ if os.name == "nt":
             if not os.path.exists(dest):
                 os.mkdir(dest)
         dest_file = os.path.join(dest, file)
-        shutil.copy2(src_file, dest)
-    print("Copied B&B files to destination")
+        status = shutil.copy2(src_file, dest)
+    if status:
+        print("Copied B&B files to destination")
     print(f"Checking for CUDNN files in {cudnn_dest}")
     if os.path.exists(cudnn_src):
         if os.path.exists(cudnn_dest):
@@ -172,8 +179,9 @@ if os.name == "nt":
                 dest_file = os.path.join(cudnn_dest, file)
                 #if dest file exists, check if it's different
                 if os.path.exists(dest_file):
-                    shutil.copy2(src_file, cudnn_dest)
-            print("Copied CUDNN 8.6 files to destination")
+                    status = shutil.copy2(src_file, cudnn_dest)
+            if status:
+                print("Copied CUDNN 8.6 files to destination")
     d_commit = 'ff65c2d'
     diffusers_cmd = f"git+https://github.com/huggingface/diffusers.git@{d_commit}#egg=diffusers --force-reinstall"
     run(f'"{python}" -m pip install {diffusers_cmd}', f"Installing diffusers {d_commit} commit", "Couldn't install diffusers")
