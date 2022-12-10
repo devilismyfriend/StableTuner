@@ -47,7 +47,6 @@ from tqdm.auto import tqdm
 from transformers import CLIPTextModel, CLIPTokenizer
 from scipy.interpolate import interp1d
 from typing import Dict, List, Generator, Tuple
-torch.backends.cudnn.benchmark = True
 import glob
 from PIL import Image, ImageOps
 import re
@@ -58,6 +57,7 @@ from PIL.Image import Resampling
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Simple example of a training script.")
+    parser.add_argument('--disable_cudnn_benchmark', default=False, action="store_true")
     parser.add_argument('--use_text_files_as_captions', default=False, action="store_true")
     parser.add_argument(
             "--stop_text_encoder_training",
@@ -1048,7 +1048,10 @@ def send_media_group(chat_id,telegram_token, images, caption=None, reply_to_mess
         media[0]['parse_mode'] = 'HTML'
         return requests.post(SEND_MEDIA_GROUP, data={'chat_id': chat_id, 'media': json.dumps(media),'disable_notification':True, 'reply_to_message_id': reply_to_message_id }, files=files)
 def main():
+    
     args = parse_args()
+    if args.disable_cudnn_benchmark:
+        torch.backends.cudnn.benchmark = False
     if args.send_telegram_updates:
         send_telegram_message(f"Booting up Dreambooth!\n", args.telegram_chat_id, args.telegram_token)
     logging_dir = Path(args.output_dir, "0", args.logging_dir)
@@ -1684,5 +1687,4 @@ def main():
 
 
 if __name__ == "__main__":
-    torch.backends.cudnn.benchmark = False
     main()

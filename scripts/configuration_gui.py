@@ -186,7 +186,7 @@ class App(tk.Frame):
         self.canvas.create_window((0,0), window=self.frame, anchor="nw")
         self.canvas.configure(bg=self.dark_mode_var)
         #create tabs
-        self.tabsSizes = {0 : [680,400], 1 : [680,550], 2 : [680,300],3 : [680,400],4 : [680,500],5 : [680,400],6 : [680,490]}
+        self.tabsSizes = {0 : [680,400], 1 : [680,560], 2 : [680,300],3 : [680,400],4 : [680,500],5 : [680,400],6 : [680,490]}
         self.notebook = ttk.Notebook(self.frame)
         self.notebook.grid(row=0, column=0, columnspan=2, sticky="nsew")
         
@@ -310,6 +310,7 @@ class App(tk.Frame):
         self.convert_to_ckpt_after_training = False
         self.execute_post_conversion = False
         self.preview_images = []
+        self.disable_cudnn_benchmark = True
         self.create_widgets()
  
         width = self.notebook.winfo_reqwidth()
@@ -675,22 +676,35 @@ class App(tk.Frame):
         #create entry
         self.limit_text_encoder_entry = tk.Entry(self.training_tab, textvariable=self.limit_text_encoder_var,fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         self.limit_text_encoder_entry.grid(row=16, column=1, sticky="nsew")
+        
+        #create checkbox disable cudnn benchmark
+        self.disable_cudnn_benchmark_var = tk.IntVar()
+        self.disable_cudnn_benchmark_var.set(self.disable_cudnn_benchmark)
+        #create label for checkbox
+        self.disable_cudnn_benchmark_label = tk.Label(self.training_tab, text="EXPERIMENTAL: Disable cuDNN Benchmark",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        disable_cudnn_benchmark_label_ttp = CreateToolTip(self.disable_cudnn_benchmark_label, "Disable cuDNN benchmarking, may offer 2x performance on some systems and stop OOM errors.")
+        self.disable_cudnn_benchmark_label.grid(row=17, column=0, sticky="nsew")
+        #create checkbox
+        self.disable_cudnn_benchmark_checkbox = tk.Checkbutton(self.training_tab, variable=self.disable_cudnn_benchmark_var,fg=self.dark_mode_text_var, bg=self.dark_mode_var, activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var, selectcolor=self.dark_mode_var)
+        self.disable_cudnn_benchmark_checkbox.grid(row=17, column=1, sticky="nsew")
+
+        #create label
         #create with prior loss preservation checkbox
         self.with_prior_loss_preservation_var = tk.IntVar()
         self.with_prior_loss_preservation_var.set(self.with_prior_reservation)
         #create label
         self.with_prior_loss_preservation_label = tk.Label(self.training_tab, text="With Prior Loss Preservation",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         with_prior_loss_preservation_label_ttp = CreateToolTip(self.with_prior_loss_preservation_label, "Use the prior loss preservation method. part of Dreambooth.")
-        self.with_prior_loss_preservation_label.grid(row=17, column=0, sticky="nsew")
+        self.with_prior_loss_preservation_label.grid(row=18, column=0, sticky="nsew")
         #create checkbox
         self.with_prior_loss_preservation_checkbox = tk.Checkbutton(self.training_tab, variable=self.with_prior_loss_preservation_var,fg=self.dark_mode_text_var, bg=self.dark_mode_var, activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var, selectcolor=self.dark_mode_var)
-        self.with_prior_loss_preservation_checkbox.grid(row=17, column=1, sticky="nsew")
+        self.with_prior_loss_preservation_checkbox.grid(row=18, column=1, sticky="nsew")
         #create prior loss preservation weight entry
         self.prior_loss_preservation_weight_label = tk.Label(self.training_tab, text="Weight",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         prior_loss_preservation_weight_label_ttp = CreateToolTip(self.prior_loss_preservation_weight_label, "The weight of the prior loss preservation loss.")
-        self.prior_loss_preservation_weight_label.grid(row=17, column=1, sticky="e")
+        self.prior_loss_preservation_weight_label.grid(row=18, column=1, sticky="e")
         self.prior_loss_preservation_weight_entry = tk.Entry(self.training_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
-        self.prior_loss_preservation_weight_entry.grid(row=17, column=3, sticky="w")
+        self.prior_loss_preservation_weight_entry.grid(row=18, column=3, sticky="w")
         self.prior_loss_preservation_weight_entry.insert(0, self.prior_loss_weight)
         #create Dataset Settings label like the model settings label
         self.dataset_settings_label = tk.Label(self.dataset_tab, text="Dataset Settings", font=("Arial", 12, "bold"),fg=self.dark_mode_title_var, bg=self.dark_mode_var)
@@ -1699,6 +1713,7 @@ class App(tk.Frame):
         config['ckpt_version'] = self.ckpt_sd_version
         config['convert_to_ckpt_after_training'] = self.convert_to_ckpt_after_training_var.get()
         config['execute_post_conversion'] = self.convert_to_ckpt_after_training_var.get()
+        config['disable_cudnn_benchmark'] = self.disable_cudnn_benchmark_var.get()
         #save the config file
         #if the file exists, delete it
         if os.path.exists(file_name):
@@ -1810,6 +1825,7 @@ class App(tk.Frame):
         self.convert_to_ckpt_after_training_var.set(config["convert_to_ckpt_after_training"])
         if config["execute_post_conversion"]:
             self.execute_post_conversion = True
+        self.disable_cudnn_benchmark_var.set(config["disable_cudnn_benchmark"])
             
 
         #self.update_controlled_seed_sample()
@@ -1867,6 +1883,7 @@ class App(tk.Frame):
         self.limit_text_encoder = self.limit_text_encoder_entry.get()
         self.use_text_files_as_captions = self.use_text_files_as_captions_var.get()
         self.convert_to_ckpt_after_training = self.convert_to_ckpt_after_training_var.get()
+        self.disable_cudnn_benchmark = self.disable_cudnn_benchmark_var.get()
         
         #open stabletune_concept_list.json
         if os.path.exists('stabletune_last_run.json'):
@@ -1892,10 +1909,10 @@ class App(tk.Frame):
             batBase = f'accelerate "launch" "--mixed_precision={self.mixed_precision}" "scripts/trainer.py"'
         else:
             batBase = 'accelerate "launch" "--mixed_precision=no" "scripts/trainer.py"'
-        
+        if self.disable_cudnn_benchmark == True:
+            batBase += ' "--disable_cudnn_benchmark" '
         if self.use_text_files_as_captions == True:
             batBase += ' "--use_text_files_as_captions" '
-
         if '%' in self.limit_text_encoder or self.limit_text_encoder != '0' and len(self.limit_text_encoder) > 0:
             #calculate the epoch number from the percentage and set the limit_text_encoder to the epoch number
             self.limit_text_encoder = int(self.limit_text_encoder.replace('%','')) * int(self.train_epocs) / 100
