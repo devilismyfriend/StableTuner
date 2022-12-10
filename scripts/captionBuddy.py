@@ -153,12 +153,15 @@ class ImageBrowser(tk.Frame):
         self.caption_file_name = ''
         self.caption_file_ext = ''
         self.caption_file_name_no_ext = ''
+        self.output_format='text'
+
         self.use_blip = True
         self.debug = False
         self.create_widgets()
         self.load_blip_model()
-        self.open_folder()
         self.load_options()
+        self.open_folder()
+        
         self.canvas.focus_force()
         self.canvas.bind("<Right>", self.next_image)
         self.canvas.bind("<Left>", self.prev_image)
@@ -394,6 +397,7 @@ class ImageBrowser(tk.Frame):
         self.folder = fd.askdirectory()
         if self.folder == '':
             return
+        self.output_folder = self.folder
         self.image_list = [os.path.join(self.folder, f) for f in os.listdir(self.folder) if f.endswith('.jpg') or f.endswith('.png') or f.endswith('.jpeg')]
         self.image_list.sort()
         self.image_count = len(self.image_list)
@@ -475,7 +479,7 @@ class ImageBrowser(tk.Frame):
                 self.prefix = self.prefix[:-1]
             if not self.prefix.endswith(','):
                 self.prefix = self.prefix+','
-        self.caption = self.prefix + ' ' + self.caption
+            self.caption = self.prefix + ' ' + self.caption
         if self.caption.endswith(',') or self.caption.endswith('.'):
             self.caption = self.caption[:-1]
             self.caption = self.caption +', ' + self.suffix_var
@@ -600,7 +604,7 @@ class ImageBrowser(tk.Frame):
         if os.path.isfile(self.options_file):
             with open(self.options_file, 'r') as f:
                 self.options = json.load(f)
-                self.output_folder = self.folder
+                #self.output_folder = self.folder
                 #self.output_folder = self.options['output_folder']
                 self.output_format = self.options['output_format']
                 self.nucleus_sampling = self.options['nucleus_sampling']
