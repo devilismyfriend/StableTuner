@@ -1897,7 +1897,9 @@ class App(tk.Frame):
         self.convert_to_ckpt_after_training = self.convert_to_ckpt_after_training_var.get()
         self.disable_cudnn_benchmark = self.disable_cudnn_benchmark_var.get()
         self.sample_step_interval = self.sample_step_interval_entry.get()
-        
+        if int(self.train_epocs) == 0 or self.train_epocs == '':
+            messagebox.showerror("Error", "Number of training epochs must be greater than 0")
+            return
         #open stabletune_concept_list.json
         if os.path.exists('stabletune_last_run.json'):
             with open('stabletune_last_run.json') as f:
