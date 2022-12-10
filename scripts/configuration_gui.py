@@ -186,7 +186,7 @@ class App(tk.Frame):
         self.canvas.create_window((0,0), window=self.frame, anchor="nw")
         self.canvas.configure(bg=self.dark_mode_var)
         #create tabs
-        self.tabsSizes = {0 : [715,400], 1 : [715,550], 2 : [715,300],3 : [715,400],4 : [715,500],5 : [715,360],6 : [715,490]}
+        self.tabsSizes = {0 : [715,400], 1 : [715,550], 2 : [715,300],3 : [715,400],4 : [715,500],5 : [715,400],6 : [715,490]}
         self.notebook = ttk.Notebook(self.frame)
         self.notebook.grid(row=0, column=0, columnspan=2, sticky="nsew")
         
@@ -198,6 +198,7 @@ class App(tk.Frame):
         self.concepts_tab = tk.Frame(self.notebook)
         self.play_tab = tk.Frame(self.notebook)
         self.tools_tab = tk.Frame(self.notebook)
+        
         self.notebook.add(self.general_tab, text="General Settings",sticky="n")
         self.notebook.add(self.training_tab, text="Training Settings",sticky="n")
         self.notebook.add(self.dataset_tab, text="Dataset Settings",sticky="n")
@@ -205,6 +206,15 @@ class App(tk.Frame):
         self.notebook.add(self.concepts_tab, text="Concept Settings",sticky="n")
         self.notebook.add(self.play_tab, text="Model Playground",sticky="n")
         self.notebook.add(self.tools_tab, text="Toolbox",sticky="n")
+        #pad the frames to make them look better
+        self.general_tab.configure(padx=10, pady=10)
+        self.training_tab.configure(padx=10, pady=10)
+        self.dataset_tab.configure(padx=10, pady=10)
+        self.sample_tab.configure(padx=10, pady=10)
+        self.concepts_tab.configure(padx=10, pady=10)
+        self.play_tab.configure(padx=10, pady=10)
+        self.tools_tab.configure(padx=10, pady=10)
+
         self.general_tab.configure(bg=self.dark_mode_var)
         self.training_tab.configure(bg=self.dark_mode_var)
         self.dataset_tab.configure(bg=self.dark_mode_var)
@@ -227,7 +237,7 @@ class App(tk.Frame):
         self.notebook_style.theme_use("clam")
         #dark mode
         self.notebook_style.configure("TNotebook", background=self.dark_mode_var, borderwidth=0, highlightthickness=0, lightcolor=self.dark_mode_var, darkcolor=self.dark_mode_var, bordercolor=self.dark_mode_var, tabmargins=[0,0,0,0], padding=[0,0,0,0], relief="flat")
-        self.notebook_style.configure("TNotebook.Tab", background=self.dark_mode_var, borderwidth=0, highlightthickness=0, lightcolor=self.dark_mode_var, foreground=self.dark_mode_text_var, bordercolor=self.dark_mode_var,highlightcolor=self.dark_mode_var)
+        self.notebook_style.configure("TNotebook.Tab", background=self.dark_mode_var, borderwidth=0, highlightthickness=0, lightcolor=self.dark_mode_var, foreground=self.dark_mode_text_var, bordercolor=self.dark_mode_var,highlightcolor=self.dark_mode_var, relief="flat")
         self.notebook_style.map("TNotebook.Tab", background=[("selected", self.dark_mode_var)], foreground=[("selected", self.dark_mode_title_var), ("active", self.dark_mode_title_var)])
         
         #on tab change resize window
@@ -424,15 +434,15 @@ class App(tk.Frame):
         #create a model settings label in bold
         #add button to load config
         #add button to save config
-        
+        self.model_settings_label = tk.Label(self.general_tab, text="StableTune Settings",  font=("Arial", 12, "bold"), fg=self.dark_mode_title_var, bg=self.dark_mode_var)
+        self.model_settings_label.grid(row=0, column=0, sticky="nsew")
         self.load_config_button = tk.Button(self.general_tab, text="Load Config", command=self.load_config,fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         self.load_config_button.configure(border=4, relief='flat')
         self.load_config_button.grid(row=0, column=1, sticky="nw")
         self.save_config_button = tk.Button(self.general_tab, text="Save Config", command=self.save_config,fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         self.save_config_button.configure(border=4, relief='flat')
         self.save_config_button.grid(row=0, column=1, sticky="ne")
-        self.model_settings_label = tk.Label(self.general_tab, text="StableTune Settings",  font=("Arial", 12, "bold"), fg=self.dark_mode_title_var, bg=self.dark_mode_var)
-        self.model_settings_label.grid(row=0, column=0, sticky="nsew")
+
         #add tip label
         self.tip_label = tk.Label(self.general_tab, text="Tip: Hover over settings for information ;)",  font=("Arial", 10), fg=self.dark_mode_title_var, bg=self.dark_mode_var)
         self.tip_label.grid(row=1, column=0,columnspan=3, sticky="nsew",pady=(0,10))
@@ -1054,11 +1064,19 @@ class App(tk.Frame):
                     
     def caption_buddy(self):
         import captionBuddy
+        self.master.overrideredirect(False)
+        self.master.iconify()
         cb_root = tk.Tk()
         cb_icon =PhotoImage(master=cb_root,file = "resources/stableTuner_icon.png")
         cb_root.iconphoto(False, cb_icon)
-        app2 = captionBuddy.ImageBrowser(cb_root)
-        cb_root.mainloop()
+        app2 = captionBuddy.ImageBrowser(cb_root,self.master)
+
+        app = cb_root.mainloop()
+        #check if app2 is running
+        
+        
+        self.master.overrideredirect(True)
+        self.master.deiconify()
     def disable_with_prior_loss(self, *args):
         if self.use_aspect_ratio_bucketing_var.get() == 1:
             self.with_prior_loss_preservation_var.set(0)
@@ -1171,7 +1189,7 @@ class App(tk.Frame):
             #if sample width is lower than current width, use current width
             if sample_width < self.master.winfo_width():
                 sample_width = self.master.winfo_width()
-            self.master.geometry(f"{sample_width}x{sample_height+330}")
+            self.master.geometry(f"{sample_width}x{sample_height+self.tabsSizes[5][1]}")
             #refresh the window
             if self.play_save_image_button == None:
                 self.play_save_image_button = tk.Button(self.play_tab, text="Save Image", command=self.play_save_image,fg=self.dark_mode_text_var, bg=self.dark_mode_var,activebackground=self.dark_mode_title_var)

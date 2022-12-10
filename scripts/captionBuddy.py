@@ -17,9 +17,69 @@ import requests
 import random
 #main class
 
+class TitleBar(tk.Frame):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.parent = parent
 
+        self.title_bar = tk.Frame(self.parent, bg="#1e2124", relief="raised", bd=0)
+        #width and height of the title bar
+        self.title_bar.config(width=1000, height=30)
+        self.title_bar.pack(expand=False, fill="x")
+        self.close_button = tk.Button(self.title_bar, text="X", command=self.parent.destroy, bg="#1e2124", fg="#7289da", bd=0, activebackground="#1e2124", activeforeground="#7289da", highlightthickness=0)
+        self.close_button.pack(side="right")
+        self.minimize_button = tk.Button(self.title_bar, text="-", command=self.minimize_window, bg="#1e2124", fg="#7289da", bd=0, activebackground="#1e2124", activeforeground="#7289da", highlightthickness=0)
+        self.minimize_button.pack(side="right")
+        #add icon to the title bar
+        #self.icon = tk.PhotoImage(self.title_bar,file="resources/stableTuner_icon.png")
+        #self.icon = self.icon.subsample(6, 6)
+        #self.icon_label = tk.Label(self.title_bar, image=self.icon, bg="#1e2124")
+        #self.icon_label.pack(side="left")
+        self.title_label = tk.Label(self.title_bar, text="StableTuner", bg="#1e2124", fg="#7289da", font=("Arial", 10, "bold"))
+        self.title_label.pack(side="left")
+        self.title_bar.bind("<B1-Motion>", self.move_window)
+        self.title_bar.bind("<Button-1>", self.click_window)
+        self.title_bar.bind("<Double-Button-1>", self.double_click)
+        self.parent.bind("<Map>", self.on_resume)
+        self.x = self.y = 0
+        self.log_size = 0
+        self.log_pos = 0
+        
+    def minimize_window(self):
+        self.parent.overrideredirect(False)
+        #self.parent.state("iconic")
+        self.parent.iconify()
+    def move_window(self, event):
+        #get the current x and y coordinates of the mouse in relation to screen coordinates
+        x = self.parent.winfo_pointerx() - self.x
+        y = self.parent.winfo_pointery() - self.y
+        #move the window to the new coordinates
+        self.parent.geometry("+{}+{}".format(x, y))
+    def double_click(self, event):
+        if self.parent.state() == "normal":
+            #self.parent.overrideredirect(False)
+            #resize the window to the screen size
+            self.log_size = self.parent.winfo_width(), self.parent.winfo_height()
+            self.log_pos = self.parent.winfo_x(), self.parent.winfo_y()
+            self.parent.geometry("{0}x{1}+0+0".format(self.parent.winfo_screenwidth(), self.parent.winfo_screenheight()))
+            self.parent.state("zoomed")
+        else:
+            #self.parent.overrideredirect(True)
+            #resize the window to the original size
+            self.parent.geometry("{0}x{1}+0+0".format(self.log_size[0], self.log_size[1]))\
+            #move the window to the original position
+            self.parent.geometry("+{0}+{1}".format(self.log_pos[0], self.log_pos[1]))
+            self.parent.state("normal")
+    def click_window(self, event):
+        self.x = event.x
+        self.y = event.y
+    def on_resume(self, event):
+        if self.parent.state() == "normal":
+            self.parent.overrideredirect(True)
+            self.parent.state("normal")
+            self.parent.deiconify()
 class ImageBrowser(tk.Frame):
-    def __init__(self, master=None):
+    def __init__(self, master=None,mainProcess=None):
         super().__init__(master)
         if not os.path.exists("scripts/BLIP"):
             print("Getting BLIP from GitHub.")
@@ -31,9 +91,12 @@ class ImageBrowser(tk.Frame):
         sys.path.append(blip_path)
         #clip_path = "scripts/CLIP"
         #sys.path.append(clip_path)
-
+        self.mainProcess = mainProcess
         self.captioner_folder = os.path.dirname(os.path.realpath(__file__))
         self.master = master
+        self.master.overrideredirect(True)
+        self.title_bar = TitleBar(self.master)
+        self.title_bar.pack(side="top", fill="x")
         #make not user resizable
         self.master.title("Caption Buddy")
         self.master.resizable(False, False)
@@ -171,14 +234,21 @@ class ImageBrowser(tk.Frame):
         self.with_entry.grid(row=0, column=3,  sticky="nswe")
         self.with_entry.bind("<Return>", self.save_caption)
         #add another entry with label, add suffix
-        #create suffix string var
-        self.suffix_entry = tk.Entry(self.bottom_frame, fg=self.dark_mode_text_var, bg=self.dark_mode_var, relief='flat', highlightthickness=2, highlightbackground=self.dark_mode_button_var,insertbackground=self.dark_mode_text_var)
-        self.suffix_entry.grid(row=0, column=5, sticky="nsew")
-        self.suffix_label = tk.Label(self.bottom_frame, text="Add Token/Artist:", fg=self.dark_mode_text_var, bg=self.dark_mode_var)
-        self.suffix_label.grid(row=0, column=4, sticky="w")
+        
+        #create prefix string var
+        self.prefix_label = tk.Label(self.bottom_frame, text="Add to start:", fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        self.prefix_label.grid(row=0, column=4, sticky="w")
+        self.prefix_entry = tk.Entry(self.bottom_frame, fg=self.dark_mode_text_var, bg=self.dark_mode_var, relief='flat', highlightthickness=2, highlightbackground=self.dark_mode_button_var,insertbackground=self.dark_mode_text_var)
+        self.prefix_entry.grid(row=0, column=5, sticky="nsew")
+        self.prefix_entry.bind("<Return>", self.save_caption)
 
+        #create suffix string var
+        self.suffix_label = tk.Label(self.bottom_frame, text="Add to end:", fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        self.suffix_label.grid(row=0, column=6, sticky="w")
+        self.suffix_entry = tk.Entry(self.bottom_frame, fg=self.dark_mode_text_var, bg=self.dark_mode_var, relief='flat', highlightthickness=2, highlightbackground=self.dark_mode_button_var,insertbackground=self.dark_mode_text_var)
+        self.suffix_entry.grid(row=0, column=7, sticky="nsew")
         self.suffix_entry.bind("<Return>", self.save_caption)
-        self.all_entries = [self.replace_entry, self.with_entry, self.suffix_entry, self.caption_entry]
+        self.all_entries = [self.replace_entry, self.with_entry, self.suffix_entry, self.caption_entry, self.prefix_entry]
         #bind right click menu to all entries
         for entry in self.all_entries:
             entry.bind("<Button-3>", self.create_right_click_menu)
@@ -390,12 +460,22 @@ class ImageBrowser(tk.Frame):
 
             
     def save_caption(self, event):
+        
+        
+
         self.caption = self.caption_entry.get()
         self.replace = self.replace_entry.get()
         self.replace_with = self.with_entry.get()
         self.suffix_var = self.suffix_entry.get()
+        self.prefix = self.prefix_entry.get()
         #prepare the caption
         self.caption = self.caption.replace(self.replace, self.replace_with)
+        if self.prefix != '':
+            if self.prefix.endswith(' '):
+                self.prefix = self.prefix[:-1]
+            if not self.prefix.endswith(','):
+                self.prefix = self.prefix+','
+        self.caption = self.prefix + ' ' + self.caption
         if self.caption.endswith(',') or self.caption.endswith('.'):
             self.caption = self.caption[:-1]
             self.caption = self.caption +', ' + self.suffix_var
