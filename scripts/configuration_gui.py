@@ -186,7 +186,7 @@ class App(tk.Frame):
         self.canvas.create_window((0,0), window=self.frame, anchor="nw")
         self.canvas.configure(bg=self.dark_mode_var)
         #create tabs
-        self.tabsSizes = {0 : [715,400], 1 : [715,550], 2 : [715,300],3 : [715,400],4 : [715,500],5 : [715,400],6 : [715,490]}
+        self.tabsSizes = {0 : [680,400], 1 : [680,550], 2 : [680,300],3 : [680,400],4 : [680,500],5 : [680,400],6 : [680,490]}
         self.notebook = ttk.Notebook(self.frame)
         self.notebook.grid(row=0, column=0, columnspan=2, sticky="nsew")
         
@@ -203,7 +203,7 @@ class App(tk.Frame):
         self.notebook.add(self.training_tab, text="Training Settings",sticky="n")
         self.notebook.add(self.dataset_tab, text="Dataset Settings",sticky="n")
         self.notebook.add(self.sample_tab, text="Sample Settings",sticky="n")
-        self.notebook.add(self.concepts_tab, text="Concept Settings",sticky="n")
+        self.notebook.add(self.concepts_tab, text="Training Data",sticky="nw")
         self.notebook.add(self.play_tab, text="Model Playground",sticky="n")
         self.notebook.add(self.tools_tab, text="Toolbox",sticky="n")
         #pad the frames to make them look better
@@ -231,7 +231,6 @@ class App(tk.Frame):
         self.bottom_frame.columnconfigure(2, weight=1)
         #rowconfigure
         self.bottom_frame.rowconfigure(0, weight=1)
-
         #notebook dark mode style
         self.notebook_style = ttk.Style()
         self.notebook_style.theme_use("clam")
@@ -869,7 +868,8 @@ class App(tk.Frame):
             i.bind("<Button-3>", self.create_right_click_menu)
         
         #add concept settings label
-        self.concept_settings_label = tk.Label(self.concepts_tab, text="Concept Settings",  font=("Helvetica", 12, "bold"),fg=self.dark_mode_title_var, bg=self.dark_mode_var)
+        self.concept_settings_label = tk.Label(self.concepts_tab, text="Training Data",  font=("Helvetica", 12, "bold"),fg=self.dark_mode_title_var, bg=self.dark_mode_var)
+        self.concept_settings_label.ttp = CreateToolTip(self.concept_settings_label, "This is where you put your training data!")
         self.concept_settings_label.grid(row=0, column=0, sticky="nsew")
 
         #add load concept from json button
@@ -1274,7 +1274,7 @@ class App(tk.Frame):
         class_prompt_label_ttp = CreateToolTip(class_prompt_label, "The prompt will be used to generate class images and train the class images if added to dataset")
         class_prompt_label.grid(row=5 + (len(self.concept_labels)*6), column=0, sticky="nsew")
         #create class prompt entry
-        class_prompt_entry = tk.Entry(self.concepts_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
+        class_prompt_entry = tk.Entry(self.concepts_tab,width=50,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
         class_prompt_entry.grid(row=5 + (len(self.concept_labels)*6), column=1, sticky="nsew")
         if class_prompt_val != None:
             class_prompt_entry.insert(0, class_prompt_val)
@@ -1283,7 +1283,7 @@ class App(tk.Frame):
         ins_data_path_label_ttp = CreateToolTip(ins_data_path_label, "The path to the folder containing the concept's images.")
         ins_data_path_label.grid(row=6 + (len(self.concept_labels)*6), column=0, sticky="nsew")
         #create instance data path entry
-        ins_data_path_entry = tk.Entry(self.concepts_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
+        ins_data_path_entry = tk.Entry(self.concepts_tab,width=50,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
         ins_data_path_entry.grid(row=6 + (len(self.concept_labels)*6), column=1, sticky="nsew")
         if inst_data_path_val != None:
             ins_data_path_entry.insert(0, inst_data_path_val)
@@ -1313,6 +1313,26 @@ class App(tk.Frame):
         do_not_balance_dataset_checkbox = tk.Checkbutton(self.concepts_tab, variable=do_not_balance_dataset_var,fg=self.dark_mode_text_var, bg=self.dark_mode_var, activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var, selectcolor=self.dark_mode_var)
         do_not_balance_dataset_checkbox.grid(row=8 + (len(self.concept_labels)*6), column=1, sticky="nsew")
         do_not_balance_dataset_var.set(0)
+
+        #create a preview of the images in the path on the right side of the concept
+        #create a frame to hold the images
+        #empty column to separate the images from the rest of the concept
+        sep = tk.Label(self.concepts_tab,padx=3, text="",fg=self.dark_mode_text_var, bg=self.dark_mode_var).grid(row=4 + (len(self.concept_labels)*6), column=3, sticky="nsew")
+
+        image_preview_frame = tk.Frame(self.concepts_tab, bg=self.dark_mode_var)
+        image_preview_frame.grid(row=4 + (len(self.concept_labels)*6), column=4, rowspan=4, sticky="ne")
+        #create a label for the images
+        image_preview_label = tk.Label(image_preview_frame, text="Image Preview",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        image_preview_label.grid(row=0, column=0, sticky="nsew")
+        #create a canvas to hold the images
+        image_preview_canvas = tk.Canvas(image_preview_frame, bg=self.dark_mode_var)
+        #canvas size is 100x100
+        image_preview_canvas.config(width=150, height=150)
+        image_preview_canvas.grid(row=1, column=0, sticky="nsew")
+        #debug test, image preview just white
+        self.image_preview = ImageTk.PhotoImage(Image.new("RGB", (150, 150), "white"))
+        image_preview_canvas.create_image(0, 0, anchor="nw", image=self.image_preview)
+
         if do_not_balance_val != False:
             do_not_balance_dataset_var.set(1)
         #combine all the entries into a list
@@ -1322,7 +1342,7 @@ class App(tk.Frame):
         #add the list to the list of concept entries
         self.concept_entries.append(concept_entries)
         #add the title to the list of concept titles
-        self.concept_labels.append([concept_title, ins_prompt_label, class_prompt_label, ins_data_path_label, class_data_path_label,do_not_balance_dataset_label])
+        self.concept_labels.append([concept_title, ins_prompt_label, class_prompt_label, ins_data_path_label, class_data_path_label,do_not_balance_dataset_label,image_preview_frame])
         self.concepts.append({"instance_prompt": ins_prompt_entry, "class_prompt": class_prompt_entry, "instance_data_dir": ins_data_path_entry, "class_data_dir": class_data_path_entry,'do_not_balance': do_not_balance_dataset_var})
         self.concept_file_dialog_buttons.append([ins_data_path_file_dialog_button, class_data_path_file_dialog_button])
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
@@ -1353,23 +1373,22 @@ class App(tk.Frame):
         if file_path == "":
             return
         #check if the file is a json file
-        if file_path.endswith(".json"):
+        if file_path.endswith("model_index.json"):
             #check if the file is a model index file
-            file_path = os.path.dirname(file_path)
-            if "model_index.json" in file_path:
-                #check if folder has folders for: vae, unet, tokenizer, text_encoder
-                required_folders = ["vae", "unet", "tokenizer", "text_encoder"]
-                for folder in required_folders:
-                    if not os.path.isdir(os.path.join(file_path, folder)):
-                        #show error message
-                        messagebox.showerror("Error", "The selected model is missing the {} folder.".format(folder))
-                        return
-                file_path = os.path.dirname(file_path)
+            #check if folder has folders for: vae, unet, tokenizer, text_encoder
+            model_dir = os.path.dirname(file_path)
+            required_folders = ["vae", "unet", "tokenizer", "text_encoder"]
+            for folder in required_folders:
+                if not os.path.isdir(os.path.join(model_dir, folder)):
+                    #show error message
+                    messagebox.showerror("Error", "The selected model is missing the {} folder.".format(folder))
+                    return
+                file_path = model_dir
             #if the file is not a model index file
-            else:
-                #show error message
-                messagebox.showerror("Error", "The selected file is not a diffusers model index file.")
-                return
+        else:
+            #show error message
+            messagebox.showerror("Error", "The selected file is not model_index.json.")
+            return
         if file_path.endswith(".ckpt"):
             sd_file = file_path
             version, prediction = self.get_sd_version(sd_file)
