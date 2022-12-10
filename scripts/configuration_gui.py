@@ -1317,21 +1317,21 @@ class App(tk.Frame):
         #create a preview of the images in the path on the right side of the concept
         #create a frame to hold the images
         #empty column to separate the images from the rest of the concept
-        sep = tk.Label(self.concepts_tab,padx=3, text="",fg=self.dark_mode_text_var, bg=self.dark_mode_var).grid(row=4 + (len(self.concept_labels)*6), column=3, sticky="nsew")
+        #sep = tk.Label(self.concepts_tab,padx=3, text="",fg=self.dark_mode_text_var, bg=self.dark_mode_var).grid(row=4 + (len(self.concept_labels)*6), column=3, sticky="nsew")
 
-        image_preview_frame = tk.Frame(self.concepts_tab, bg=self.dark_mode_var)
-        image_preview_frame.grid(row=4 + (len(self.concept_labels)*6), column=4, rowspan=4, sticky="ne")
+        #image_preview_frame = tk.Frame(self.concepts_tab, bg=self.dark_mode_var)
+        #image_preview_frame.grid(row=4 + (len(self.concept_labels)*6), column=4, rowspan=4, sticky="ne")
         #create a label for the images
-        image_preview_label = tk.Label(image_preview_frame, text="Image Preview",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
-        image_preview_label.grid(row=0, column=0, sticky="nsew")
+        #image_preview_label = tk.Label(image_preview_frame, text="Image Preview",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        #image_preview_label.grid(row=0, column=0, sticky="nsew")
         #create a canvas to hold the images
-        image_preview_canvas = tk.Canvas(image_preview_frame, bg=self.dark_mode_var)
+        #image_preview_canvas = tk.Canvas(image_preview_frame, bg=self.dark_mode_var)
         #canvas size is 100x100
-        image_preview_canvas.config(width=150, height=150)
-        image_preview_canvas.grid(row=1, column=0, sticky="nsew")
+        #image_preview_canvas.config(width=150, height=150)
+        #image_preview_canvas.grid(row=1, column=0, sticky="nsew")
         #debug test, image preview just white
-        self.image_preview = ImageTk.PhotoImage(Image.new("RGB", (150, 150), "white"))
-        image_preview_canvas.create_image(0, 0, anchor="nw", image=self.image_preview)
+        #self.image_preview = ImageTk.PhotoImage(Image.new("RGB", (150, 150), "white"))
+        #image_preview_canvas.create_image(0, 0, anchor="nw", image=self.image_preview)
 
         if do_not_balance_val != False:
             do_not_balance_dataset_var.set(1)
@@ -1342,7 +1342,7 @@ class App(tk.Frame):
         #add the list to the list of concept entries
         self.concept_entries.append(concept_entries)
         #add the title to the list of concept titles
-        self.concept_labels.append([concept_title, ins_prompt_label, class_prompt_label, ins_data_path_label, class_data_path_label,do_not_balance_dataset_label,image_preview_frame])
+        self.concept_labels.append([concept_title, ins_prompt_label, class_prompt_label, ins_data_path_label, class_data_path_label,do_not_balance_dataset_label])
         self.concepts.append({"instance_prompt": ins_prompt_entry, "class_prompt": class_prompt_entry, "instance_data_dir": ins_data_path_entry, "class_data_dir": class_data_path_entry,'do_not_balance': do_not_balance_dataset_var})
         self.concept_file_dialog_buttons.append([ins_data_path_file_dialog_button, class_data_path_file_dialog_button])
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))

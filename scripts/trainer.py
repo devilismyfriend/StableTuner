@@ -1520,7 +1520,10 @@ def main():
 
     # Only show the progress bar once on each machine.
     progress_bar = tqdm(range(args.max_train_steps), disable=not accelerator.is_local_main_process)
+    progress_bar_e = tqdm(range(args.num_train_epochs), disable=not accelerator.is_local_main_process)
+
     progress_bar.set_description("Steps")
+    progress_bar_e.set_description("Epochs")
     global_step = 0
     loss_avg = AverageMeter()
     text_enc_context = nullcontext() if args.train_text_encoder else torch.no_grad()
@@ -1653,6 +1656,7 @@ def main():
 
                 if global_step >= args.max_train_steps:
                     break
+            progress_bar_e.update(1)
             if not epoch % args.save_every_n_epoch and epoch != 0:
                     #print(epoch % args.save_every_n_epoch)
                     #print('test')
