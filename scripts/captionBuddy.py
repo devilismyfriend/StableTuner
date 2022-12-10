@@ -24,9 +24,13 @@ class ImageBrowser(tk.Frame):
         if not os.path.exists("scripts/BLIP"):
             print("Getting BLIP from GitHub.")
             subprocess.run(["git", "clone", "https://github.com/salesforce/BLIP", "scripts/BLIP"])
+        #if not os.path.exists("scripts/CLIP"):
+        #    print("Getting CLIP from GitHub.")
+        #    subprocess.run(["git", "clone", "https://github.com/pharmapsychotic/clip-interrogator.git', 'scripts/CLIP"])
         blip_path = "scripts/BLIP"
         sys.path.append(blip_path)
-        
+        #clip_path = "scripts/CLIP"
+        #sys.path.append(clip_path)
 
         self.captioner_folder = os.path.dirname(os.path.realpath(__file__))
         self.master = master
@@ -479,6 +483,18 @@ class ImageBrowser(tk.Frame):
         self.min_length_entry = tk.Entry(self.options_window, bg=self.dark_mode_var, fg=self.dark_mode_text_var)
         self.min_length_entry.insert(0, self.min_length)
         self.min_length_entry.pack(side="top")
+        #add a horozontal radio button to select between None, ViT-L-14/openai, ViT-H-14/laion2b_s32b_b79k
+        #self.model_label = tk.Label(self.options_window, text="CLIP Interrogation", bg=self.dark_mode_var, fg=self.dark_mode_text_var)
+        #self.model_label.pack(side="top")
+        #self.model_var = tk.StringVar(self.options_window)
+        #self.model_var.set(self.model)
+        #self.model_none = tk.Radiobutton(self.options_window, text="None", variable=self.model_var, value="None", bg=self.dark_mode_var, fg=self.dark_mode_text_var, activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var, selectcolor=self.dark_mode_var)
+        #self.model_none.pack(side="top")
+        #self.model_vit_l_14 = tk.Radiobutton(self.options_window, text="ViT-L-14/openai", variable=self.model_var, value="ViT-L-14/openai", bg=self.dark_mode_var, fg=self.dark_mode_text_var, activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var, selectcolor=self.dark_mode_var)
+        #self.model_vit_l_14.pack(side="top")
+        #self.model_vit_h_14 = tk.Radiobutton(self.options_window, text="ViT-H-14/laion2b_s32b_b79k", variable=self.model_var, value="ViT-H-14/laion2b_s32b_b79k", bg=self.dark_mode_var, fg=self.dark_mode_text_var, activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var, selectcolor=self.dark_mode_var)
+        #self.model_vit_h_14.pack(side="top")
+
         #add a save button
         self.save_button = tk.Button(self.options_window, text="Save", command=self.save_options,fg=self.dark_mode_text_var, bg=self.dark_mode_title_var, activebackground=self.dark_mode_button_var, activeforeground="white", relief="flat")
         self.save_button.pack(side="top")

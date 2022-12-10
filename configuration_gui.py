@@ -278,7 +278,7 @@ class App(tk.Frame):
         tab_id = self.notebook.select()
         #get the tab index
         tab_index = self.notebook.index(tab_id)
-        tabsSizes = {0 : [715,320], 1 : [715,510], 2 : [715,230],3 : [715,400],4 : [715,500],5 : [715,360],6 : [715,490]}
+        tabsSizes = {0 : [715,340], 1 : [715,510], 2 : [715,230],3 : [715,400],4 : [715,500],5 : [715,360],6 : [715,490]}
         #get the tab size
         tab_size = tabsSizes[tab_index]
         #resize the window to fit the widgets
