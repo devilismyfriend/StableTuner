@@ -84,7 +84,7 @@ def parse_args():
         help="Will save and generate samples before training",
     )
     parser.add_argument(
-        "--save_on_training_start",
+        "--sample_on_training_start",
         default=False,
         action="store_true",
         help="Will save and generate samples before training",
@@ -309,7 +309,7 @@ def parse_args():
         ),
     )
     parser.add_argument("--log_interval", type=int, default=10, help="Log every N steps.")
-    parser.add_argument("--save_interval", type=int, default=10_000, help="Save weights every N steps.")
+    parser.add_argument("--sample_step_interval", type=int, default=100000000000000, help="Sample images every N steps.")
     parser.add_argument(
         "--mixed_precision",
         type=str,
@@ -459,7 +459,7 @@ def get_aspect_buckets(resolution):
         print("Rounded resolution to", rounded_resolution)
         all_image_sizes = __get_all_aspects()
         aspects = next(filter(lambda sizes: sizes[0][0]==rounded_resolution, all_image_sizes), None)
-        print(aspects)
+        #print(aspects)
         return aspects
     except Exception as e:
         print(f" *** Could not find selected resolution: {rounded_resolution}, check your resolution in config YAML")
@@ -1151,7 +1151,7 @@ def main():
     if args.tokenizer_name:
         tokenizer = CLIPTokenizer.from_pretrained(args.tokenizer_name )
     elif args.pretrained_model_name_or_path:
-        print(os.getcwd())
+        #print(os.getcwd())
         tokenizer = CLIPTokenizer.from_pretrained(args.pretrained_model_name_or_path, subfolder="tokenizer" )
 
     # Load models and create wrapper for stable diffusion
@@ -1405,7 +1405,7 @@ def main():
     logger.info(f"  Gradient Accumulation steps = {args.gradient_accumulation_steps}")
     logger.info(f"  Total optimization steps = {args.max_train_steps}")
 
-    def save_weights(step,context='checkpoint'):
+    def save_and_sample_weights(step,context='checkpoint',save_model=True):
         #check how many folders are in the output dir
         #if there are more than 5, delete the oldest one
         #save the model
@@ -1437,14 +1437,18 @@ def main():
                     shutil.rmtree(oldest_folder_path)
         # Create the pipeline using using the trained modules and save it.
         if accelerator.is_main_process:
-            
+            if context =='step':
+                #what is the current epoch
+                epoch = step // num_update_steps_per_epoch
+            else:
+                epoch = step
             if args.train_text_encoder and args.stop_text_encoder_training == True:
                 text_enc_model = accelerator.unwrap_model(text_encoder,True)
-            elif args.train_text_encoder and args.stop_text_encoder_training > step:
+            elif args.train_text_encoder and args.stop_text_encoder_training > epoch:
                 text_enc_model = accelerator.unwrap_model(text_encoder,True)
             elif args.train_text_encoder == False:
                 text_enc_model = CLIPTextModel.from_pretrained(args.pretrained_model_name_or_path, subfolder="text_encoder" )
-            elif args.train_text_encoder and args.stop_text_encoder_training <= step:
+            elif args.train_text_encoder and args.stop_text_encoder_training <= epoch:
                 text_enc_model = CLIPTextModel.from_pretrained(frozen_directory, subfolder="text_encoder" )
                 
             #scheduler = DDIMScheduler(beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear", clip_sample=False, set_alpha_to_one=False)
@@ -1464,8 +1468,11 @@ def main():
             if args.stop_text_encoder_training == True:
                 save_dir = frozen_directory
             if step != 0:
-                
-                pipeline.save_pretrained(save_dir)
+                if save_model:
+                    pipeline.save_pretrained(save_dir)
+                else:
+                    if not os.path.isdir(save_dir):
+                        os.mkdir(save_dir)
                 with open(os.path.join(save_dir, "args.json"), "w") as f:
                     json.dump(args.__dict__, f, indent=2)
                 if args.stop_text_encoder_training == True:
@@ -1519,7 +1526,10 @@ def main():
                 del pipeline
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()
-            print(f"[*] Weights saved at {save_dir}")
+            if save_model == True:
+                print(f"[*] Weights saved to {save_dir}")
+            else:
+                print(f"[*] Samples saved to {save_dir}")
 
     # Only show the progress bar once on each machine.
     progress_bar = tqdm(range(args.max_train_steps), disable=not accelerator.is_local_main_process)
@@ -1542,8 +1552,8 @@ def main():
                 text_encoder.train()
             
             #save initial weights
-            if args.save_on_training_start==True and epoch==0:
-                save_weights(epoch,'epoch')
+            if args.sample_on_training_start==True and epoch==0:
+                save_and_sample_weights(epoch,'epoch',save_model=False)
             
             if args.train_text_encoder and args.stop_text_encoder_training == epoch:
                 args.stop_text_encoder_training = True
@@ -1561,7 +1571,7 @@ def main():
                         #delete the folder if it already exists
                         shutil.rmtree(frozen_directory)
                     os.mkdir(frozen_directory)
-                    save_weights(epoch,'epoch')
+                    save_and_sample_weights(epoch,'epoch')
                     args.stop_text_encoder_training = epoch
 
             for step, batch in enumerate(train_dataloader):
@@ -1629,7 +1639,6 @@ def main():
                         prior_loss = F.mse_loss(model_pred_prior.float(), target_prior.float(), reduction="mean")
                         
                     else:
-                        #loss = F.mse_loss(noise_pred.float(), noise.float(), reduction="mean")
                         loss = F.mse_loss(model_pred.float(), target.float(), reduction="mean")
                     accelerator.backward(loss)
                     if accelerator.sync_gradients:
@@ -1651,8 +1660,8 @@ def main():
                 
                 
 
-                #if global_step > 0 and not global_step % args.save_interval:
-                #    save_weights(global_step,'checkpoint')
+                if global_step > 0 and not global_step % args.sample_step_interval:
+                    save_and_sample_weights(global_step,'step',save_model=False)
 
                 progress_bar.update(1)
                 global_step += 1
@@ -1660,23 +1669,26 @@ def main():
                 if global_step >= args.max_train_steps:
                     break
             progress_bar_e.update(1)
-            if not epoch % args.save_every_n_epoch and epoch != 0:
+            if not epoch % args.save_every_n_epoch:
                     #print(epoch % args.save_every_n_epoch)
                     #print('test')
-                    save_weights(epoch,'epoch')
+                    if epoch != 0:
+                        save_and_sample_weights(epoch,'epoch')
+                    else:
+                        save_and_sample_weights(epoch,'epoch',False)
             
             accelerator.wait_for_everyone()
     except Exception:
         try:
             send_telegram_message("Something went wrong while training! :(", args.telegram_chat_id, args.telegram_token)
-            #save_weights(global_step,'checkpoint')
+            #save_and_sample_weights(global_step,'checkpoint')
             send_telegram_message(f"Saved checkpoint {global_step} on exit", args.telegram_chat_id, args.telegram_token)
         except Exception:
             pass
         raise
     except KeyboardInterrupt:
         send_telegram_message("Training stopped", args.telegram_chat_id, args.telegram_token)
-    save_weights(args.num_train_epochs,'epoch')
+    save_and_sample_weights(args.num_train_epochs,'epoch')
     try:
         send_telegram_message("Training finished!", args.telegram_chat_id, args.telegram_token)
     except:

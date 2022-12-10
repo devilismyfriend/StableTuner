@@ -186,7 +186,7 @@ class App(tk.Frame):
         self.canvas.create_window((0,0), window=self.frame, anchor="nw")
         self.canvas.configure(bg=self.dark_mode_var)
         #create tabs
-        self.tabsSizes = {0 : [680,400], 1 : [680,560], 2 : [680,300],3 : [680,400],4 : [680,500],5 : [680,400],6 : [680,490]}
+        self.tabsSizes = {0 : [680,400], 1 : [680,560], 2 : [680,300],3 : [680,440],4 : [680,500],5 : [680,400],6 : [680,490]}
         self.notebook = ttk.Notebook(self.frame)
         self.notebook.grid(row=0, column=0, columnspan=2, sticky="nsew")
         
@@ -285,7 +285,7 @@ class App(tk.Frame):
         self.prior_loss_weight = 1.0
         self.sample_random_aspect_ratio = False
         self.add_controlled_seed_to_sample = []
-        self.save_on_training_start = False
+        self.sample_on_training_start = False
         self.concept_template = {'instance_prompt': 'subject', 'class_prompt': 'a photo of class', 'instance_data_dir':'./data/subject','class_data_dir':'./data/subject_class'}
         self.concepts = []
         self.play_input_model_path = ""
@@ -311,6 +311,7 @@ class App(tk.Frame):
         self.execute_post_conversion = False
         self.preview_images = []
         self.disable_cudnn_benchmark = True
+        self.sample_step_interval = 500
         self.create_widgets()
  
         width = self.notebook.winfo_reqwidth()
@@ -783,70 +784,77 @@ class App(tk.Frame):
         #create Sampling Settings label like the model settings label
         self.sampling_settings_label = tk.Label(self.sample_tab, text="Sampling Settings", font=("Arial", 12, "bold"),fg=self.dark_mode_title_var, bg=self.dark_mode_var)
         self.sampling_settings_label.grid(row=0, column=0, sticky="nsew")
+        #create sample every n steps entry
+        self.sample_step_interval_label = tk.Label(self.sample_tab, text="Sample Every N Steps",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        sample_step_interval_label_ttp = CreateToolTip(self.sample_step_interval_label, "Will sample the model every N steps.")
+        self.sample_step_interval_label.grid(row=1, column=0, sticky="nsew")
+        self.sample_step_interval_entry = tk.Entry(self.sample_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
+        self.sample_step_interval_entry.grid(row=1, column=1, sticky="nsew")
+        self.sample_step_interval_entry.insert(0, self.sample_step_interval)
         #create saver every n epochs entry
-        self.save_every_n_epochs_label = tk.Label(self.sample_tab, text="Save Every N Epochs",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        self.save_every_n_epochs_label = tk.Label(self.sample_tab, text="Save and sample Every N Epochs",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         save_every_n_epochs_label_ttp = CreateToolTip(self.save_every_n_epochs_label, "Will save and sample the model every N epochs.")
-        self.save_every_n_epochs_label.grid(row=1, column=0, sticky="nsew")
+        self.save_every_n_epochs_label.grid(row=2, column=0, sticky="nsew")
         self.save_every_n_epochs_entry = tk.Entry(self.sample_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
-        self.save_every_n_epochs_entry.grid(row=1, column=1, sticky="nsew")
+        self.save_every_n_epochs_entry.grid(row=2, column=1, sticky="nsew")
         self.save_every_n_epochs_entry.insert(0, self.save_and_sample_every_x_epochs)
         #create number of samples to generate entry
         self.number_of_samples_to_generate_label = tk.Label(self.sample_tab, text="Number of Samples to Generate",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         number_of_samples_to_generate_label_ttp = CreateToolTip(self.number_of_samples_to_generate_label, "The number of samples to generate per prompt.")
-        self.number_of_samples_to_generate_label.grid(row=2, column=0, sticky="nsew")
+        self.number_of_samples_to_generate_label.grid(row=3, column=0, sticky="nsew")
         self.number_of_samples_to_generate_entry = tk.Entry(self.sample_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
-        self.number_of_samples_to_generate_entry.grid(row=2, column=1, sticky="nsew")
+        self.number_of_samples_to_generate_entry.grid(row=3, column=1, sticky="nsew")
         self.number_of_samples_to_generate_entry.insert(0, self.num_samples_to_generate)
         #create sample width entry
         self.sample_width_label = tk.Label(self.sample_tab, text="Sample Width",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         sample_width_label_ttp = CreateToolTip(self.sample_width_label, "The width of the generated samples.")
-        self.sample_width_label.grid(row=3, column=0, sticky="nsew")
+        self.sample_width_label.grid(row=4, column=0, sticky="nsew")
         self.sample_width_entry = tk.Entry(self.sample_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
-        self.sample_width_entry.grid(row=3, column=1, sticky="nsew")
+        self.sample_width_entry.grid(row=4, column=1, sticky="nsew")
         self.sample_width_entry.insert(0, self.sample_width)
         #create sample height entry
         self.sample_height_label = tk.Label(self.sample_tab, text="Sample Height",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         sample_height_label_ttp = CreateToolTip(self.sample_height_label, "The height of the generated samples.")
-        self.sample_height_label.grid(row=4, column=0, sticky="nsew")
+        self.sample_height_label.grid(row=5, column=0, sticky="nsew")
         self.sample_height_entry = tk.Entry(self.sample_tab,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
-        self.sample_height_entry.grid(row=4, column=1, sticky="nsew")
+        self.sample_height_entry.grid(row=5, column=1, sticky="nsew")
         self.sample_height_entry.insert(0, self.sample_height)
         
-        #create a checkbox to save_on_training_start
-        self.save_on_training_start_var = tk.IntVar()
-        self.save_on_training_start_var.set(self.save_on_training_start)
+        #create a checkbox to sample_on_training_start
+        self.sample_on_training_start_var = tk.IntVar()
+        self.sample_on_training_start_var.set(self.sample_on_training_start)
         #create label
-        self.save_on_training_start_label = tk.Label(self.sample_tab, text="Save On Training Start",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
-        save_on_training_start_label_ttp = CreateToolTip(self.save_on_training_start_label, "Will save and sample the model on training start, useful for debugging and comparison.")
-        self.save_on_training_start_label.grid(row=5, column=0, sticky="nsew")
+        self.sample_on_training_start_label = tk.Label(self.sample_tab, text="Sample On Training Start",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        sample_on_training_start_label_ttp = CreateToolTip(self.sample_on_training_start_label, "Will save and sample the model on training start, useful for debugging and comparison.")
+        self.sample_on_training_start_label.grid(row=6, column=0, sticky="nsew")
         #create checkbox
-        self.save_on_training_start_checkbox = tk.Checkbutton(self.sample_tab, variable=self.save_on_training_start_var,fg=self.dark_mode_text_var, bg=self.dark_mode_var, activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var, selectcolor=self.dark_mode_var)
-        self.save_on_training_start_checkbox.grid(row=5, column=1, sticky="nsew")
+        self.sample_on_training_start_checkbox = tk.Checkbutton(self.sample_tab, variable=self.sample_on_training_start_var,fg=self.dark_mode_text_var, bg=self.dark_mode_var, activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var, selectcolor=self.dark_mode_var)
+        self.sample_on_training_start_checkbox.grid(row=6, column=1, sticky="nsew")
         #create sample random aspect ratio checkbox
         self.sample_random_aspect_ratio_var = tk.IntVar()
         self.sample_random_aspect_ratio_var.set(self.sample_random_aspect_ratio)
         #create label
         self.sample_random_aspect_ratio_label = tk.Label(self.sample_tab, text="Sample Random Aspect Ratio",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
         sample_random_aspect_ratio_label_ttp = CreateToolTip(self.sample_random_aspect_ratio_label, "Will generate samples with random aspect ratios, useful to check aspect ratio bucketing.")
-        self.sample_random_aspect_ratio_label.grid(row=6, column=0, sticky="nsew")
+        self.sample_random_aspect_ratio_label.grid(row=7, column=0, sticky="nsew")
         #create checkbox
         self.sample_random_aspect_ratio_checkbox = tk.Checkbutton(self.sample_tab, variable=self.sample_random_aspect_ratio_var,fg=self.dark_mode_text_var, bg=self.dark_mode_var, activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var, selectcolor=self.dark_mode_var)
-        self.sample_random_aspect_ratio_checkbox.grid(row=6, column=1, sticky="nsew")
+        self.sample_random_aspect_ratio_checkbox.grid(row=7, column=1, sticky="nsew")
         #create add sample prompt button
         self.add_sample_prompt_button = tk.Button(self.sample_tab, text="Add Sample Prompt",  command=self.add_sample_prompt,fg=self.dark_mode_title_var, bg=self.dark_mode_var,activebackground=self.dark_mode_title_var)
         self.add_sample_prompt_button.configure(border=4, relief='flat')
         add_sample_prompt_button_ttp = CreateToolTip(self.add_sample_prompt_button, "Add a sample prompt to the list.")
-        self.add_sample_prompt_button.grid(row=7, column=0, sticky="nsew")
+        self.add_sample_prompt_button.grid(row=8, column=0, sticky="nsew")
         #create remove sample prompt button
         self.remove_sample_prompt_button = tk.Button(self.sample_tab, text="Remove Sample Prompt",  command=self.remove_sample_prompt,fg=self.dark_mode_title_var, bg=self.dark_mode_var,activebackground=self.dark_mode_title_var)
         self.remove_sample_prompt_button.configure(border=4, relief='flat')
         remove_sample_prompt_button_ttp = CreateToolTip(self.remove_sample_prompt_button, "Remove a sample prompt from the list.")
-        self.remove_sample_prompt_button.grid(row=7, column=1, sticky="nsew")
+        self.remove_sample_prompt_button.grid(row=8, column=1, sticky="nsew")
 
         #for every prompt in self.sample_prompts, create a label and entry
         self.sample_prompt_labels = []
         self.sample_prompt_entries = []
-        self.sample_prompt_row = 8
+        self.sample_prompt_row = 9
         for i in range(len(self.sample_prompts)):
             #create label
             self.sample_prompt_labels.append(tk.Label(self.sample_tab, text="Sample Prompt " + str(i),fg=self.dark_mode_text_var, bg=self.dark_mode_var))
@@ -1703,7 +1711,7 @@ class App(tk.Frame):
         config["sample_height"] = self.sample_height_entry.get()
         config["sample_width"] = self.sample_width_entry.get()
         config["sample_random_aspect_ratio"] = self.sample_random_aspect_ratio_var.get()
-        config['save_on_training_start'] = self.save_on_training_start_var.get()
+        config['sample_on_training_start'] = self.sample_on_training_start_var.get()
         config['concepts'] = self.concepts
         config['aspect_ratio_bucketing'] = self.use_aspect_ratio_bucketing_var.get()
         config['seed'] = self.seed_entry.get()
@@ -1714,6 +1722,7 @@ class App(tk.Frame):
         config['convert_to_ckpt_after_training'] = self.convert_to_ckpt_after_training_var.get()
         config['execute_post_conversion'] = self.convert_to_ckpt_after_training_var.get()
         config['disable_cudnn_benchmark'] = self.disable_cudnn_benchmark_var.get()
+        config['sample_step_interval'] = self.sample_step_interval_entry.get()
         #save the config file
         #if the file exists, delete it
         if os.path.exists(file_name):
@@ -1811,7 +1820,7 @@ class App(tk.Frame):
         self.sample_width_entry.delete(0, tk.END)
         self.sample_width_entry.insert(0, config["sample_width"])
         self.sample_random_aspect_ratio_var.set(config["sample_random_aspect_ratio"])
-        self.save_on_training_start_var.set(config["save_on_training_start"])
+        self.sample_on_training_start_var.set(config["sample_on_training_start"])
         #self.concept_config_path_entry.delete(0, tk.END)
         #self.concept_config_path_entry.insert(0,config["concept_config_path"])
         self.use_aspect_ratio_bucketing_var.set(config["aspect_ratio_bucketing"])
@@ -1826,6 +1835,9 @@ class App(tk.Frame):
         if config["execute_post_conversion"]:
             self.execute_post_conversion = True
         self.disable_cudnn_benchmark_var.set(config["disable_cudnn_benchmark"])
+        self.sample_step_interval_entry.delete(0, tk.END)
+        self.sample_step_interval_entry.insert(0, config["sample_step_interval"])
+
             
 
         #self.update_controlled_seed_sample()
@@ -1875,7 +1887,7 @@ class App(tk.Frame):
         self.sample_height = self.sample_height_entry.get()
         self.sample_width = self.sample_width_entry.get()
         self.sample_random_aspect_ratio = self.sample_random_aspect_ratio_var.get()
-        self.save_on_training_start = self.save_on_training_start_var.get()
+        self.sample_on_training_start = self.sample_on_training_start_var.get()
         self.concept_list_json_path = 'stabletune_concept_list.json'
         self.use_aspect_ratio_bucketing = self.use_aspect_ratio_bucketing_var.get()
         self.seed_number = self.seed_entry.get()
@@ -1884,6 +1896,7 @@ class App(tk.Frame):
         self.use_text_files_as_captions = self.use_text_files_as_captions_var.get()
         self.convert_to_ckpt_after_training = self.convert_to_ckpt_after_training_var.get()
         self.disable_cudnn_benchmark = self.disable_cudnn_benchmark_var.get()
+        self.sample_step_interval = self.sample_step_interval_entry.get()
         
         #open stabletune_concept_list.json
         if os.path.exists('stabletune_last_run.json'):
@@ -1913,6 +1926,8 @@ class App(tk.Frame):
             batBase += ' "--disable_cudnn_benchmark" '
         if self.use_text_files_as_captions == True:
             batBase += ' "--use_text_files_as_captions" '
+        if self.sample_step_interval != '0' or self.sample_step_interval != '' or self.sample_step_interval != ' ':
+            batBase += f' "--sample_step_interval={self.sample_step_interval}" '
         if '%' in self.limit_text_encoder or self.limit_text_encoder != '0' and len(self.limit_text_encoder) > 0:
             #calculate the epoch number from the percentage and set the limit_text_encoder to the epoch number
             self.limit_text_encoder = int(self.limit_text_encoder.replace('%','')) * int(self.train_epocs) / 100
@@ -1979,8 +1994,8 @@ class App(tk.Frame):
             batBase += f' "--add_sample_prompt={self.sample_prompts[i]}" '
         for i in range(len(self.add_controlled_seed_to_sample)):
             batBase += f' "--save_sample_controlled_seed={self.add_controlled_seed_to_sample[i]}" '
-        if self.save_on_training_start == True:
-            batBase += f' "--save_on_training_start" '
+        if self.sample_on_training_start == True:
+            batBase += f' "--sample_on_training_start" '
         #save config
         self.save_config('stabletune_last_run.json')
         
