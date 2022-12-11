@@ -762,6 +762,7 @@ class DataLoaderMultiAspect():
         decorated_image_train_items = []
         
         for pathname in image_paths:
+            identifier = concept 
             if use_image_names_as_captions:
                 caption_from_filename = os.path.splitext(os.path.basename(pathname))[0].split("_")[0]
                 identifier = caption_from_filename
@@ -779,9 +780,7 @@ class DataLoaderMultiAspect():
                         print(f" *** Error reading {txt_file_path} to get caption, falling back to filename")
                         identifier = caption_from_filename
                         pass
-            elif use_image_names_as_captions == False and use_text_files_as_captions == False:
-                identifier = concept 
-            #print("identifier: ",identifier)
+            print("identifier: ",identifier)
             image = Image.open(pathname)
             width, height = image.size
             image_aspect = width / height
