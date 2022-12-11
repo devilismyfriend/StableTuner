@@ -780,7 +780,7 @@ class DataLoaderMultiAspect():
                         print(f" *** Error reading {txt_file_path} to get caption, falling back to filename")
                         identifier = caption_from_filename
                         pass
-            print("identifier: ",identifier)
+            #print("identifier: ",identifier)
             image = Image.open(pathname)
             width, height = image.size
             image_aspect = width / height
@@ -1047,7 +1047,7 @@ def send_media_group(chat_id,telegram_token, images, caption=None, reply_to_mess
         media[0]['parse_mode'] = 'HTML'
         return requests.post(SEND_MEDIA_GROUP, data={'chat_id': chat_id, 'media': json.dumps(media),'disable_notification':True, 'reply_to_message_id': reply_to_message_id }, files=files)
 def main():
-    
+    #torch.cuda.set_per_process_memory_fraction(0.35)
     args = parse_args()
     if args.disable_cudnn_benchmark:
         torch.backends.cudnn.benchmark = False
