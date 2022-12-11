@@ -18,6 +18,7 @@ Features
 * **Easy Installation** - ST makes installing convenient, using a bat file, ST will setup an environment ready for work and will install all the necessary components to get your training started fast!
 * **Friendly GUI** - ST features a full GUI to configure training runs, import and export settings, view tool tips for options, test your new model in the playground, convert the model to CKPT and more!
 * **Better Performance** - Using Diffusers, Xformers, CUDNN 1.8 and Bitsandbytes along with Latent caching allows for higher batch sizes and faster speeds, higher batch sizes = better quality model!.
+* **A Toolbox** - Use Caption Buddy to quickly generate and edit captions for your dataset in one streamlined tool, ST is building a toolbox for the must-have tools if you're training models.
 * **Fine Tuning Mindset** - ST is built to fine-tune, unlike Dreambooth, ST is meant to fine-tune a model, providing tools and settings to make most of your 3090/4090s, Dreambooth is still an option.
 * **Filename/Caption/Token based learning** - You can train using the individual file names as caption, use a caption txt file or a single token DB style, for finetuning file name and captions are best. 
 * **Aspect Ratio Bucketing** - Using Aspect Ratio bucketing you can use any aspect ratio or resolution for your training images, images will get shuffled into buckets and resized to your chosen resolution target!, supports up to 1024 resolution!.
