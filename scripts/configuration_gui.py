@@ -1298,41 +1298,42 @@ class App(tk.Frame):
         #resize the image
         image = icon.resize((150, 150), Image.Resampling.LANCZOS)
         if path != "":
-            files = os.listdir(path)
-            for i in range(4):
-                #get an image from the path
-                import random
-                
-                #filter files for images
-                files = [f for f in files if f.endswith(".jpg") or f.endswith(".png") or f.endswith(".jpeg")]
-                if len(files) != 0:
-                    rand = random.choice(files)
-                    image_path = os.path.join(path,rand)
-                    #remove image_path from files
-                    if len(files) > 4:
-                        files.remove(rand)
-                    #files.pop(image_path)
-                    #open the image
-                    #print(image_path)
-                    image_to_add = Image.open(image_path)
-                    #resize the image to 38x38
-                    #resize to 150x150 closest to the original aspect ratio
-                    image_to_add.thumbnail((150, 150), Image.Resampling.LANCZOS)
-                    #decide where to put the image
-                    if i == 0:
-                        #top left
-                        image.paste(image_to_add, (0, 0))
-                    elif i == 1:
-                        #top right
-                        image.paste(image_to_add, (76, 0))
-                    elif i == 2:
-                        #bottom left
-                        image.paste(image_to_add, (0, 76))
-                    elif i == 3:
-                        #bottom right
-                        image.paste(image_to_add, (76, 76))
-                #convert the image to a photoimage
-                #image.show()
+            if os.path.exists(path):
+                files = os.listdir(path)
+                for i in range(4):
+                    #get an image from the path
+                    import random
+                    
+                    #filter files for images
+                    files = [f for f in files if f.endswith(".jpg") or f.endswith(".png") or f.endswith(".jpeg")]
+                    if len(files) != 0:
+                        rand = random.choice(files)
+                        image_path = os.path.join(path,rand)
+                        #remove image_path from files
+                        if len(files) > 4:
+                            files.remove(rand)
+                        #files.pop(image_path)
+                        #open the image
+                        #print(image_path)
+                        image_to_add = Image.open(image_path)
+                        #resize the image to 38x38
+                        #resize to 150x150 closest to the original aspect ratio
+                        image_to_add.thumbnail((150, 150), Image.Resampling.LANCZOS)
+                        #decide where to put the image
+                        if i == 0:
+                            #top left
+                            image.paste(image_to_add, (0, 0))
+                        elif i == 1:
+                            #top right
+                            image.paste(image_to_add, (76, 0))
+                        elif i == 2:
+                            #bottom left
+                            image.paste(image_to_add, (0, 76))
+                        elif i == 3:
+                            #bottom right
+                            image.paste(image_to_add, (76, 76))
+                    #convert the image to a photoimage
+                    #image.show()
         newImage=ImageTk.PhotoImage(image)
         self.preview_images[indexOfEntry][2] = newImage
         canvas.itemconfig(image_container, image=newImage)
@@ -1431,47 +1432,48 @@ class App(tk.Frame):
         image = icon.resize((150, 150), Image.Resampling.LANCZOS)
         image_preview = ImageTk.PhotoImage(image, master=image_preview_frame)
         if inst_data_path_val != None:
-            del image_preview
-            #get 4 images from the path
-            #create a host image 
-            image = Image.new("RGB", (150, 150), "white")
-            files = os.listdir(inst_data_path_val)
-            if len(files) > 0:
-                for i in range(4):
-                    #get an image from the path
-                    import random
-                    
-                    #filter files for images
-                    files = [f for f in files if f.endswith(".jpg") or f.endswith(".png") or f.endswith(".jpeg")]
-                    rand = random.choice(files)
-                    image_path = os.path.join(inst_data_path_val,rand)
-                    #remove image_path from files
-                    if len(files) > 4:
-                        files.remove(rand)
-                    #files.pop(image_path)
-                    #open the image
-                    #print(image_path)
-                    image_to_add = Image.open(image_path)
-                    #resize the image to 38x38
-                    #resize to 150x150 closest to the original aspect ratio
-                    image_to_add.thumbnail((150, 150), Image.Resampling.LANCZOS)
-                    #decide where to put the image
-                    if i == 0:
-                        #top left
-                        image.paste(image_to_add, (0, 0))
-                    elif i == 1:
-                        #top right
-                        image.paste(image_to_add, (76, 0))
-                    elif i == 2:
-                        #bottom left
-                        image.paste(image_to_add, (0, 76))
-                    elif i == 3:
-                        #bottom right
-                        image.paste(image_to_add, (76, 76))
-                #convert the image to a photoimage
-                #image.show()
-                image_preview = ImageTk.PhotoImage(image, master=image_preview_frame)
-                #add the image to the canvas
+            if os.path.exists(inst_data_path_val):
+                del image_preview
+                #get 4 images from the path
+                #create a host image 
+                image = Image.new("RGB", (150, 150), "white")
+                files = os.listdir(inst_data_path_val)
+                if len(files) > 0:
+                    for i in range(4):
+                        #get an image from the path
+                        import random
+                        
+                        #filter files for images
+                        files = [f for f in files if f.endswith(".jpg") or f.endswith(".png") or f.endswith(".jpeg")]
+                        rand = random.choice(files)
+                        image_path = os.path.join(inst_data_path_val,rand)
+                        #remove image_path from files
+                        if len(files) > 4:
+                            files.remove(rand)
+                        #files.pop(image_path)
+                        #open the image
+                        #print(image_path)
+                        image_to_add = Image.open(image_path)
+                        #resize the image to 38x38
+                        #resize to 150x150 closest to the original aspect ratio
+                        image_to_add.thumbnail((150, 150), Image.Resampling.LANCZOS)
+                        #decide where to put the image
+                        if i == 0:
+                            #top left
+                            image.paste(image_to_add, (0, 0))
+                        elif i == 1:
+                            #top right
+                            image.paste(image_to_add, (76, 0))
+                        elif i == 2:
+                            #bottom left
+                            image.paste(image_to_add, (0, 76))
+                        elif i == 3:
+                            #bottom right
+                            image.paste(image_to_add, (76, 76))
+                    #convert the image to a photoimage
+                    #image.show()
+                    image_preview = ImageTk.PhotoImage(image, master=image_preview_frame)
+                    #add the image to the canvas
 
         
         image_container = image_preview_canvas.create_image(0, 0, anchor="nw", image=image_preview)
@@ -1759,6 +1761,7 @@ class App(tk.Frame):
         self.update_sample_prompts()
         self.update_concepts()
         config["concepts"] = self.concepts
+        print(self.concepts)
         config["sample_prompts"] = self.sample_prompts
         config['add_controlled_seed_to_sample'] = self.add_controlled_seed_to_sample
         config["model_path"] = self.input_model_path_entry.get()
@@ -1830,7 +1833,8 @@ class App(tk.Frame):
             self.concepts = []
             for i in range(len(config["concepts"])):
                 self.add_concept(inst_prompt_val=config["concepts"][i]["instance_prompt"], class_prompt_val=config["concepts"][i]["class_prompt"], inst_data_path_val=config["concepts"][i]["instance_data_dir"], class_data_path_val=config["concepts"][i]["class_data_dir"],do_not_balance_val=config["concepts"][i]["do_not_balance"])
-        except:
+        except Exception as e:
+            print(e)
             pass
         
         #destroy all the current labels and entries
