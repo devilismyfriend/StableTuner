@@ -1536,6 +1536,9 @@ class App(tk.Frame):
             script_path = os.getcwd()
             #get the path of the models folder
             models_path = os.path.join(script_path, "models")
+            #if no models_path exists, create it
+            if not os.path.isdir(models_path):
+                os.mkdir(models_path)
             #create the path of the new model folder
             model_path = os.path.join(models_path, model_name)
             #check if the model folder already exists
