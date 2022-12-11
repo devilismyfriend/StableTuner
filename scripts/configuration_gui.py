@@ -1412,8 +1412,8 @@ class App(tk.Frame):
         image_preview_frame = tk.Frame(self.concepts_tab, bg=self.dark_mode_var)
         image_preview_frame.grid(row=4 + (len(self.concept_labels)*6), column=4, rowspan=4, sticky="ne")
         #create a label for the images
-        image_preview_label = tk.Label(image_preview_frame, text="Image Preview",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
-        image_preview_label.grid(row=0, column=0, sticky="nsew")
+        #image_preview_label = tk.Label(image_preview_frame, text="Image Preview",fg=self.dark_mode_text_var, bg=self.dark_mode_var)
+        #image_preview_label.grid(row=0, column=0, sticky="nsew")
         #create a canvas to hold the images
         image_preview_canvas = tk.Canvas(image_preview_frame, bg=self.dark_mode_var)
         #flat border
