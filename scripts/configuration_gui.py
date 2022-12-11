@@ -24,12 +24,10 @@ ctk.set_default_color_theme("blue")
 class ScrollableFrame(ttk.Frame):
     def __init__(self, container, *args, **kwargs):
         super().__init__(container, *args, **kwargs)
-        #self.pack(fill="both", expand=True)
-        self.columnconfigure(0, weight=2)
-        self.columnconfigure(1, weight=1)
-        self.columnconfigure(2, weight=2)
+        self.pack(fill="both", expand=True)
         s = ttk.Style()
         s.configure('new.TFrame', background='#333333',borderwidth=0,highlightthickness=0)
+        self.configure(style='new.TFrame')
         self.canvas = tk.Canvas(self)
         self.canvas.config(bg="#333333",highlightthickness=0,borderwidth=0,highlightbackground="#333333")
         self.scrollbar = ctk.CTkScrollbar(
@@ -37,7 +35,6 @@ class ScrollableFrame(ttk.Frame):
             width=10, corner_radius=10)
 
         self.scrollable_frame = ttk.Frame(self.canvas,style='new.TFrame')
-        self.scrollable_frame.grid(row=0,column=1,sticky="nsew")
         #set background color of the scrollable frame
         #self.scrollable_frame.config(background="#333333")
         self.scrollable_frame.bind("<Configure>",
@@ -48,11 +45,11 @@ class ScrollableFrame(ttk.Frame):
         self.bind("<Destroy>",
             lambda *args, **kwargs: self.unbind_all("<MouseWheel>"))
 
-        self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="n")
+        self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
         self.canvas.pack(side="left", fill="both", expand=True)
 
-        #self.scrollbar.pack(side="right", fill="y")
+        self.scrollbar.pack(side="right", fill="y")
 
     def _on_mousewheel(self, event):
         self.canvas.yview_scroll(-1 * round(event.delta / 120), "units")
@@ -132,7 +129,7 @@ class App(ctk.CTkFrame):
         #force keep window on top
         #self.master.wm_attributes("-topmost", 1)
         #create gui at center of screen
-        self.master.geometry("1000x600+{}+{}".format(int(self.master.winfo_screenwidth()/2-1000/2), int(self.master.winfo_screenheight()/2-600/2)))
+        self.master.geometry("800x600+{}+{}".format(int(self.master.winfo_screenwidth()/2-1000/2), int(self.master.winfo_screenheight()/2-600/2)))
         #create a title bar
         #self.title_bar = TitleBar(self.master)
         #self.title_bar.pack(side="top", fill="x",)
@@ -184,11 +181,8 @@ class App(ctk.CTkFrame):
         self.notebook.add('Toolbox')
 
         self.general_tab = self.notebook.tab('General Settings')
-        self.general_tab.columnconfigure(0, weight=5)
-        self.general_tab.columnconfigure(1, weight=1)
-        self.general_tab.columnconfigure(2, weight=2)
-        self.general_tab.columnconfigure(3, weight=5)
-        
+        #use pack to place the tab contents in the center of the tab
+        #self.general_tab.place(relx=0.5, rely=0.5, anchor="center")
         self.training_tab_host = ScrollableFrame(self.notebook.tab('Training Settings'),style='new.TFrame')
         self.training_tab_host.pack(fill="both", expand=True)
         self.training_tab = self.training_tab_host.scrollable_frame
@@ -197,8 +191,14 @@ class App(ctk.CTkFrame):
         #self.training_tabl_scroll.place(relx=0.98, rely=0.05, relheight=0.9, anchor='ne')
         
         self.dataset_tab = self.notebook.tab('Dataset Settings')
-        self.sample_tab = self.notebook.tab('Sample Settings')
-        self.concepts_tab = self.notebook.tab('Concepts Settings')
+        #self.sample_tab = self.notebook.tab('Sample Settings')
+        self.sample_tab_host = ScrollableFrame(self.notebook.tab('Sample Settings'),style='new.TFrame')
+        self.sample_tab_host.pack(fill="both", expand=True)
+        self.sample_tab = self.sample_tab_host.scrollable_frame
+        #self.concepts_tab = self.notebook.tab('Concepts Settings')
+        self.concepts_tab_host = ScrollableFrame(self.notebook.tab('Concepts Settings'),style='new.TFrame')
+        self.concepts_tab_host.pack(fill="both", expand=True)
+        self.concepts_tab = self.concepts_tab_host.scrollable_frame
         self.play_tab = self.notebook.tab('Play Settings')
         self.tools_tab = self.notebook.tab('Toolbox')
         
@@ -211,14 +211,14 @@ class App(ctk.CTkFrame):
         #self.notebook.add(self.tools_tab, text="Toolbox",sticky="n")
         #pad the frames to make them look better
         #make a bottom frame
-        self.bottom_frame = ctk.CTkFrame(self.master)
-        self.bottom_frame.pack(side="bottom", fill="x", expand=False)
+        #self.bottom_frame = ctk.CTkFrame(self.master)
+        #self.bottom_frame.pack(side="bottom", fill="x", expand=False)
         #configure grid
-        self.bottom_frame.columnconfigure(0, weight=1)
-        self.bottom_frame.columnconfigure(1, weight=1)
-        self.bottom_frame.columnconfigure(2, weight=1)
+        #self.bottom_frame.columnconfigure(0, weight=1)
+        #self.bottom_frame.columnconfigure(1, weight=1)
+        #self.bottom_frame.columnconfigure(2, weight=1)
         #rowconfigure
-        self.bottom_frame.rowconfigure(0, weight=1)
+        #self.bottom_frame.rowconfigure(0, weight=1)
         #notebook dark mode style
         #self.notebook_style = ttk.Style()
         #self.notebook_style.theme_use("clam")
@@ -301,13 +301,49 @@ class App(ctk.CTkFrame):
         self.disable_cudnn_benchmark = True
         self.sample_step_interval = 500
         self.create_widgets()
+        for child in self.training_tab.children.values():
+            child.configure(bg_color='#333333')
+            #print type of l
+            #print(type(l))
+            if type(child) == ctk.CTkCheckBox:
+                child.configure(text='')
+                child.grid(sticky="e")
+        for child in self.general_tab.children.values():
+            try:
+                child.configure(bg_color='#333333')
+                #print type of l
+                #print(type(l))
+                if type(child) == ctk.CTkCheckBox:
+                    child.configure(text='')
+                    child.grid(sticky="we")
+            except:
+                pass
+        for child in self.dataset_tab.children.values():
+            try:
+                child.configure(bg_color='#333333')
+                #print type of l
+                #print(type(l))
+                if type(child) == ctk.CTkCheckBox:
+                    child.configure(text='')
+                    child.grid(sticky="we")
+            except:
+                pass  
+        for child in self.sample_tab.children.values():
+            child.configure(bg_color='#333333')
+            #print type of l
+            #print(type(l))
+            if type(child) == ctk.CTkCheckBox:
+                child.configure(text='')
+                child.grid(sticky="e")
+        #apply dark theme to scrollable frame
+        
         self.training_tab_host.update_scroll_region()
         #width = self.notebook.winfo_reqwidth()
         #height = self.notebook.winfo_reqheight()
         #self.master.geometry(f"{width}x{height}")
         #self.training_tabl_scroll.configure()
         ##self.training_tab.configure(scrollregion=self.training_tab.bbox("all"))
-        self.master.update()
+        #self.master.update()
         #check if there is a stabletune_last_run.json file
         #if there is, load the settings from it
         if os.path.exists("stabletune_last_run.json"):
@@ -344,6 +380,7 @@ class App(ctk.CTkFrame):
             #self.load_config()
             pass
         #self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        
     def on_resume(self, event):
         #if state is deiconified, then window is restored
         
@@ -427,111 +464,105 @@ class App(ctk.CTkFrame):
         #add button to load configure
         #add button to save configure
         self.model_settings_label = ctk.CTkLabel(self.general_tab, text="StableTune Settings",  font=("Arial", 12, "bold"))
-        self.model_settings_label.grid(row=0, column=1, sticky="nsew")
+        self.model_settings_label.grid(row=0, column=0, sticky="nsew")
         self.load_config_button = ctk.CTkButton(self.general_tab, text="Load Config", command=self.load_config)
-        self.load_config_button.grid(row=0, column=2, sticky="nw")
+        self.load_config_button.grid(row=0, column=1, sticky="nw")
         self.save_config_button = ctk.CTkButton(self.general_tab, text="Save Config", command=self.save_config)
-        self.save_config_button.grid(row=0, column=3, sticky="nw")
+        self.save_config_button.grid(row=0, column=2, sticky="ne")
 
         #add tip label
         self.tip_label = ctk.CTkLabel(self.general_tab, text="Tip: Hover over settings for information ;)",  font=("Arial", 10))
-        self.tip_label.grid(row=1, column=0,columnspan=5, sticky="nsew",pady=(0,10))
+        self.tip_label.grid(row=1, column=0,columnspan=3, sticky="nsew",pady=(0,10))
         self.quick_select_label = ctk.CTkLabel(self.general_tab, text="Quick Select Model",  font=("Arial", 10, "bold"))
         quick_select_label_ttp = CreateToolTip(self.quick_select_label, "Quick select another model to use.")
-        self.quick_select_label.grid(row=2, column=1, sticky="nsew")
+        self.quick_select_label.grid(row=2, column=0, sticky="nsew")
         self.quick_select_var = tk.StringVar(self.master)
         self.quick_select_var.set('Click to select')
-        #self.quick_select_dropdown = ctk.CTkOptionMenu(self.general_tab, self.quick_select_var, *self.quick_select_models, command=self.quick_select_model)
-        #self.quick_select_dropdown.grid(row=2, column=1, sticky="nsew")
+        self.quick_select_dropdown = ctk.CTkOptionMenu(self.general_tab, variable=self.quick_select_var, values=self.quick_select_models, command=self.quick_select_model,dynamic_resizing=False, width=200)
+        self.quick_select_dropdown.grid(row=2, column=1, sticky="nsew")
         
         self.input_model_path_label = ctk.CTkLabel(self.general_tab, text="Input Model / HuggingFace Repo")
         input_model_path_label_ttp = CreateToolTip(self.input_model_path_label, "The path to the diffusers model to use. Can be a local path or a HuggingFace repo path.")
-        self.input_model_path_label.grid(row=3, column=1, sticky="nsew")
+        self.input_model_path_label.grid(row=3, column=0, sticky="nsew")
         self.input_model_path_entry = ctk.CTkEntry(self.general_tab,width=30)
         
-        self.input_model_path_entry.grid(row=3, column=2, sticky="nsew")
+        self.input_model_path_entry.grid(row=3, column=1, sticky="nsew")
         self.input_model_path_entry.insert(0, self.input_model_path)
         #make a button to open a file dialog
-        self.input_model_path_button = ctk.CTkButton(self.general_tab,width=20, text="...", command=self.choose_model)
-        self.input_model_path_button.grid(row=3, column=3, sticky="w")
+        self.input_model_path_button = ctk.CTkButton(self.general_tab, text="...", command=self.choose_model)
+        self.input_model_path_button.grid(row=3, column=2, sticky="nwse")
         #create vae model path dark mode
         self.vae_model_path_label = ctk.CTkLabel(self.general_tab, text="VAE model path / HuggingFace Repo")
         vae_model_path_label_ttp = CreateToolTip(self.vae_model_path_label, "OPTINAL The path to the VAE model to use. Can be a local path or a HuggingFace repo path.")
-        self.vae_model_path_label.grid(row=4, column=1, sticky="nsew")
+        self.vae_model_path_label.grid(row=4, column=0, sticky="nsew")
         self.vae_model_path_entry = ctk.CTkEntry(self.general_tab)
-        self.vae_model_path_entry.grid(row=4, column=2, sticky="nsew")
+        self.vae_model_path_entry.grid(row=4, column=1, sticky="nsew")
         self.vae_model_path_entry.insert(0, self.vae_model_path)
         #make a button to open a file dialog
-        self.vae_model_path_button = ctk.CTkButton(self.general_tab,width=20, text="...", command=lambda: self.open_file_dialog(self.vae_model_path_entry))
-        self.vae_model_path_button.grid(row=4, column=3, sticky="w")
+        self.vae_model_path_button = ctk.CTkButton(self.general_tab, text="...", command=lambda: self.open_file_dialog(self.vae_model_path_entry))
+        self.vae_model_path_button.grid(row=4, column=2, sticky="nsew")
         #create output path dark mode
         self.output_path_label = ctk.CTkLabel(self.general_tab, text="Output Path")
         output_path_label_ttp = CreateToolTip(self.output_path_label, "The path to the output directory. If it doesn't exist, it will be created.")
-        self.output_path_label.grid(row=5, column=1, sticky="nsew")
+        self.output_path_label.grid(row=5, column=0, sticky="nsew")
         self.output_path_entry = ctk.CTkEntry(self.general_tab)
-        self.output_path_entry.grid(row=5, column=2, sticky="nsew")
+        self.output_path_entry.grid(row=5, column=1, sticky="nsew")
         self.output_path_entry.insert(0, self.output_path)
         #make a button to open a file dialog
-        self.output_path_button = ctk.CTkButton(self.general_tab,width=20, text="...", command=lambda: self.open_file_dialog(self.output_path_entry))
-        self.output_path_button.grid(row=5, column=3, sticky="w")
+        self.output_path_button = ctk.CTkButton(self.general_tab, text="...", command=lambda: self.open_file_dialog(self.output_path_entry))
+        self.output_path_button.grid(row=5, column=2, sticky="nsew")
         #create a checkbox wether to convert to ckpt after training
         self.convert_to_ckpt_after_training_label = ctk.CTkLabel(self.general_tab, text="Convert to CKPT after training?")
         convert_to_ckpt_label_ttp = CreateToolTip(self.convert_to_ckpt_after_training_label, "Convert the model to a tensorflow checkpoint after training.")
-        self.convert_to_ckpt_after_training_label.grid(row=6, column=1, sticky="nsew")
+        self.convert_to_ckpt_after_training_label.grid(row=6, column=0, sticky="nsew")
         self.convert_to_ckpt_after_training_var = tk.IntVar()
-        self.convert_to_ckpt_after_training_checkbox = ctk.CTkCheckBox(self.general_tab,variable=self.convert_to_ckpt_after_training_var,text='')
-        self.convert_to_ckpt_after_training_checkbox.grid(row=6, column=2, sticky="nsew")
+        self.convert_to_ckpt_after_training_checkbox = ctk.CTkCheckBox(self.general_tab,variable=self.convert_to_ckpt_after_training_var)
+        self.convert_to_ckpt_after_training_checkbox.grid(row=6, column=1, sticky="nsew")
         #use telegram updates dark mode
         self.send_telegram_updates_label = ctk.CTkLabel(self.general_tab, text="Send Telegram Updates")
         send_telegram_updates_label_ttp = CreateToolTip(self.send_telegram_updates_label, "Use Telegram updates to monitor training progress, must have a Telegram bot set up.")
-        self.send_telegram_updates_label.grid(row=7, column=1, sticky="nsew")
+        self.send_telegram_updates_label.grid(row=7, column=0, sticky="nsew")
         #create checkbox to toggle telegram updates and show telegram token and chat id
         self.send_telegram_updates_var = tk.IntVar()
-        self.send_telegram_updates_checkbox = ctk.CTkCheckBox(self.general_tab,variable=self.send_telegram_updates_var, command=self.toggle_telegram_settings,text='')
-        self.send_telegram_updates_checkbox.grid(row=7, column=2, sticky="nsew")
+        self.send_telegram_updates_checkbox = ctk.CTkCheckBox(self.general_tab,variable=self.send_telegram_updates_var, command=self.toggle_telegram_settings)
+        self.send_telegram_updates_checkbox.grid(row=7, column=1, sticky="nsew")
         #create telegram token dark mode
         self.telegram_token_label = ctk.CTkLabel(self.general_tab, text="Telegram Token",  state="disabled")
         telegram_token_label_ttp = CreateToolTip(self.telegram_token_label, "The Telegram token for your bot.")
-        self.telegram_token_label.grid(row=8, column=1, sticky="nsew")
+        self.telegram_token_label.grid(row=8, column=0, sticky="nsew")
         self.telegram_token_entry = ctk.CTkEntry(self.general_tab,  state="disabled")
-        self.telegram_token_entry.grid(row=8, column=2, sticky="nsew")
+        self.telegram_token_entry.grid(row=8, column=1, sticky="nsew")
         self.telegram_token_entry.insert(0, self.telegram_token)
         #create telegram chat id dark mode
         self.telegram_chat_id_label = ctk.CTkLabel(self.general_tab, text="Telegram Chat ID",  state="disabled")
         telegram_chat_id_label_ttp = CreateToolTip(self.telegram_chat_id_label, "The Telegram chat ID to send updates to.")
-        self.telegram_chat_id_label.grid(row=9, column=1, sticky="nsew")
+        self.telegram_chat_id_label.grid(row=9, column=0, sticky="nsew")
         self.telegram_chat_id_entry = ctk.CTkEntry(self.general_tab,  state="disabled")
-        self.telegram_chat_id_entry.grid(row=9, column=2, sticky="nsew")
+        self.telegram_chat_id_entry.grid(row=9, column=1, sticky="nsew")
         self.telegram_chat_id_entry.insert(0, self.telegram_chat_id)
-        #list to hold all the CTK widgets
-        training_tab_CTK_list = []
         #Training settings label in bold
         self.training_settings_label = ctk.CTkLabel(self.training_tab, text="Training Settings",  font=("Helvetica", 12, "bold"))
-        training_tab_CTK_list.append(self.training_settings_label)
         self.training_settings_label.grid(row=0, column=0, sticky="nsew")
         #add a seed entry
         self.seed_label = ctk.CTkLabel(self.training_tab, text="Seed")
-        training_tab_CTK_list.append(self.seed_label)
         seed_label_ttp = CreateToolTip(self.seed_label, "The seed to use for training.")
         self.seed_label.grid(row=1, column=0, sticky="nsew")
         self.seed_entry = ctk.CTkEntry(self.training_tab)
-        training_tab_CTK_list.append(self.seed_entry)
         self.seed_entry.grid(row=1, column=1, sticky="nsew")
         self.seed_entry.insert(0, self.seed_number)
 
         #create resolution dark mode dropdown
         self.resolution_label = ctk.CTkLabel(self.training_tab, text="Resolution")
-        training_tab_CTK_list.append(self.resolution_label)
         resolution_label_ttp = CreateToolTip(self.resolution_label, "The resolution of the images to train on.")
         self.resolution_label.grid(row=2, column=0, sticky="nsew")
         self.resolution_var = tk.StringVar()
         self.resolution_var.set(self.resolution)
-        #self.resolution_dropdown = ctk.CTkOptionMenu(self.training_tab, self.resolution_var, "256", "320", "384", "448","512", "576", "640", "704", "768", "832", "896", "960", "1024")
-        #self.resolution_dropdown.grid(row=2, column=1, sticky="nsew")
-
+        self.resolution_dropdown = ctk.CTkOptionMenu(self.training_tab, variable=self.resolution_var, values=["256", "320", "384", "448","512", "576", "640", "704", "768", "832", "896", "960", "1024"])
+        self.resolution_dropdown.grid(row=2, column=1, sticky="nsew")
+        
+        
         #create train batch size dark mode dropdown with values from 1 to 60
         self.train_batch_size_label = ctk.CTkLabel(self.training_tab, text="Train Batch Size")
-        training_tab_CTK_list.append(self.train_batch_size_label)
         train_batch_size_label_ttp = CreateToolTip(self.train_batch_size_label, "The batch size to use for training.")
         self.train_batch_size_label.grid(row=3, column=0, sticky="nsew")
         self.train_batch_size_var = tk.StringVar()
@@ -541,17 +572,14 @@ class App(ctk.CTkFrame):
 
         #create train epochs dark mode 
         self.train_epochs_label = ctk.CTkLabel(self.training_tab, text="Train Epochs")
-        training_tab_CTK_list.append(self.train_epochs_label)
         train_epochs_label_ttp = CreateToolTip(self.train_epochs_label, "The number of epochs to train for. An epoch is one pass through the entire dataset.")
         self.train_epochs_label.grid(row=4, column=0, sticky="nsew")
         self.train_epochs_entry = ctk.CTkEntry(self.training_tab)
-        training_tab_CTK_list.append(self.train_epochs_entry)
         self.train_epochs_entry.grid(row=4, column=1, sticky="nsew")
         self.train_epochs_entry.insert(0, self.num_train_epochs)
         
         #create mixed precision dark mode dropdown
         self.mixed_precision_label = ctk.CTkLabel(self.training_tab, text="Mixed Precision")
-        training_tab_CTK_list.append(self.mixed_precision_label)
         mixed_precision_label_ttp = CreateToolTip(self.mixed_precision_label, "Use mixed precision training to speed up training, FP16 is recommended but requires a GPU with Tensor Cores.")
         self.mixed_precision_label.grid(row=5, column=0, sticky="nsew")
         self.mixed_precision_var = tk.StringVar()
@@ -564,28 +592,23 @@ class App(ctk.CTkFrame):
         self.use_8bit_adam_var.set(self.use_8bit_adam)
         #create label
         self.use_8bit_adam_label = ctk.CTkLabel(self.training_tab, text="Use 8bit Adam")
-        training_tab_CTK_list.append(self.use_8bit_adam_label)
         use_8bit_adam_label_ttp = CreateToolTip(self.use_8bit_adam_label, "Use 8bit Adam to speed up training, requires bytsandbytes.")
         self.use_8bit_adam_label.grid(row=6, column=0, sticky="nsew")
         #create checkbox
-        self.use_8bit_adam_checkbox = ctk.CTkCheckBox(self.training_tab, variable=self.use_8bit_adam_var)
-        training_tab_CTK_list.append(self.use_8bit_adam_checkbox)
+        self.use_8bit_adam_checkbox = ctk.CTkCheckBox(self.training_tab, variable=self.use_8bit_adam_var,text='')
         self.use_8bit_adam_checkbox.grid(row=6, column=1, sticky="nsew")
         #create use gradient checkpointing checkbox
         self.use_gradient_checkpointing_var = tk.IntVar()
         self.use_gradient_checkpointing_var.set(self.use_gradient_checkpointing)
         #create label
         self.use_gradient_checkpointing_label = ctk.CTkLabel(self.training_tab, text="Use Gradient Checkpointing")
-        training_tab_CTK_list.append(self.use_gradient_checkpointing_label)
         use_gradient_checkpointing_label_ttp = CreateToolTip(self.use_gradient_checkpointing_label, "Use gradient checkpointing to reduce RAM usage.")
         self.use_gradient_checkpointing_label.grid(row=7, column=0, sticky="nsew")
         #create checkbox
         self.use_gradient_checkpointing_checkbox = ctk.CTkCheckBox(self.training_tab, variable=self.use_gradient_checkpointing_var)
-        training_tab_CTK_list.append(self.use_gradient_checkpointing_checkbox)
         self.use_gradient_checkpointing_checkbox.grid(row=7, column=1, sticky="nsew")
         #create gradient accumulation steps dark mode dropdown with values from 1 to 60
         self.gradient_accumulation_steps_label = ctk.CTkLabel(self.training_tab, text="Gradient Accumulation Steps")
-        training_tab_CTK_list.append(self.gradient_accumulation_steps_label)
         gradient_accumulation_steps_label_ttp = CreateToolTip(self.gradient_accumulation_steps_label, "The number of gradient accumulation steps to use, this is useful for training with limited GPU memory.")
         self.gradient_accumulation_steps_label.grid(row=8, column=0, sticky="nsew")
         self.gradient_accumulation_steps_var = tk.StringVar()
@@ -594,16 +617,13 @@ class App(ctk.CTkFrame):
         #self.gradient_accumulation_steps_dropdown.grid(row=8, column=1, sticky="nsew")
         #create learning rate dark mode entry
         self.learning_rate_label = ctk.CTkLabel(self.training_tab, text="Learning Rate")
-        training_tab_CTK_list.append(self.learning_rate_label)
         learning_rate_label_ttp = CreateToolTip(self.learning_rate_label, "The learning rate to use for training.")
         self.learning_rate_label.grid(row=9, column=0, sticky="nsew")
         self.learning_rate_entry = ctk.CTkEntry(self.training_tab)
-        training_tab_CTK_list.append(self.learning_rate_entry)
         self.learning_rate_entry.grid(row=9, column=1, sticky="nsew")
         self.learning_rate_entry.insert(0, self.learning_rate)
         #create learning rate scheduler dropdown
         self.learning_rate_scheduler_label = ctk.CTkLabel(self.training_tab, text="Learning Rate Scheduler")
-        training_tab_CTK_list.append(self.learning_rate_scheduler_label)
         learning_rate_scheduler_label_ttp = CreateToolTip(self.learning_rate_scheduler_label, "The learning rate scheduler to use for training.")
         self.learning_rate_scheduler_label.grid(row=10, column=0, sticky="nsew")
         self.learning_rate_scheduler_var = tk.StringVar()
@@ -612,11 +632,9 @@ class App(ctk.CTkFrame):
         #self.learning_rate_scheduler_dropdown.grid(row=10, column=1, sticky="nsew")
         #create num warmup steps dark mode entry
         self.num_warmup_steps_label = ctk.CTkLabel(self.training_tab, text="LR Warmup Steps")
-        training_tab_CTK_list.append(self.num_warmup_steps_label)
         num_warmup_steps_label_ttp = CreateToolTip(self.num_warmup_steps_label, "The number of warmup steps to use for the learning rate scheduler.")
         self.num_warmup_steps_label.grid(row=11, column=0, sticky="nsew")
         self.num_warmup_steps_entry = ctk.CTkEntry(self.training_tab)
-        training_tab_CTK_list.append(self.num_warmup_steps_entry)
         self.num_warmup_steps_entry.grid(row=11, column=1, sticky="nsew")
         self.num_warmup_steps_entry.insert(0, self.learning_rate_warmup_steps)
         #create use latent cache checkbox
@@ -624,60 +642,50 @@ class App(ctk.CTkFrame):
         self.use_latent_cache_var.set(self.do_not_use_latents_cache)
         #create label
         self.use_latent_cache_label = ctk.CTkLabel(self.training_tab, text="Use Latent Cache")
-        training_tab_CTK_list.append(self.use_latent_cache_label)
         use_latent_cache_label_ttp = CreateToolTip(self.use_latent_cache_label, "Cache the latents to speed up training.")
         self.use_latent_cache_label.grid(row=12, column=0, sticky="nsew")
         #create checkbox
         self.use_latent_cache_checkbox = ctk.CTkCheckBox(self.training_tab, variable=self.use_latent_cache_var)
-        training_tab_CTK_list.append(self.use_latent_cache_checkbox)
         self.use_latent_cache_checkbox.grid(row=12, column=1, sticky="nsew")
         #create save latent cache checkbox
         self.save_latent_cache_var = tk.IntVar()
         self.save_latent_cache_var.set(self.save_latents_cache)
         #create label
         self.save_latent_cache_label = ctk.CTkLabel(self.training_tab, text="Save Latent Cache")
-        training_tab_CTK_list.append(self.save_latent_cache_label)
         save_latent_cache_label_ttp = CreateToolTip(self.save_latent_cache_label, "Save the latents cache to disk after generation, will be remade if batch size changes.")
         self.save_latent_cache_label.grid(row=13, column=0, sticky="nsew")
         #create checkbox
         self.save_latent_cache_checkbox = ctk.CTkCheckBox(self.training_tab, variable=self.save_latent_cache_var)
-        training_tab_CTK_list.append(self.save_latent_cache_checkbox)
         self.save_latent_cache_checkbox.grid(row=13, column=1, sticky="nsew")
         #create regnerate latent cache checkbox
         self.regenerate_latent_cache_var = tk.IntVar()
         self.regenerate_latent_cache_var.set(self.regenerate_latents_cache)
         #create label
         self.regenerate_latent_cache_label = ctk.CTkLabel(self.training_tab, text="Regenerate Latent Cache")
-        training_tab_CTK_list.append(self.regenerate_latent_cache_label)
         regenerate_latent_cache_label_ttp = CreateToolTip(self.regenerate_latent_cache_label, "Force the latents cache to be regenerated.")
         self.regenerate_latent_cache_label.grid(row=14, column=0, sticky="nsew")
         #create checkbox
         self.regenerate_latent_cache_checkbox = ctk.CTkCheckBox(self.training_tab, variable=self.regenerate_latent_cache_var)
-        training_tab_CTK_list.append(self.regenerate_latent_cache_checkbox)
         self.regenerate_latent_cache_checkbox.grid(row=14, column=1, sticky="nsew")
         #create train text encoder checkbox
         self.train_text_encoder_var = tk.IntVar()
         self.train_text_encoder_var.set(self.train_text_encoder)
         #create label
         self.train_text_encoder_label = ctk.CTkLabel(self.training_tab, text="Train Text Encoder")
-        training_tab_CTK_list.append(self.train_text_encoder_label)
         train_text_encoder_label_ttp = CreateToolTip(self.train_text_encoder_label, "Train the text encoder along with the UNET.")
         self.train_text_encoder_label.grid(row=15, column=0, sticky="nsew")
         #create checkbox
         self.train_text_encoder_checkbox = ctk.CTkCheckBox(self.training_tab, variable=self.train_text_encoder_var)
-        training_tab_CTK_list.append(self.train_text_encoder_checkbox)
         self.train_text_encoder_checkbox.grid(row=15, column=1, sticky="nsew")
         #create limit text encoder encoder entry
         self.limit_text_encoder_var = tk.StringVar()
         self.limit_text_encoder_var.set(self.limit_text_encoder)
         #create label
         self.limit_text_encoder_label = ctk.CTkLabel(self.training_tab, text="Limit Text Encoder")
-        training_tab_CTK_list.append(self.limit_text_encoder_label)
         limit_text_encoder_label_ttp = CreateToolTip(self.limit_text_encoder_label, "Stop training the text encoder after this many epochs, use % to train for a percentage of the total epochs.")
         self.limit_text_encoder_label.grid(row=16, column=0, sticky="nsew")
         #create entry
         self.limit_text_encoder_entry = ctk.CTkEntry(self.training_tab, textvariable=self.limit_text_encoder_var)
-        training_tab_CTK_list.append(self.limit_text_encoder_entry)
         self.limit_text_encoder_entry.grid(row=16, column=1, sticky="nsew")
         
         #create checkbox disable cudnn benchmark
@@ -685,12 +693,10 @@ class App(ctk.CTkFrame):
         self.disable_cudnn_benchmark_var.set(self.disable_cudnn_benchmark)
         #create label for checkbox
         self.disable_cudnn_benchmark_label = ctk.CTkLabel(self.training_tab, text="EXPERIMENTAL: Disable cuDNN Benchmark")
-        training_tab_CTK_list.append(self.disable_cudnn_benchmark_label)
         disable_cudnn_benchmark_label_ttp = CreateToolTip(self.disable_cudnn_benchmark_label, "Disable cuDNN benchmarking, may offer 2x performance on some systems and stop OOM errors.")
         self.disable_cudnn_benchmark_label.grid(row=17, column=0, sticky="nsew")
         #create checkbox
         self.disable_cudnn_benchmark_checkbox = ctk.CTkCheckBox(self.training_tab, variable=self.disable_cudnn_benchmark_var)
-        training_tab_CTK_list.append(self.disable_cudnn_benchmark_checkbox)
         self.disable_cudnn_benchmark_checkbox.grid(row=17, column=1, sticky="nsew")
         #list of label and entries that attach to the training tab
   
@@ -700,24 +706,19 @@ class App(ctk.CTkFrame):
         self.with_prior_loss_preservation_var.set(self.with_prior_reservation)
         #create label
         self.with_prior_loss_preservation_label = ctk.CTkLabel(self.training_tab, text="With Prior Loss Preservation")
-        training_tab_CTK_list.append(self.with_prior_loss_preservation_label)
         with_prior_loss_preservation_label_ttp = CreateToolTip(self.with_prior_loss_preservation_label, "Use the prior loss preservation method. part of Dreambooth.")
         self.with_prior_loss_preservation_label.grid(row=18, column=0, sticky="nsew")
         #create checkbox
         self.with_prior_loss_preservation_checkbox = ctk.CTkCheckBox(self.training_tab, variable=self.with_prior_loss_preservation_var)
-        training_tab_CTK_list.append(self.with_prior_loss_preservation_checkbox)
         self.with_prior_loss_preservation_checkbox.grid(row=18, column=1, sticky="nsew")
         #create prior loss preservation weight entry
         self.prior_loss_preservation_weight_label = ctk.CTkLabel(self.training_tab, text="Weight")
-        training_tab_CTK_list.append(self.prior_loss_preservation_weight_label)
         prior_loss_preservation_weight_label_ttp = CreateToolTip(self.prior_loss_preservation_weight_label, "The weight of the prior loss preservation loss.")
         self.prior_loss_preservation_weight_label.grid(row=18, column=1, sticky="e")
         self.prior_loss_preservation_weight_entry = ctk.CTkEntry(self.training_tab)
-        training_tab_CTK_list.append(self.prior_loss_preservation_weight_entry)
         self.prior_loss_preservation_weight_entry.grid(row=18, column=3, sticky="w")
         self.prior_loss_preservation_weight_entry.insert(0, self.prior_loss_weight)
-        for l in training_tab_CTK_list:
-            l.configure(bg_color='#333333') 
+ 
         #create Dataset Settings label like the model settings label
         self.dataset_settings_label = ctk.CTkLabel(self.dataset_tab, text="Dataset Settings", font=("Arial", 12, "bold"))
         self.dataset_settings_label.grid(row=0, column=0, sticky="nsew")
@@ -1042,12 +1043,10 @@ class App(ctk.CTkFrame):
         self.all_entries_list = [self.input_model_path_entry, self.seed_entry,self.play_seed_entry,self.play_model_entry,self.output_path_entry,self.play_prompt_entry,self.sample_width_entry,self.train_epochs_entry,self.learning_rate_entry,self.sample_height_entry,self.telegram_token_entry,self.vae_model_path_entry,self.dataset_repeats_entry,self.download_dataset_entry,self.num_warmup_steps_entry,self.download_dataset_entry,self.telegram_chat_id_entry,self.save_every_n_epochs_entry,self.play_negative_prompt_entry,self.number_of_class_images_entry,self.number_of_samples_to_generate_entry,self.prior_loss_preservation_weight_entry]
         for entry in self.all_entries_list:
             entry.bind("<Button-3>", self.create_right_click_menu)
-        self.start_training_btn = ctk.CTkButton(self.bottom_frame)
-        #self.start_training_btn.pack(side="bottom", fill="both")
-        self.start_training_btn.configure(font=("Helvetica", 12, "bold"))
-        self.start_training_btn["text"] = "Start Training!"
-        self.start_training_btn["command"] = self.process_inputs
-        self.start_training_btn.grid(row=0, column=1,columnspan=1, sticky="nsew")
+        self.start_training_btn = ctk.CTkButton(self.frame, text="Start Training!", command=self.process_inputs,font=("Helvetica", 12, "bold"))
+        self.start_training_btn.pack(side="bottom", fill="both")
+        #make a list of all the checkboxes
+        #self.start_training_btn.grid(row=0, column=1,columnspan=1, sticky="nsew")
     def playground_find_latest_generated_model(self):
         last_output_path = self.output_path_entry.get()
         last_num_epochs = self.train_epochs_entry.get()
@@ -1699,9 +1698,9 @@ class App(ctk.CTkFrame):
 
     def add_sample_prompt(self,value=""):
         #add a new label and entry
-        self.sample_prompt_labels.append(ctk.CTkLabel(self.sample_tab, text="Sample Prompt " + str(len(self.sample_prompt_labels))))
+        self.sample_prompt_labels.append(ctk.CTkLabel(self.sample_tab, text="Sample Prompt " + str(len(self.sample_prompt_labels)),bg_color='#333333'))
         self.sample_prompt_labels[-1].grid(row=self.sample_prompt_row + len(self.sample_prompt_labels) - 1, column=0, sticky="nsew")
-        entry = ctk.CTkEntry(self.sample_tab)
+        entry = ctk.CTkEntry(self.sample_tab,bg_color='#333333')
         entry.bind("<Button-3>", self.create_right_click_menu)
         self.sample_prompt_entries.append(entry)
         self.sample_prompt_entries[-1].grid(row=self.sample_prompt_row + len(self.sample_prompt_labels) - 1, column=1, sticky="nsew")
