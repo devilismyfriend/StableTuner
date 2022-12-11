@@ -54,7 +54,7 @@ import torchvision
 from PIL.Image import Image as Img
 logger = get_logger(__name__)
 from PIL.Image import Resampling
-
+from diffusers.utils.import_utils import is_xformers_available
 def parse_args():
     parser = argparse.ArgumentParser(description="Simple example of a training script.")
     parser.add_argument('--disable_cudnn_benchmark', default=False, action="store_true")
@@ -1159,7 +1159,16 @@ def main():
     text_encoder = CLIPTextModel.from_pretrained(args.pretrained_model_name_or_path, subfolder="text_encoder" )
     vae = AutoencoderKL.from_pretrained(args.pretrained_model_name_or_path, subfolder="vae" )
     unet = UNet2DConditionModel.from_pretrained(args.pretrained_model_name_or_path, subfolder="unet" )
-
+    
+    if is_xformers_available():
+        try:
+            unet.enable_xformers_memory_efficient_attention()
+            vae.enable_xformers_memory_efficient_attention()
+        except Exception as e:
+            logger.warning(
+                "Could not enable memory efficient attention. Make sure xformers is installed"
+                f" correctly and a GPU is available: {e}"
+            )
     vae.requires_grad_(False)
     #vae.enable_slicing()
     if not args.train_text_encoder:
@@ -1465,6 +1474,14 @@ def main():
                 torch_dtype=torch.float16
             )
             pipeline.scheduler = scheduler
+            if is_xformers_available():
+                try:
+                    pipeline.enable_xformers_memory_efficient_attention()
+                except Exception as e:
+                    logger.warning(
+                        "Could not enable memory efficient attention. Make sure xformers is installed"
+                        f" correctly and a GPU is available: {e}"
+                    )
             save_dir = os.path.join(args.output_dir, f"{step}")
             if args.stop_text_encoder_training == True:
                 save_dir = frozen_directory

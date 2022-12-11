@@ -6,6 +6,8 @@ import sys
 import sysconfig
 import subprocess
 from pathlib import Path
+import requests
+import zipfile
 if sys.version_info < (3, 8):
     import importlib_metadata
 else:
@@ -144,10 +146,22 @@ if os.name == "nt":
     cudnn_src = os.path.join(os.getcwd(), "resources/cudnn_windows")
     #check if chudnn is in cwd
     if not os.path.exists(cudnn_src):
-        print("Can't find cudnn in resources, trying main folder...")
+        print("Can't find CUDNN in resources, trying main folder...")
         cudnn_src = os.path.join(os.getcwd(), "cudnn_windows")
         if not os.path.exists(cudnn_src):
-            print('Can\'t find CUDNN, please refer to the README for instructions on how to install it.')
+            cudnn_url = "https://b1.thefileditch.ch/mwxKTEtelILoIbMbruuM.zip"
+            print(f"Downloading CUDNN 8.6")
+            #download with requests
+            r = requests.get(cudnn_url, allow_redirects=True)
+            #save to cwd
+            open('cudnn_windows.zip', 'wb').write(r.content)
+            #unzip
+            with zipfile.ZipFile('cudnn_windows.zip','r') as zip_ref:
+                zip_ref.extractall(os.path.join(os.getcwd(),"resources/cudnn_windows"))
+            #remove zip
+            os.remove('cudnn_windows.zip')
+            cudnn_src = os.path.join(os.getcwd(), "resources/cudnn_windows")
+
     cudnn_dest = os.path.join(sysconfig.get_paths()["purelib"], "torch", "lib")
     print(f"Checking for B&B files in {bnb_dest}")
     if not os.path.exists(bnb_dest):
@@ -182,7 +196,7 @@ if os.name == "nt":
                     status = shutil.copy2(src_file, cudnn_dest)
             if status:
                 print("Copied CUDNN 8.6 files to destination")
-    d_commit = 'ff65c2d'
+    d_commit = '0ca1724'
     diffusers_cmd = f"git+https://github.com/huggingface/diffusers.git@{d_commit}#egg=diffusers --force-reinstall"
     run(f'"{python}" -m pip install {diffusers_cmd}', f"Installing diffusers {d_commit} commit", "Couldn't install diffusers")
     #install requirements file

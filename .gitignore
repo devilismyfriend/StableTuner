@@ -2380,3 +2380,4 @@ src/LICENSE
 src/README.md
 src/theme/dark.tcl
 src/theme/light.tcl
+resources/DeepSpeed/
