@@ -1047,10 +1047,12 @@ def send_media_group(chat_id,telegram_token, images, caption=None, reply_to_mess
         media[0]['parse_mode'] = 'HTML'
         return requests.post(SEND_MEDIA_GROUP, data={'chat_id': chat_id, 'media': json.dumps(media),'disable_notification':True, 'reply_to_message_id': reply_to_message_id }, files=files)
 def main():
-    #torch.cuda.set_per_process_memory_fraction(0.35)
+    #torch.cuda.set_per_process_memory_fraction(0.5)
     args = parse_args()
     if args.disable_cudnn_benchmark:
         torch.backends.cudnn.benchmark = False
+    else:
+        torch.backends.cudnn.benchmark = True
     if args.send_telegram_updates:
         send_telegram_message(f"Booting up Dreambooth!\n", args.telegram_chat_id, args.telegram_token)
     logging_dir = Path(args.output_dir, "0", args.logging_dir)

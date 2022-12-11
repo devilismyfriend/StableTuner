@@ -30,7 +30,8 @@ class CreateToolTip(object):
         self.widget = widget
         #parent of the widget
         #hack to get the master of the app
-        self.parent = widget.master.master.master.master.master
+        
+        self.parent = widget.winfo_toplevel()
         self.text = text
         self.widget.bind("<Enter>", self.enter)
         self.widget.bind("<Leave>", self.leave)
@@ -1280,10 +1281,62 @@ class App(tk.Frame):
     
     #function to act as a callback when the user adds a new concept data path to generate a new preview image
     def update_preview_image(self, event):
-        #get the entry that was changed
-        entry = event.widget
-        #get the index of the entry
-        index = self.concept_data_path_entries.index(entry)
+        #check if entry has changed
+        indexOfEntry = 0
+        for concept_entry in self.concept_entries:
+            if event.widget in concept_entry:
+                indexOfEntry = self.concept_entries.index(concept_entry)
+                #stop the loop
+                break
+        #get the path from the entry
+        path = event.widget.get()
+        canvas = self.preview_images[indexOfEntry][0]
+        image_container = self.preview_images[indexOfEntry][1]
+        icon = 'resources/stableTuner_icon.png'
+        #create a photoimage object of the image in the path
+        icon = Image.open(icon)
+        #resize the image
+        image = icon.resize((150, 150), Image.Resampling.LANCZOS)
+        if path != "":
+            files = os.listdir(path)
+            for i in range(4):
+                #get an image from the path
+                import random
+                
+                #filter files for images
+                files = [f for f in files if f.endswith(".jpg") or f.endswith(".png") or f.endswith(".jpeg")]
+                if len(files) != 0:
+                    rand = random.choice(files)
+                    image_path = os.path.join(path,rand)
+                    #remove image_path from files
+                    if len(files) > 4:
+                        files.remove(rand)
+                    #files.pop(image_path)
+                    #open the image
+                    #print(image_path)
+                    image_to_add = Image.open(image_path)
+                    #resize the image to 38x38
+                    #resize to 150x150 closest to the original aspect ratio
+                    image_to_add.thumbnail((150, 150), Image.Resampling.LANCZOS)
+                    #decide where to put the image
+                    if i == 0:
+                        #top left
+                        image.paste(image_to_add, (0, 0))
+                    elif i == 1:
+                        #top right
+                        image.paste(image_to_add, (76, 0))
+                    elif i == 2:
+                        #bottom left
+                        image.paste(image_to_add, (0, 76))
+                    elif i == 3:
+                        #bottom right
+                        image.paste(image_to_add, (76, 76))
+                #convert the image to a photoimage
+                #image.show()
+        newImage=ImageTk.PhotoImage(image)
+        self.preview_images[indexOfEntry][2] = newImage
+        canvas.itemconfig(image_container, image=newImage)
+        
 
     def add_concept(self, inst_prompt_val=None, class_prompt_val=None, inst_data_path_val=None, class_data_path_val=None, do_not_balance_val=False):
         #create a title for the new concept
@@ -1313,9 +1366,16 @@ class App(tk.Frame):
         ins_data_path_label.grid(row=6 + (len(self.concept_labels)*6), column=0, sticky="nsew")
         #create instance data path entry
         ins_data_path_entry = tk.Entry(self.concepts_tab,width=50,fg=self.dark_mode_text_var, bg=self.dark_mode_var,insertbackground="white")
+        ins_data_path_entry.bind("<FocusOut>", self.update_preview_image)
+        #bind to insert
         ins_data_path_entry.grid(row=6 + (len(self.concept_labels)*6), column=1, sticky="nsew")
         if inst_data_path_val != None:
+            #focus on the entry
+            
             ins_data_path_entry.insert(0, inst_data_path_val)
+            ins_data_path_entry.focus_set()
+            #focus on main window
+            self.master.focus_set()
         #add a button to open a file dialog to select the instance data path
         ins_data_path_file_dialog_button = tk.Button(self.concepts_tab, text="...", command=lambda: self.open_file_dialog(ins_data_path_entry),fg=self.dark_mode_text_var, bg=self.dark_mode_title_var, activebackground=self.dark_mode_button_var, activeforeground="white")
         ins_data_path_file_dialog_button.configure(border=4, relief='flat')
@@ -1346,7 +1406,7 @@ class App(tk.Frame):
         #create a preview of the images in the path on the right side of the concept
         #create a frame to hold the images
         #empty column to separate the images from the rest of the concept
-        '''
+        
         sep = tk.Label(self.concepts_tab,padx=3, text="",fg=self.dark_mode_text_var, bg=self.dark_mode_var).grid(row=4 + (len(self.concept_labels)*6), column=3, sticky="nsew")
 
         image_preview_frame = tk.Frame(self.concepts_tab, bg=self.dark_mode_var)
@@ -1356,58 +1416,67 @@ class App(tk.Frame):
         image_preview_label.grid(row=0, column=0, sticky="nsew")
         #create a canvas to hold the images
         image_preview_canvas = tk.Canvas(image_preview_frame, bg=self.dark_mode_var)
+        #flat border
+        image_preview_canvas.configure(border=0, relief='flat', highlightthickness=0)
         #canvas size is 100x100
         image_preview_canvas.config(width=150, height=150)
         image_preview_canvas.grid(row=0, column=0, sticky="nsew")
         #debug test, image preview just white
         #if there's a path in the entry, show the images in the path
-        image_preview = ImageTk.PhotoImage(Image.new("RGB", (150, 150), "white"), master=image_preview_frame)
+        #grab stableTuner_icon.png from the resources folder
+        icon = 'resources/stableTuner_icon.png'
+        #create a photoimage object of the image in the path
+        icon = Image.open(icon)
+        #resize the image
+        image = icon.resize((150, 150), Image.Resampling.LANCZOS)
+        image_preview = ImageTk.PhotoImage(image, master=image_preview_frame)
         if inst_data_path_val != None:
             del image_preview
             #get 4 images from the path
             #create a host image 
             image = Image.new("RGB", (150, 150), "white")
             files = os.listdir(inst_data_path_val)
-            for i in range(4):
-                #get an image from the path
-                import random
-                
-                #filter files for images
-                files = [f for f in files if f.endswith(".jpg") or f.endswith(".png") or f.endswith(".jpeg")]
-                rand = random.choice(files)
-                image_path = os.path.join(inst_data_path_val,rand)
-                #remove image_path from files
-                if len(files) > 4:
-                    files.remove(rand)
-                #files.pop(image_path)
-                #open the image
-                print(image_path)
-                image_to_add = Image.open(image_path)
-                #resize the image to 38x38
-                #resize to 150x150 closest to the original aspect ratio
-                image_to_add.thumbnail((150, 150), Image.ANTIALIAS)
-                #decide where to put the image
-                if i == 0:
-                    #top left
-                    image.paste(image_to_add, (0, 0))
-                elif i == 1:
-                    #top right
-                    image.paste(image_to_add, (76, 0))
-                elif i == 2:
-                    #bottom left
-                    image.paste(image_to_add, (0, 76))
-                elif i == 3:
-                    #bottom right
-                    image.paste(image_to_add, (76, 76))
-            #convert the image to a photoimage
-            #image.show()
-            image_preview = ImageTk.PhotoImage(image, master=image_preview_frame)
-            #add the image to the canvas
+            if len(files) > 0:
+                for i in range(4):
+                    #get an image from the path
+                    import random
+                    
+                    #filter files for images
+                    files = [f for f in files if f.endswith(".jpg") or f.endswith(".png") or f.endswith(".jpeg")]
+                    rand = random.choice(files)
+                    image_path = os.path.join(inst_data_path_val,rand)
+                    #remove image_path from files
+                    if len(files) > 4:
+                        files.remove(rand)
+                    #files.pop(image_path)
+                    #open the image
+                    #print(image_path)
+                    image_to_add = Image.open(image_path)
+                    #resize the image to 38x38
+                    #resize to 150x150 closest to the original aspect ratio
+                    image_to_add.thumbnail((150, 150), Image.Resampling.LANCZOS)
+                    #decide where to put the image
+                    if i == 0:
+                        #top left
+                        image.paste(image_to_add, (0, 0))
+                    elif i == 1:
+                        #top right
+                        image.paste(image_to_add, (76, 0))
+                    elif i == 2:
+                        #bottom left
+                        image.paste(image_to_add, (0, 76))
+                    elif i == 3:
+                        #bottom right
+                        image.paste(image_to_add, (76, 76))
+                #convert the image to a photoimage
+                #image.show()
+                image_preview = ImageTk.PhotoImage(image, master=image_preview_frame)
+                #add the image to the canvas
 
-        self.preview_images.append(image_preview)
-        image_preview_canvas.create_image(0, 0, anchor="nw", image=image_preview)
+        
+        image_container = image_preview_canvas.create_image(0, 0, anchor="nw", image=image_preview)
+        self.preview_images.append([image_preview_canvas,image_container,image_preview])
         image_preview_frame.update()
-        '''
         if do_not_balance_val != False:
             do_not_balance_dataset_var.set(1)
         #combine all the entries into a list
@@ -1417,7 +1486,7 @@ class App(tk.Frame):
         #add the list to the list of concept entries
         self.concept_entries.append(concept_entries)
         #add the title to the list of concept titles
-        self.concept_labels.append([concept_title, ins_prompt_label, class_prompt_label, ins_data_path_label, class_data_path_label,do_not_balance_dataset_label])
+        self.concept_labels.append([concept_title, ins_prompt_label, class_prompt_label, ins_data_path_label, class_data_path_label,do_not_balance_dataset_label,image_preview_frame])
         self.concepts.append({"instance_prompt": ins_prompt_entry, "class_prompt": class_prompt_entry, "instance_data_dir": ins_data_path_entry, "class_data_dir": class_data_path_entry,'do_not_balance': do_not_balance_dataset_var})
         self.concept_file_dialog_buttons.append([ins_data_path_file_dialog_button, class_data_path_file_dialog_button])
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
@@ -1504,9 +1573,17 @@ class App(tk.Frame):
     
     def open_file_dialog(self, entry):
         """Opens a file dialog and sets the entry to the selected file."""
+        indexOfEntry = None
         file_path = fd.askdirectory()
+        #get the entry name
+        
         entry.delete(0, tk.END)
         entry.insert(0, file_path)
+        #focus on the entry
+        entry.focus_set()
+        #unset the focus on the button
+        self.master.focus_set()
+
     def save_concept_to_json(self,filename=None):
         #dialog box to select the file to save to
         if filename == None:
@@ -1571,6 +1648,7 @@ class App(tk.Frame):
             self.concept_labels.pop()
             self.concepts.pop()
             self.concept_file_dialog_buttons.pop()
+            self.preview_images.pop()
             self.canvas.configure(scrollregion=self.canvas.bbox("all"))
     def toggle_telegram_settings(self):
         #print(self.send_telegram_updates_var.get())
