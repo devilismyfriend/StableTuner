@@ -12,7 +12,7 @@ from PIL import Image, ImageTk
 import glob
 import converters
 import shutil
-
+import ctypes as ct
 #from scripts import converters
 #work in progress code, not finished, credits will be added at a later date.
 
@@ -20,6 +20,20 @@ import shutil
 
 #class to make a title bar for the window instead of the default one with the minimize, maximize, and close buttons
 
+def dark_title_bar(window):
+    """
+    MORE INFO:
+    https://docs.microsoft.com/en-us/windows/win32/api/dwmapi/ne-dwmapi-dwmwindowattribute
+    """
+    window.update()
+    DWMWA_USE_IMMERSIVE_DARK_MODE = 20
+    set_window_attribute = ct.windll.dwmapi.DwmSetWindowAttribute
+    get_parent = ct.windll.user32.GetParent
+    hwnd = get_parent(window.winfo_id())
+    rendering_policy = DWMWA_USE_IMMERSIVE_DARK_MODE
+    value = 2
+    value = ct.c_int(value)
+    set_window_attribute(hwnd, rendering_policy, ct.byref(value), ct.sizeof(value))
 class CreateToolTip(object):
     """
     create a tooltip for a given widget
@@ -80,65 +94,6 @@ class CreateToolTip(object):
         self.tw= None
         if tw:
             tw.destroy()
-class TitleBar(tk.Frame):
-    def __init__(self, parent):
-        super().__init__(parent)
-        self.parent = parent
-        self.title_bar = tk.Frame(self.parent, bg="#1e2124", relief="raised", bd=0)
-        #width and height of the title bar
-        self.title_bar.config(width=1000, height=30)
-        self.title_bar.pack(expand=False, fill="x")
-        self.close_button = tk.Button(self.title_bar, text="X", command=self.parent.destroy, bg="#1e2124", fg="#7289da", bd=0, activebackground="#1e2124", activeforeground="#7289da", highlightthickness=0)
-        self.close_button.pack(side="right")
-        self.minimize_button = tk.Button(self.title_bar, text="-", command=self.minimize_window, bg="#1e2124", fg="#7289da", bd=0, activebackground="#1e2124", activeforeground="#7289da", highlightthickness=0)
-        self.minimize_button.pack(side="right")
-        #add icon to the title bar
-        self.icon = tk.PhotoImage(file="resources/stableTuner_icon.png")
-        self.icon = self.icon.subsample(6, 6)
-        self.icon_label = tk.Label(self.title_bar, image=self.icon, bg="#1e2124")
-        self.icon_label.pack(side="left")
-        self.title_label = tk.Label(self.title_bar, text="StableTuner", bg="#1e2124", fg="#7289da", font=("Arial", 10, "bold"))
-        self.title_label.pack(side="left")
-        self.title_bar.bind("<B1-Motion>", self.move_window)
-        self.title_bar.bind("<Button-1>", self.click_window)
-        self.title_bar.bind("<Double-Button-1>", self.double_click)
-        self.parent.bind("<Map>", self.on_resume)
-        self.x = self.y = 0
-        self.log_size = 0
-        self.log_pos = 0
-    def minimize_window(self):
-        self.parent.overrideredirect(False)
-        #self.parent.state("iconic")
-        self.parent.iconify()
-    def move_window(self, event):
-        #get the current x and y coordinates of the mouse in relation to screen coordinates
-        x = self.parent.winfo_pointerx() - self.x
-        y = self.parent.winfo_pointery() - self.y
-        #move the window to the new coordinates
-        self.parent.geometry("+{}+{}".format(x, y))
-    def double_click(self, event):
-        if self.parent.state() == "normal":
-            #self.parent.overrideredirect(False)
-            #resize the window to the screen size
-            self.log_size = self.parent.winfo_width(), self.parent.winfo_height()
-            self.log_pos = self.parent.winfo_x(), self.parent.winfo_y()
-            self.parent.geometry("{0}x{1}+0+0".format(self.parent.winfo_screenwidth(), self.parent.winfo_screenheight()))
-            self.parent.state("zoomed")
-        else:
-            #self.parent.overrideredirect(True)
-            #resize the window to the original size
-            self.parent.geometry("{0}x{1}+0+0".format(self.log_size[0], self.log_size[1]))\
-            #move the window to the original position
-            self.parent.geometry("+{0}+{1}".format(self.log_pos[0], self.log_pos[1]))
-            self.parent.state("normal")
-    def click_window(self, event):
-        self.x = event.x
-        self.y = event.y
-    def on_resume(self, event):
-        if self.parent.state() == "normal":
-            self.parent.overrideredirect(True)
-            self.parent.state("normal")
-            self.parent.deiconify()
 class App(tk.Frame):
     
     def __init__(self, master=None):
@@ -146,21 +101,19 @@ class App(tk.Frame):
         #deiconify event
         #self.master.bind("<Map>", self.on_resume)
         #remove the default title bar
-        self.master.overrideredirect(True)
+        self.master.overrideredirect(False)
         #force keep window on top
         self.master.wm_attributes("-topmost", 1)
         #create gui at center of screen
         self.master.geometry("1000x600+{}+{}".format(int(self.master.winfo_screenwidth()/2-1000/2), int(self.master.winfo_screenheight()/2-600/2)))
         #create a title bar
-        self.title_bar = TitleBar(self.master)
-        self.title_bar.pack(side="top", fill="x",)
         #self.master.configure(bg="#1e2124")
         #define some colors
         self.stableTune_icon =PhotoImage(file = "resources/stableTuner_icon.png")
         self.master.iconphoto(False, self.stableTune_icon)
-        self.dark_mode_var = "#1e2124"
-        self.dark_purple_mode_var = "#1B0F1B"
-        self.dark_mode_title_var = "#7289da"
+        self.dark_mode_var = "#202020"
+        #self.dark_purple_mode_var = "#1B0F1B"
+        self.dark_mode_title_var = "#286aff"
         self.dark_mode_button_pressed_var = "#BB91B6"
         self.dark_mode_button_var = "#8ea0e1"
         self.dark_mode_text_var = "#c6c7c8"
@@ -171,8 +124,14 @@ class App(tk.Frame):
         #master canvas
         self.canvas = tk.Canvas(self.master)
         self.canvas.configure(highlightthickness=0)
-        self.canvas.pack(side="top", fill="both", expand=True)
-        self.scrollbar = tk.Scrollbar(self.canvas, orient="vertical", command=self.canvas.yview)
+        self.canvas.pack(side="left", fill="both", expand=True)
+        #create a dark mode style for the scrollbar
+        style = ttk.Style()
+        style.theme_use('clam')
+        #create new style
+        style.element_create('Vertical.Scrollbar.trough', "from", 'default')
+        style.configure("Vertical.TScrollbar", gripcount=0, background=self.dark_mode_title_var, darkcolor="#202020", lightcolor="#202020", troughcolor="#202020", bordercolor="#202020", arrowcolor=self.dark_mode_title_var)
+        self.scrollbar = ttk.Scrollbar(self.master, orient="vertical", command=self.canvas.yview,style="Vertical.TScrollbar")
         #create dark mdoe style for vertical scrollbar
         self.scrollbar.pack(side="right", fill="y")
         #bind mousewheel to scroll
@@ -187,7 +146,7 @@ class App(tk.Frame):
         self.canvas.create_window((0,0), window=self.frame, anchor="nw")
         self.canvas.configure(bg=self.dark_mode_var)
         #create tabs
-        self.tabsSizes = {0 : [680,400], 1 : [680,560], 2 : [680,300],3 : [680,440],4 : [680,500],5 : [680,400],6 : [680,490]}
+        self.tabsSizes = {0 : [695,400], 1 : [695,560], 2 : [695,300],3 : [695,440],4 : [695,500],5 : [695,400],6 : [695,490]}
         self.notebook = ttk.Notebook(self.frame)
         self.notebook.grid(row=0, column=0, columnspan=2, sticky="nsew")
         
@@ -379,6 +338,8 @@ class App(tk.Frame):
     def on_tab_changed(self, event):
         #get the current selected notebook tab id
         tab_id = self.notebook.select()
+        #get the tab object
+        tab = self.notebook.nametowidget(tab_id)
         #get the tab index
         tab_index = self.notebook.index(tab_id)
         
@@ -1761,7 +1722,7 @@ class App(tk.Frame):
         self.update_sample_prompts()
         self.update_concepts()
         config["concepts"] = self.concepts
-        print(self.concepts)
+        #print(self.concepts)
         config["sample_prompts"] = self.sample_prompts
         config['add_controlled_seed_to_sample'] = self.add_controlled_seed_to_sample
         config["model_path"] = self.input_model_path_entry.get()
@@ -2119,4 +2080,5 @@ class App(tk.Frame):
         
 root = tk.Tk()
 app = App(master=root)
+dark_title_bar(root)
 app.mainloop()
