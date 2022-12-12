@@ -308,6 +308,33 @@ class App(ctk.CTkFrame):
             if type(child) == ctk.CTkCheckBox:
                 child.configure(text='')
                 child.grid(sticky="e")
+        for child in self.concepts_tab.children.values():
+            child.configure(bg_color='#333333')
+            #print type of l
+            #print(type(l))
+            if type(child) == ctk.CTkCheckBox:
+                child.configure(text='')
+                child.grid(sticky="e")
+        for child in self.play_tab.children.values():
+            try:
+                child.configure(bg_color='#333333')
+                #print type of l
+                #print(type(l))
+                if type(child) == ctk.CTkCheckBox:
+                    child.configure(text='')
+                    child.grid(sticky="we")
+            except:
+                pass
+        for child in self.tools_tab.children.values():
+            try:
+                child.configure(bg_color='#333333')
+                #print type of l
+                #print(type(l))
+                if type(child) == ctk.CTkCheckBox:
+                    child.configure(text='')
+                    child.grid(sticky="we")
+            except:
+                pass
         for child in self.general_tab.children.values():
             try:
                 child.configure(bg_color='#333333')
@@ -1334,32 +1361,32 @@ class App(ctk.CTkFrame):
 
     def add_concept(self, inst_prompt_val=None, class_prompt_val=None, inst_data_path_val=None, class_data_path_val=None, do_not_balance_val=False):
         #create a title for the new concept
-        concept_title = ctk.CTkLabel(self.concepts_tab, text="Concept " + str(len(self.concept_labels)+1), font=("Helvetica", 10, "bold"))
+        concept_title = ctk.CTkLabel(self.concepts_tab, text="Concept " + str(len(self.concept_labels)+1), font=("Helvetica", 10, "bold"), bg_color='#333333')
         concept_title.grid(row=3 + (len(self.concept_labels)*6), column=0, sticky="nsew")
         #create instance prompt label
-        ins_prompt_label = ctk.CTkLabel(self.concepts_tab, text="Token/Prompt")
+        ins_prompt_label = ctk.CTkLabel(self.concepts_tab, text="Token/Prompt", bg_color='#333333')
         ins_prompt_label_ttp = CreateToolTip(ins_prompt_label, "The token for the concept, will be ignored if use image names as captions is checked.")
         ins_prompt_label.grid(row=4 + (len(self.concept_labels)*6), column=0, sticky="nsew")
         #create instance prompt entry
-        ins_prompt_entry = ctk.CTkEntry(self.concepts_tab)
+        ins_prompt_entry = ctk.CTkEntry(self.concepts_tab, bg_color='#333333')
         ins_prompt_entry.grid(row=4 + (len(self.concept_labels)*6), column=1, sticky="nsew")
         if inst_prompt_val != None:
             ins_prompt_entry.insert(0, inst_prompt_val)
         #create class prompt label
-        class_prompt_label = ctk.CTkLabel(self.concepts_tab, text="Class Prompt")
+        class_prompt_label = ctk.CTkLabel(self.concepts_tab, text="Class Prompt", bg_color='#333333')
         class_prompt_label_ttp = CreateToolTip(class_prompt_label, "The prompt will be used to generate class images and train the class images if added to dataset")
         class_prompt_label.grid(row=5 + (len(self.concept_labels)*6), column=0, sticky="nsew")
         #create class prompt entry
-        class_prompt_entry = ctk.CTkEntry(self.concepts_tab,width=50)
+        class_prompt_entry = ctk.CTkEntry(self.concepts_tab,width=50, bg_color='#333333')
         class_prompt_entry.grid(row=5 + (len(self.concept_labels)*6), column=1, sticky="nsew")
         if class_prompt_val != None:
             class_prompt_entry.insert(0, class_prompt_val)
         #create instance data path label
-        ins_data_path_label = ctk.CTkLabel(self.concepts_tab, text="Training Data Directory")
+        ins_data_path_label = ctk.CTkLabel(self.concepts_tab, text="Training Data Directory", bg_color='#333333')
         ins_data_path_label_ttp = CreateToolTip(ins_data_path_label, "The path to the folder containing the concept's images.")
         ins_data_path_label.grid(row=6 + (len(self.concept_labels)*6), column=0, sticky="nsew")
         #create instance data path entry
-        ins_data_path_entry = ctk.CTkEntry(self.concepts_tab,width=50)
+        ins_data_path_entry = ctk.CTkEntry(self.concepts_tab,width=50, bg_color='#333333')
         ins_data_path_entry.bind("<FocusOut>", self.update_preview_image)
         #bind to insert
         ins_data_path_entry.grid(row=6 + (len(self.concept_labels)*6), column=1, sticky="nsew")
@@ -1371,27 +1398,27 @@ class App(ctk.CTkFrame):
             #focus on main window
             self.master.focus_set()
         #add a button to open a file dialog to select the instance data path
-        ins_data_path_file_dialog_button = ctk.CTkButton(self.concepts_tab, text="...", command=lambda: self.open_file_dialog(ins_data_path_entry))
+        ins_data_path_file_dialog_button = ctk.CTkButton(self.concepts_tab, text="...", command=lambda: self.open_file_dialog(ins_data_path_entry), bg_color='#333333')
         ins_data_path_file_dialog_button.grid(row=6 + (len(self.concept_labels)*6), column=2, sticky="nsew")
         #create class data path label
-        class_data_path_label = ctk.CTkLabel(self.concepts_tab, text="Class Data Directory")
+        class_data_path_label = ctk.CTkLabel(self.concepts_tab, text="Class Data Directory", bg_color='#333333')
         class_data_path_label_ttp = CreateToolTip(class_data_path_label, "The path to the folder containing the concept's class images.")
         class_data_path_label.grid(row=7 + (len(self.concept_labels)*6), column=0, sticky="nsew")
         #add a button to open a file dialog to select the class data path
-        class_data_path_file_dialog_button = ctk.CTkButton(self.concepts_tab, text="...", command=lambda: self.open_file_dialog(class_data_path_entry))
+        class_data_path_file_dialog_button = ctk.CTkButton(self.concepts_tab, text="...", command=lambda: self.open_file_dialog(class_data_path_entry), bg_color='#333333')
         class_data_path_file_dialog_button.grid(row=7 + (len(self.concept_labels)*6), column=2, sticky="nsew")
         #create class data path entry
-        class_data_path_entry = ctk.CTkEntry(self.concepts_tab)
+        class_data_path_entry = ctk.CTkEntry(self.concepts_tab, bg_color='#333333')
         class_data_path_entry.grid(row=7 + (len(self.concept_labels)*6), column=1, sticky="nsew")
         if class_data_path_val != None:
             class_data_path_entry.insert(0, class_data_path_val)
         #add a checkbox to do not balance dataset
         do_not_balance_dataset_var = tk.IntVar()
         #label for checkbox
-        do_not_balance_dataset_label = ctk.CTkLabel(self.concepts_tab, text="Do not balance dataset")
+        do_not_balance_dataset_label = ctk.CTkLabel(self.concepts_tab, text="Do not balance dataset", bg_color='#333333')
         do_not_balance_dataset_label_ttp = CreateToolTip(do_not_balance_dataset_label, "If checked, the dataset will not be balanced. this settings overrides the global auto balance setting, if there's a concept you'd like to train without balance while the others will.")
         do_not_balance_dataset_label.grid(row=8 + (len(self.concept_labels)*6), column=0, sticky="nsew")
-        do_not_balance_dataset_checkbox = ctk.CTkCheckBox(self.concepts_tab, variable=do_not_balance_dataset_var)
+        do_not_balance_dataset_checkbox = ctk.CTkCheckBox(self.concepts_tab, variable=do_not_balance_dataset_var, bg_color='#333333')
         do_not_balance_dataset_checkbox.grid(row=8 + (len(self.concept_labels)*6), column=1, sticky="nsew")
         do_not_balance_dataset_var.set(0)
 
@@ -1399,7 +1426,7 @@ class App(ctk.CTkFrame):
         #create a frame to hold the images
         #empty column to separate the images from the rest of the concept
         
-        sep = ctk.CTkLabel(self.concepts_tab,padx=3, text="").grid(row=4 + (len(self.concept_labels)*6), column=3, sticky="nsew")
+        #sep = ctk.CTkLabel(self.concepts_tab,padx=3, text="").grid(row=4 + (len(self.concept_labels)*6), column=3, sticky="nsew", bg_color='#333333')
 
         image_preview_frame = ctk.CTkFrame(self.concepts_tab)
         image_preview_frame.grid(row=4 + (len(self.concept_labels)*6), column=4, rowspan=4, sticky="ne")
@@ -1408,10 +1435,11 @@ class App(ctk.CTkFrame):
         #image_preview_label.grid(row=0, column=0, sticky="nsew")
         #create a canvas to hold the images
         image_preview_canvas = tk.Canvas(image_preview_frame)
+        
         #flat border
         image_preview_canvas.configure(border=0, relief='flat', highlightthickness=0)
         #canvas size is 100x100
-        image_preview_canvas.configure(width=150, height=150)
+        image_preview_canvas.configure(width=150, height=150, bg='#333333')
         image_preview_canvas.grid(row=0, column=0, sticky="nsew")
         #debug test, image preview just white
         #if there's a path in the entry, show the images in the path
@@ -1421,7 +1449,7 @@ class App(ctk.CTkFrame):
         icon = Image.open(icon)
         #resize the image
         image = icon.resize((150, 150), Image.Resampling.LANCZOS)
-        image_preview = ctk.CTkImage(image, master=image_preview_frame)
+        image_preview = ctk.CTkImage(image)
         if inst_data_path_val != None:
             if os.path.exists(inst_data_path_val):
                 del image_preview
@@ -1463,7 +1491,7 @@ class App(ctk.CTkFrame):
                             image.paste(image_to_add, (76, 76))
                     #convert the image to a photoimage
                     #image.show()
-                    image_preview = ctk.CTkImage(image, master=image_preview_frame)
+                    image_preview = ctk.CTkImage(image)
                     #add the image to the canvas
 
         
@@ -1659,10 +1687,10 @@ class App(ctk.CTkFrame):
             self.telegram_chat_id_label.configure(state="disabled")
             self.telegram_chat_id_entry.configure(state="disabled")
     def add_controlled_seed_sample(self,value=""):
-        self.controlled_seed_sample_labels.append(ctk.CTkLabel(self.sample_tab, text="Controlled Seed Sample " + str(len(self.controlled_seed_sample_labels))))
+        self.controlled_seed_sample_labels.append(ctk.CTkLabel(self.sample_tab,bg_color='#333333' ,text="Controlled Seed Sample " + str(len(self.controlled_seed_sample_labels))))
         self.controlled_seed_sample_labels[-1].grid(row=self.controlled_sample_row + len(self.sample_prompts) + len(self.controlled_seed_sample_labels), column=0, sticky="nsew")
         #create entry
-        entry = ctk.CTkEntry(self.sample_tab)
+        entry = ctk.CTkEntry(self.sample_tab,bg_color='#333333')
         entry.bind("<Button-3>",self.create_right_click_menu)
         self.controlled_seed_sample_entries.append(entry)
         self.controlled_seed_sample_entries[-1].grid(row=self.controlled_sample_row + len(self.sample_prompts) + len(self.controlled_seed_sample_entries), column=1, sticky="nsew")
