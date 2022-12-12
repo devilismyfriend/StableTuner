@@ -77,8 +77,8 @@ class CreateToolTip(object):
         y += self.widget.winfo_rooty() + 20
         # creates a toplevel window
         self.tw = tk.Toplevel(self.widget)
-        self.tw.wm_attributes("-topmost", 1)
-        self.parent.wm_attributes("-topmost", 0)
+        #self.tw.wm_attributes("-topmost", 1)
+        #self.parent.wm_attributes("-topmost", 0)
         # Leaves only the label and removes the app window
         self.tw.wm_overrideredirect(True)
         self.tw.wm_geometry("+%d+%d" % (x, y))
@@ -101,9 +101,9 @@ class App(tk.Frame):
         #deiconify event
         #self.master.bind("<Map>", self.on_resume)
         #remove the default title bar
-        self.master.overrideredirect(False)
+        #self.master.overrideredirect(False)
         #force keep window on top
-        self.master.wm_attributes("-topmost", 1)
+        #self.master.wm_attributes("-topmost", 1)
         #create gui at center of screen
         self.master.geometry("1000x600+{}+{}".format(int(self.master.winfo_screenwidth()/2-1000/2), int(self.master.winfo_screenheight()/2-600/2)))
         #create a title bar
@@ -994,7 +994,7 @@ class App(tk.Frame):
 
         #add a button for Caption Buddy
         self.caption_buddy_button = tk.Button(self.tools_tab, text="Launch Caption Buddy",font=("Helvetica", 10, "bold"), command=lambda:self.caption_buddy(),fg=self.dark_mode_title_var, bg=self.dark_mode_var,activebackground=self.dark_mode_title_var)
-        self.caption_buddy_button.configure(border=4, relief='flat')
+        self.caption_buddy_button.configure(pady=10,border=4, relief='flat')
         self.caption_buddy_button.grid(row=8, column=0, columnspan=3, sticky="nsew")
 
 
@@ -2060,10 +2060,7 @@ class App(tk.Frame):
         if train == 0:
             root = tk.Tk()
             app = App(master=root)
-            #self.play_model_entry.insert(0, self.output_path_entry.get()+os.sep+self.train_epochs_entry.get())
-            #switch to the play tab
-            #self.notebook.select(5)
-            #self.master.update()
+            dark_title_bar(root)
             app.mainloop() 
         else:
             #cancel conversion on restart
