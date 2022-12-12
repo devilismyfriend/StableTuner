@@ -1456,20 +1456,27 @@ class App(tk.Frame):
     
     def get_sd_version(self,file_path):
             import torch
-            checkpoint = torch.load(file_path)
+            from safetensors.torch import load_file
+
+            if ".ckpt" in file_path:
+                checkpoint = torch.load(file_path)
+            else:
+                checkpoint = load_file(file_path)
             answer = messagebox.askyesno("V-Model?", "Is this model using V-Parameterization? (based on SD2.x 768 model)")
             if answer == True:
                 prediction = "vprediction"
             else:
                 prediction = "epsilon"
             key_name = "model.diffusion_model.input_blocks.2.1.transformer_blocks.0.attn2.to_k.weight"
-            checkpoint = checkpoint["state_dict"]
+            if "ckpt" in file_path:
+                checkpoint = checkpoint["state_dict"]
             if key_name in checkpoint and checkpoint[key_name].shape[-1] == 1024:
                 version = "v2"
             else:
                 version = "v1"
             del checkpoint
             return version, prediction
+
     def choose_model(self):
         """Opens a file dialog and to choose either a model or a model folder."""
         #open file dialog and show only ckpt and json files and folders
@@ -1531,9 +1538,45 @@ class App(tk.Frame):
 
                 file_path = model_path
         if file_path.endswith(".safetensors"):
-            #raise not implemented error
-            raise NotImplementedError("The selected file is a safetensors file. This file type is not supported yet.")
-            file_path = ''
+            sd_file = file_path
+            version, prediction = self.get_sd_version(sd_file)
+            #create a directory under the models folder with the name of the ckpt file
+            model_name = os.path.basename(file_path).split(".")[0]
+            #get the path of the script
+            script_path = os.getcwd()
+            #get the path of the models folder
+            models_path = os.path.join(script_path, "models")
+            #if no models_path exists, create it
+            if not os.path.isdir(models_path):
+                os.mkdir(models_path)
+            #create the path of the new model folder
+            model_path = os.path.join(models_path, model_name)
+            #check if the model folder already exists
+            if os.path.isdir(model_path) and os.path.isfile(os.path.join(model_path, "model_index.json")):
+                file_path = model_path
+            else:
+                #create the model folder
+                if os.path.isdir(model_path):
+                    shutil.rmtree(model_path)
+                os.mkdir(model_path)
+                #converter
+                #show a dialog to inform the user that the model is being converted
+                self.convert_model_dialog = tk.Toplevel(self)
+                self.convert_model_dialog.title("Converting model")
+                #label
+                empty_label = tk.Label(self.convert_model_dialog, text="")
+                empty_label.pack()
+                label = tk.Label(self.convert_model_dialog, text="Converting CKPT to Diffusers. Please wait...")
+                label.pack()
+                self.convert_model_dialog.geometry("300x70")
+                self.convert_model_dialog.resizable(False, False)
+                self.convert_model_dialog.grab_set()
+                self.convert_model_dialog.focus_set()
+                self.master.update()
+                convert = converters.Convert_SD_to_Diffusers(sd_file,model_path,prediction_type=prediction,version=version)
+                self.convert_model_dialog.destroy()
+
+                file_path = model_path
         self.input_model_path_entry.delete(0, tk.END)
         self.input_model_path_entry.insert(0, file_path)
     

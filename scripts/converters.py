@@ -85,7 +85,7 @@ class Convert_SD_to_Diffusers():
         dtype = 'fp16' if self.half else None
         v2_model = True if is_v2 else False
         print(f"loading model from: {self.checkpoint_path}")
-        #print(v2_model)
+        # print(v2_model)
         text_encoder, vae, unet = model_util.load_models_from_stable_diffusion_checkpoint(v2_model, self.checkpoint_path)
         print(f"copy scheduler/tokenizer config from: {reference_diffusers_model}")
         model_util.save_diffusers_checkpoint(v2_model, self.output_path, text_encoder, unet, reference_diffusers_model, vae)
