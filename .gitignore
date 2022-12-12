@@ -2381,3 +2381,4 @@ src/README.md
 src/theme/dark.tcl
 src/theme/light.tcl
 resources/DeepSpeed/
+image_gui_exmaple.py

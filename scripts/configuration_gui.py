@@ -10,7 +10,7 @@ import json
 from tkinter import messagebox
 from PIL import Image, ImageTk
 import glob
-import converters
+#import converters
 import shutil
 import customtkinter as ctk
 ctk.set_appearance_mode("System")
@@ -118,10 +118,10 @@ class CreateToolTip(object):
         if tw:
             tw.destroy()
 
-class App(ctk.CTkFrame):
+class App(ctk.CTk):
     
-    def __init__(self, master=None):
-        super().__init__(master)
+    def __init__(self):
+        super().__init__()
         #deiconify event
         #self.master.bind("<Map>", self.on_resume)
         #remove the default title bar
@@ -129,24 +129,28 @@ class App(ctk.CTkFrame):
         #force keep window on top
         #self.master.wm_attributes("-topmost", 1)
         #create gui at center of screen
-        self.master.geometry("800x600+{}+{}".format(int(self.master.winfo_screenwidth()/2-1000/2), int(self.master.winfo_screenheight()/2-600/2)))
+        self.grid_columnconfigure(1, weight=1)
+        self.grid_columnconfigure((2, 3), weight=0)
+        self.grid_rowconfigure((0, 1, 2), weight=1)
+        self.geometry(f"{1100}x{580}")
+        #self.master.geometry("800x600+{}+{}".format(int(self.master.winfo_screenwidth()/2-1000/2), int(self.master.winfo_screenheight()/2-600/2)))
         #create a title bar
         #self.title_bar = TitleBar(self.master)
         #self.title_bar.pack(side="top", fill="x",)
         #self.master.configure(bg="#1e2124")
         #define some colors
-        self.stableTune_icon =PhotoImage(file = "resources/stableTuner_icon.png")
-        self.master.iconphoto(False, self.stableTune_icon)
+        #self.stableTune_icon =PhotoImage(file = "resources/stableTuner_icon.png")
+        #self.master.iconphoto(False, self.stableTune_icon)
         self.dark_mode_var = "#1e2124"
         self.dark_purple_mode_var = "#1B0F1B"
         self.dark_mode_title_var = "#7289da"
         self.dark_mode_button_pressed_var = "#BB91B6"
         self.dark_mode_button_var = "#8ea0e1"
         self.dark_mode_text_var = "#c6c7c8"
-        self.master.title("StableTune")
-        self.master.configure(cursor="left_ptr")
+        self.title("StableTune")
+        self.configure(cursor="left_ptr")
         #resizable window
-        self.master.resizable(True, True)
+        self.resizable(True, True)
         #master canvas
         #self.canvas = tk.Canvas(self.master)
         #self.canvas.configure(highlightthickness=0)
@@ -158,8 +162,52 @@ class App(ctk.CTkFrame):
         #self.canvas.bind_all("<MouseWheel>", lambda event: self.canvas.yview_scroll(int(-1*(event.delta/120)), "units"))
         #self.canvas.configure(yscrollcommand=self.scrollbar.set)
         #self.canvas.bind('<Configure>', lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
-        self.frame = ctk.CTkFrame(self.master)
+        self.create_default_variables()
+        self.sidebar_frame = ctk.CTkFrame(self, width=140, corner_radius=0)
+        self.sidebar_frame.grid(row=0, column=0, rowspan=10, sticky="nsew")
+        #self.sidebar_frame.grid_rowconfigure(4, weight=1)
+        self.logo_img = ctk.CTkImage(Image.open("resources/stableTuner_logo.png").resize((300, 300), Image.Resampling.LANCZOS),size=(80,80))
+        #self.logo_img = ctk.CTkButton(self.sidebar_frame, image=self.logo_img, text='', height=100,width=100)
+        self.logo_img = ctk.CTkLabel(self.sidebar_frame, image=self.logo_img, text='', height=50,width=50, font=ctk.CTkFont(size=15, weight="bold"))
+        self.logo_img.grid(row=0, column=0, padx=20, pady=20)
+        self.logo_label = ctk.CTkLabel(self.sidebar_frame, text="StableTuner", font=ctk.CTkFont(size=20, weight="bold"))
+        self.logo_label.place(x=90, y=105, anchor="n")
+        self.empty_label = ctk.CTkLabel(self.sidebar_frame, text="", font=ctk.CTkFont(size=20, weight="bold"))
+        self.empty_label.grid(row=1, column=0, padx=0, pady=0)
+        self.sidebar_button_1 = ctk.CTkButton(self.sidebar_frame,text='General Settings',command=self.general_nav_button_event)
+        self.sidebar_button_1.grid(row=2, column=0, padx=20, pady=5)
+        self.sidebar_button_2 = ctk.CTkButton(self.sidebar_frame,text='Trainer Settings',command=self.training_nav_button_event)
+        self.sidebar_button_2.grid(row=3, column=0, padx=20, pady=5)
+        self.sidebar_button_3 = ctk.CTkButton(self.sidebar_frame,text='Dataset Settings',command=self.dataset_nav_button_event)
+        self.sidebar_button_3.grid(row=4, column=0, padx=20, pady=5)
+
+        self.general_frame = ctk.CTkFrame(self, width=140, corner_radius=0,fg_color='transparent')
+        self.general_frame.grid_columnconfigure(0, weight=5)
+        self.general_frame.grid_columnconfigure(1, weight=1)
         
+        
+        self.general_frame_subframe = ctk.CTkFrame(self.general_frame,width=400, corner_radius=20)
+        #self.general_frame_subframe.grid_columnconfigure(0, weight=1)
+        self.general_frame_subframe.grid(row=2, column=0,sticky="nsew", padx=20, pady=20)
+        self.general_frame_subframe_side_guide = ctk.CTkFrame(self.general_frame,width=250, corner_radius=20)
+        self.general_frame_subframe_side_guide.grid(row=2, column=1,sticky="nsew", padx=20, pady=20)
+        self.create_general_settings_widgets()    
+
+        self.training_frame = ctk.CTkFrame(self, width=140, corner_radius=0,fg_color='transparent')
+        #self.training_frame.grid_columnconfigure(0, weight=1)
+        self.training_frame_title = ctk.CTkLabel(self.training_frame, text="Training Settings", font=ctk.CTkFont(size=20, weight="bold"))
+        self.training_frame_title.grid(row=0, column=0, padx=20, pady=20)   
+
+        self.dataset_frame = ctk.CTkFrame(self, width=140, corner_radius=0,fg_color='transparent')
+        self.dataset_frame.grid_columnconfigure(0, weight=1)
+        self.dataset_frame_title = ctk.CTkLabel(self.dataset_frame, text="Dataset Settings", font=ctk.CTkFont(size=20, weight="bold"))
+        self.dataset_frame_title.grid(row=0, column=0, padx=20, pady=20)  
+
+        self.select_frame_by_name('general') 
+        self.update()
+        return
+        print('test')
+        '''
         self.frame.pack(pady=20, padx=20, fill="both", expand=True)
         
         #self.canvas.create_window((0,0), window=self.frame, anchor="nw")
@@ -168,7 +216,7 @@ class App(ctk.CTkFrame):
         #self.notebook = ttk.Notebook(self.frame)
         self.notebook = ctk.CTkTabview(self.frame)
         #self.notebook.grid(row=0, column=0, columnspan=2, sticky="nsew")
-        self.notebook.pack(pady=10, padx=10, fill="both", expand=True)
+        self.notebook.pack(pady=5, padx=10, fill="both", expand=True)
         s = ttk.Style()
         s.configure('new.TFrame', background='#333333',borderwidth=0,highlightthickness=0)
         #create tabs
@@ -229,7 +277,7 @@ class App(ctk.CTkFrame):
         
         #on tab change resize window
         #self.notebook.bind("<<NotebookTabChanged>>", self.on_tab_changed)
-
+        '''
         #variables
         
         self.sample_prompts = []
@@ -300,7 +348,8 @@ class App(ctk.CTkFrame):
         self.preview_images = []
         self.disable_cudnn_benchmark = True
         self.sample_step_interval = 500
-        self.create_widgets()
+        #self.create_widgets()
+        '''
         for child in self.training_tab.children.values():
             child.configure(bg_color='#333333')
             #print type of l
@@ -407,13 +456,105 @@ class App(ctk.CTkFrame):
             #self.load_config()
             pass
         #self.canvas.configure(scrollregion=self.canvas.bbox("all"))
-        
-    def on_resume(self, event):
-        #if state is deiconified, then window is restored
-        
-        self.master.update()
-        self.master.overrideredirect(True)
-        #self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        '''
+    def create_default_variables(self):
+        self.sample_prompts = []
+        self.number_of_sample_prompts = len(self.sample_prompts)
+        self.sample_prompt_labels = []
+        self.input_model_path = ""
+        self.vae_model_path = ""
+        self.output_path = "models/model_name"
+        self.send_telegram_updates = False
+        self.telegram_token = "TOKEN"
+        self.telegram_chat_id = "ID"
+        self.seed_number = 3434554
+        self.resolution = 512
+        self.batch_size = 1
+        self.num_train_epochs = 5
+        self.accumulation_steps = 1
+        self.mixed_precision = "fp16"
+        self.learning_rate = "5e-6"
+        self.learning_rate_schedule = "constant"
+        self.learning_rate_warmup_steps = 0
+        self.concept_list_json_path = "concept_list.json"
+        self.save_and_sample_every_x_epochs = 5
+        self.train_text_encoder = True
+        self.use_8bit_adam = True
+        self.use_gradient_checkpointing = True
+        self.num_class_images = 200
+        self.add_class_images_to_training = False
+        self.sample_batch_size = 1
+        self.save_sample_controlled_seed = []
+        self.delete_checkpoints_when_full_drive = True
+        self.use_image_names_as_captions = True
+        self.num_samples_to_generate = 1
+        self.auto_balance_concept_datasets = True
+        self.sample_width = 512
+        self.sample_height = 512
+        self.save_latents_cache = True
+        self.regenerate_latents_cache = False
+        self.use_aspect_ratio_bucketing = True
+        self.do_not_use_latents_cache = True
+        self.with_prior_reservation = False
+        self.prior_loss_weight = 1.0
+        self.sample_random_aspect_ratio = False
+        self.add_controlled_seed_to_sample = []
+        self.sample_on_training_start = False
+        self.concept_template = {'instance_prompt': 'subject', 'class_prompt': 'a photo of class', 'instance_data_dir':'./data/subject','class_data_dir':'./data/subject_class'}
+        self.concepts = []
+        self.play_input_model_path = ""
+        self.play_postive_prompt = ""
+        self.play_negative_prompt = ""
+        self.play_seed = -1
+        self.play_num_samples = 1
+        self.play_sample_width = 512
+        self.play_sample_height = 512
+        self.play_cfg = 7.5
+        self.play_steps = 25
+        self.schedulers = ["DPMSolverMultistepScheduler", "PNDMScheduler", 'DDIMScheduler','EulerAncestralDiscreteScheduler','EulerDiscreteScheduler']
+        self.quick_select_models = ["Stable Diffusion 1.4", "Stable Diffusion 1.5", "Stable Diffusion 2 Base (512)", "Stable Diffusion 2 (768)", 'Stable Diffusion 2.1 Base (512)', "Stable Diffusion 2.1 (768)"]
+        self.play_scheduler = 'DPMSolverMultistepScheduler'
+        self.pipe = None
+        self.current_model = None
+        self.play_save_image_button = None
+        self.dataset_repeats = 1
+        self.limit_text_encoder = 0
+        self.use_text_files_as_captions = False
+        self.ckpt_sd_version = None
+        self.convert_to_ckpt_after_training = False
+        self.execute_post_conversion = False
+        self.preview_images = []
+        self.disable_cudnn_benchmark = True
+        self.sample_step_interval = 500
+    def select_frame_by_name(self, name):
+        # set button color for selected button
+        self.sidebar_button_1.configure(fg_color=("gray75", "gray25") if name == "general" else "transparent")
+        self.sidebar_button_2.configure(fg_color=("gray75", "gray25") if name == "training" else "transparent")
+        self.sidebar_button_3.configure(fg_color=("gray75", "gray25") if name == "dataset" else "transparent")
+
+        # show selected frame
+        if name == "general":
+            self.general_frame.grid(row=0, column=1, sticky="nsew")
+        else:
+            self.general_frame.grid_forget()
+        if name == "training":
+            self.training_frame.grid(row=0, column=1, sticky="nsew")
+        else:
+            self.training_frame.grid_forget()
+        if name == "dataset":
+            self.dataset_frame.grid(row=0, column=1, sticky="nsew")
+        else:
+            self.dataset_frame.grid_forget()
+
+    def general_nav_button_event(self):
+        self.select_frame_by_name("general")
+
+    def training_nav_button_event(self):
+        self.select_frame_by_name("training")
+
+    def dataset_nav_button_event(self):
+        self.select_frame_by_name("dataset")
+
     #create a right click menu for entry widgets
     def create_right_click_menu(self, event):
         #create a menu
@@ -484,6 +625,95 @@ class App(ctk.CTkFrame):
                 self.input_model_path_entry.insert(0,"stabilityai/stable-diffusion-2-1")
                 self.resolution_var.set("768")
             self.master.update()
+    
+    def create_general_settings_widgets(self):
+        self.general_frame_title = ctk.CTkLabel(self.general_frame, text="General Settings", font=ctk.CTkFont(size=20, weight="bold"))
+        self.general_frame_title.grid(row=0, column=0,columnspan=2, padx=20, pady=20)    
+        #self.tip_label = ctk.CTkLabel(self.general_frame, text="Tip: Hover over settings for information",  font=ctk.CTkFont(size=14))
+        #self.tip_label.grid(row=1, column=0, sticky="nsew")
+        self.quick_select_var = tk.StringVar(self.master)
+        self.quick_select_var.set('Quick Select Base Model')
+        self.quick_select_dropdown = ctk.CTkOptionMenu(self.general_frame_subframe, variable=self.quick_select_var, values=self.quick_select_models, command=self.quick_select_model,dynamic_resizing=False, width=200)
+        self.quick_select_dropdown.grid(row=0, column=0,padx=20, pady=20, sticky="nsew")
+        self.load_config_button = ctk.CTkButton(self.general_frame_subframe, text="Load Config", command=self.load_config)
+        self.load_config_button.grid(row=0, column=1,padx=20, pady=5, sticky="nsew")
+        #self.load_config_button.grid(row=2, column=1, sticky="nsew")
+        #get the location of load config button in the frame
+        self.save_config_button = ctk.CTkButton(self.general_frame_subframe, text="Save Config", command=self.save_config)
+        self.save_config_button.grid(row=0, column=2,padx=20, pady=5, sticky="nsew")
+        #self.save_config_button.grid(row=2, column=2, sticky="nsew")
+
+        self.input_model_path_label = ctk.CTkLabel(self.general_frame_subframe, text="Input Model / HuggingFace Repo")
+        input_model_path_label_ttp = CreateToolTip(self.input_model_path_label, "The path to the diffusers model to use. Can be a local path or a HuggingFace repo path.")
+        self.input_model_path_label.grid(row=1, column=0, sticky="nsew")
+        self.input_model_path_entry = ctk.CTkEntry(self.general_frame_subframe,width=30)
+        
+        self.input_model_path_entry.grid(row=1, column=1, sticky="nsew",padx=20,pady=5)
+        self.input_model_path_entry.insert(0, self.input_model_path)
+        #make a button to open a file dialog
+        self.input_model_path_button = ctk.CTkButton(self.general_frame_subframe,width=30, text="...", command=self.choose_model)
+        self.input_model_path_button.grid(row=1, column=2, sticky="w",pady=5)
+        self.vae_model_path_label = ctk.CTkLabel(self.general_frame_subframe, text="VAE model path / HuggingFace Repo")
+        vae_model_path_label_ttp = CreateToolTip(self.vae_model_path_label, "OPTINAL The path to the VAE model to use. Can be a local path or a HuggingFace repo path.")
+        self.vae_model_path_label.grid(row=2, column=0, sticky="nsew")
+        self.vae_model_path_entry = ctk.CTkEntry(self.general_frame_subframe)
+        self.vae_model_path_entry.grid(row=2, column=1, sticky="nsew",padx=20,pady=5)
+        self.vae_model_path_entry.insert(0, self.vae_model_path)
+        #make a button to open a file dialog
+        self.vae_model_path_button = ctk.CTkButton(self.general_frame_subframe,width=30, text="...", command=lambda: self.open_file_dialog(self.vae_model_path_entry))
+        self.vae_model_path_button.grid(row=2, column=2, sticky="w",pady=5)
+
+        self.output_path_label = ctk.CTkLabel(self.general_frame_subframe, text="Output Path")
+        output_path_label_ttp = CreateToolTip(self.output_path_label, "The path to the output directory. If it doesn't exist, it will be created.")
+        self.output_path_label.grid(row=3, column=0, sticky="nsew",padx=20,pady=5)
+        self.output_path_entry = ctk.CTkEntry(self.general_frame_subframe)
+        self.output_path_entry.grid(row=3, column=1, sticky="nsew",padx=20,pady=5)
+        self.output_path_entry.insert(0, self.output_path)
+        #make a button to open a file dialog
+        self.output_path_button = ctk.CTkButton(self.general_frame_subframe,width=30, text="...", command=lambda: self.open_file_dialog(self.output_path_entry))
+        self.output_path_button.grid(row=3, column=2, sticky="w",pady=5)
+
+        self.convert_to_ckpt_after_training_label = ctk.CTkLabel(self.general_frame_subframe, text="Convert to CKPT after training?")
+        convert_to_ckpt_label_ttp = CreateToolTip(self.convert_to_ckpt_after_training_label, "Convert the model to a tensorflow checkpoint after training.")
+        self.convert_to_ckpt_after_training_label.grid(row=4, column=0, sticky="nsew",pady=5)
+        self.convert_to_ckpt_after_training_var = tk.IntVar()
+        self.convert_to_ckpt_after_training_checkbox = ctk.CTkSwitch(self.general_frame_subframe,text='',variable=self.convert_to_ckpt_after_training_var)
+        self.convert_to_ckpt_after_training_checkbox.grid(row=4, column=1, sticky="nsew",padx=10,pady=5)
+        return
+        #add tip label
+        #create vae model path dark mode
+        
+        #create output path dark mode
+        
+        #create a checkbox wether to convert to ckpt after training
+        self.convert_to_ckpt_after_training_label = ctk.CTkLabel(self.general_frame_subframe, text="Convert to CKPT after training?")
+        convert_to_ckpt_label_ttp = CreateToolTip(self.convert_to_ckpt_after_training_label, "Convert the model to a tensorflow checkpoint after training.")
+        self.convert_to_ckpt_after_training_label.grid(row=6, column=0, sticky="nsew")
+        self.convert_to_ckpt_after_training_var = tk.IntVar()
+        self.convert_to_ckpt_after_training_checkbox = ctk.CTkCheckBox(self.general_frame_subframe,variable=self.convert_to_ckpt_after_training_var)
+        self.convert_to_ckpt_after_training_checkbox.grid(row=6, column=1, sticky="nsew")
+        #use telegram updates dark mode
+        self.send_telegram_updates_label = ctk.CTkLabel(self.general_frame_subframe, text="Send Telegram Updates")
+        send_telegram_updates_label_ttp = CreateToolTip(self.send_telegram_updates_label, "Use Telegram updates to monitor training progress, must have a Telegram bot set up.")
+        self.send_telegram_updates_label.grid(row=7, column=0, sticky="nsew")
+        #create checkbox to toggle telegram updates and show telegram token and chat id
+        self.send_telegram_updates_var = tk.IntVar()
+        self.send_telegram_updates_checkbox = ctk.CTkCheckBox(self.general_frame_subframe,variable=self.send_telegram_updates_var, command=self.toggle_telegram_settings)
+        self.send_telegram_updates_checkbox.grid(row=7, column=1, sticky="nsew")
+        #create telegram token dark mode
+        self.telegram_token_label = ctk.CTkLabel(self.general_frame_subframe, text="Telegram Token",  state="disabled")
+        telegram_token_label_ttp = CreateToolTip(self.telegram_token_label, "The Telegram token for your bot.")
+        self.telegram_token_label.grid(row=8, column=0, sticky="nsew")
+        self.telegram_token_entry = ctk.CTkEntry(self.general_frame_subframe,  state="disabled")
+        self.telegram_token_entry.grid(row=8, column=1, sticky="nsew")
+        self.telegram_token_entry.insert(0, self.telegram_token)
+        #create telegram chat id dark mode
+        self.telegram_chat_id_label = ctk.CTkLabel(self.general_frame_subframe, text="Telegram Chat ID",  state="disabled")
+        telegram_chat_id_label_ttp = CreateToolTip(self.telegram_chat_id_label, "The Telegram chat ID to send updates to.")
+        self.telegram_chat_id_label.grid(row=9, column=0, sticky="nsew")
+        self.telegram_chat_id_entry = ctk.CTkEntry(self.general_frame_subframe,  state="disabled")
+        self.telegram_chat_id_entry.grid(row=9, column=1, sticky="nsew")
+        self.telegram_chat_id_entry.insert(0, self.telegram_chat_id)
     def create_widgets(self):
         #create grid one side for labels the other for inputs
         #make the second column size 2x the first
@@ -496,7 +726,6 @@ class App(ctk.CTkFrame):
         self.load_config_button.grid(row=0, column=1, sticky="nw")
         self.save_config_button = ctk.CTkButton(self.general_tab, text="Save Config", command=self.save_config)
         self.save_config_button.grid(row=0, column=2, sticky="ne")
-
         #add tip label
         self.tip_label = ctk.CTkLabel(self.general_tab, text="Tip: Hover over settings for information ;)",  font=("Arial", 10))
         self.tip_label.grid(row=1, column=0,columnspan=3, sticky="nsew",pady=(0,10))
@@ -2136,6 +2365,6 @@ class App(ctk.CTkFrame):
 
 
         
-root = ctk.CTk()
-app = App(master=root)
+#root = ctk.CTk()
+app = App()
 app.mainloop()
