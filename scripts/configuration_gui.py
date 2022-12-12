@@ -1458,7 +1458,7 @@ class App(tk.Frame):
             import torch
             from safetensors.torch import load_file
 
-            if ".ckpt" in file_path:
+            if file_path.endswith(".ckpt"):
                 checkpoint = torch.load(file_path)
             else:
                 checkpoint = load_file(file_path)
@@ -1468,7 +1468,7 @@ class App(tk.Frame):
             else:
                 prediction = "epsilon"
             key_name = "model.diffusion_model.input_blocks.2.1.transformer_blocks.0.attn2.to_k.weight"
-            if "ckpt" in file_path:
+            if file_path.endswith(".ckpt"):
                 checkpoint = checkpoint["state_dict"]
             if key_name in checkpoint and checkpoint[key_name].shape[-1] == 1024:
                 version = "v2"
@@ -1497,7 +1497,7 @@ class App(tk.Frame):
                     return
                 file_path = model_dir
             #if the file is not a model index file
-        if file_path.endswith(".ckpt"):
+        if file_path.endswith(".ckpt") or file_path.endswith(".safetensors"):
             sd_file = file_path
             version, prediction = self.get_sd_version(sd_file)
             #create a directory under the models folder with the name of the ckpt file
@@ -1526,8 +1526,12 @@ class App(tk.Frame):
                 #label
                 empty_label = tk.Label(self.convert_model_dialog, text="")
                 empty_label.pack()
-                label = tk.Label(self.convert_model_dialog, text="Converting CKPT to Diffusers. Please wait...")
-                label.pack()
+                if file_path.endswith(".ckpt"):
+                    label = tk.Label(self.convert_model_dialog, text="Converting CKPT to Diffusers. Please wait...")
+                    label.pack()
+                elif file_path.endswith(".safetensors"):
+                    label = tk.Label(self.convert_model_dialog, text="Converting safetensors to Diffusers. Please wait...")
+                    label.pack()
                 self.convert_model_dialog.geometry("300x70")
                 self.convert_model_dialog.resizable(False, False)
                 self.convert_model_dialog.grab_set()
@@ -1537,46 +1541,7 @@ class App(tk.Frame):
                 self.convert_model_dialog.destroy()
 
                 file_path = model_path
-        if file_path.endswith(".safetensors"):
-            sd_file = file_path
-            version, prediction = self.get_sd_version(sd_file)
-            #create a directory under the models folder with the name of the ckpt file
-            model_name = os.path.basename(file_path).split(".")[0]
-            #get the path of the script
-            script_path = os.getcwd()
-            #get the path of the models folder
-            models_path = os.path.join(script_path, "models")
-            #if no models_path exists, create it
-            if not os.path.isdir(models_path):
-                os.mkdir(models_path)
-            #create the path of the new model folder
-            model_path = os.path.join(models_path, model_name)
-            #check if the model folder already exists
-            if os.path.isdir(model_path) and os.path.isfile(os.path.join(model_path, "model_index.json")):
-                file_path = model_path
-            else:
-                #create the model folder
-                if os.path.isdir(model_path):
-                    shutil.rmtree(model_path)
-                os.mkdir(model_path)
-                #converter
-                #show a dialog to inform the user that the model is being converted
-                self.convert_model_dialog = tk.Toplevel(self)
-                self.convert_model_dialog.title("Converting model")
-                #label
-                empty_label = tk.Label(self.convert_model_dialog, text="")
-                empty_label.pack()
-                label = tk.Label(self.convert_model_dialog, text="Converting CKPT to Diffusers. Please wait...")
-                label.pack()
-                self.convert_model_dialog.geometry("300x70")
-                self.convert_model_dialog.resizable(False, False)
-                self.convert_model_dialog.grab_set()
-                self.convert_model_dialog.focus_set()
-                self.master.update()
-                convert = converters.Convert_SD_to_Diffusers(sd_file,model_path,prediction_type=prediction,version=version)
-                self.convert_model_dialog.destroy()
 
-                file_path = model_path
         self.input_model_path_entry.delete(0, tk.END)
         self.input_model_path_entry.insert(0, file_path)
     
