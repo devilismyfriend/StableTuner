@@ -94,20 +94,20 @@ class ImageBrowser(tk.Frame):
         self.mainProcess = mainProcess
         self.captioner_folder = os.path.dirname(os.path.realpath(__file__))
         self.master = master
-        self.master.overrideredirect(True)
-        self.title_bar = TitleBar(self.master)
-        self.title_bar.pack(side="top", fill="x")
+        #self.master.overrideredirect(True)
+        #self.title_bar = TitleBar(self.master)
+        #self.title_bar.pack(side="top", fill="x")
         #make not user resizable
         self.master.title("Caption Buddy")
-        self.master.resizable(False, False)
+        #self.master.resizable(False, False)
         self.master.geometry("820x820")
         self.top_frame = tk.Frame(self.master)
         self.top_frame.pack(side="top")
         self.tip_frame = tk.Frame(self.master)
         self.tip_frame.pack(side="top")
-        self.dark_mode_var = "#1e2124"
-        self.dark_purple_mode_var = "#1B0F1B"
-        self.dark_mode_title_var = "#7289da"
+        self.dark_mode_var = "#202020"
+        #self.dark_purple_mode_var = "#1B0F1B"
+        self.dark_mode_title_var = "#286aff"
         self.dark_mode_button_pressed_var = "#BB91B6"
         self.dark_mode_button_var = "#8ea0e1"
         self.dark_mode_text_var = "#c6c7c8"
@@ -201,12 +201,12 @@ class ImageBrowser(tk.Frame):
         self.image_label = tk.Label(self.canvas, bg=self.dark_mode_var)
         self.image_label.pack(side="top")
         #previous button
-        self.prev_button = tk.Button(self.frame,activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var, border=0, relief='flat', fg=self.dark_mode_title_var, bg=self.dark_mode_var, highlightthickness=2, highlightbackground=self.dark_mode_button_var)
+        self.prev_button = tk.Button(self.frame,command= lambda event=None: self.prev_image(event),activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var, border=0, relief='flat', fg=self.dark_mode_title_var, bg=self.dark_mode_var, highlightthickness=2, highlightbackground=self.dark_mode_button_var)
         #grid
         self.prev_button.grid(row=1, column=0, sticky="w")
 
         self.prev_button["text"] = "Previous"
-        self.prev_button["command"] = self.prev_image
+        #self.prev_button["command"] = self.prev_image
         #self.prev_button.pack(side="left")
         #self.prev_button.bind("<Left>", self.prev_image)
         self.caption_entry = tk.Entry(self.frame,fg=self.dark_mode_text_var, bg=self.dark_mode_var, relief='flat', highlightthickness=2, highlightbackground=self.dark_mode_button_var,insertbackground=self.dark_mode_text_var)
@@ -338,6 +338,12 @@ class ImageBrowser(tk.Frame):
         #show message box when done
         pba.destroy()
         donemsg = tk.messagebox.showinfo("Batch Folder", "Batching complete!",parent=self.master)
+        #ask user if we should load the batch output folder
+        ask3 = tk.messagebox.askquestion("Batch Folder", "Load batch output folder?")
+        if ask3 == 'yes':
+            self.image_index = 0
+            self.open_folder(folder=batch_output_dir)
+
         #focus on donemsg
         #donemsg.focus_force()
     def generate_caption(self):
@@ -393,8 +399,11 @@ class ImageBrowser(tk.Frame):
         blip_decoder.eval()
         self.blip_decoder = blip_decoder.to(torch.device("cuda"))
         
-    def open_folder(self):
-        self.folder = fd.askdirectory()
+    def open_folder(self,folder=None):
+        if folder is None:
+            self.folder = fd.askdirectory()
+        else:
+            self.folder = folder
         if self.folder == '':
             return
         self.output_folder = self.folder
