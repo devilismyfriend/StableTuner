@@ -317,8 +317,15 @@ class ImageBrowser(tk.Frame):
             self.replace = self.replace_entry.get()
             self.replace_with = self.with_entry.get()
             self.suffix_var = self.suffix_entry.get()
+            self.prefix = self.prefix_entry.get()
             #prepare the caption
             caption = caption.replace(self.replace, self.replace_with)
+            if self.prefix != '':
+                if self.prefix.endswith(' '):
+                    self.prefix = self.prefix[:-1]
+                if not self.prefix.endswith(','):
+                    self.prefix = self.prefix+','
+                caption = self.prefix + ' ' + caption
             if caption.endswith(',') or caption.endswith('.'):
                 caption = caption[:-1]
                 caption = caption +', ' + self.suffix_var
