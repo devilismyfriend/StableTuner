@@ -169,7 +169,7 @@ class ImageBrowser(tk.Frame):
     def create_widgets(self):
         self.auto_generate_caption_text_override = tk.BooleanVar(self.top_frame)
         self.auto_generate_caption_text_override.set(False)
-        self.auto_generate_caption_checkbox_text_override = tk.Checkbutton(self.top_frame, text="Skipa Auto Generate If Text Caption Exists", variable=self.auto_generate_caption_text_override,fg=self.dark_mode_title_var, bg=self.dark_mode_var, activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var, selectcolor=self.dark_mode_var)
+        self.auto_generate_caption_checkbox_text_override = tk.Checkbutton(self.top_frame, text="Skip Auto Generate If Text Caption Exists", variable=self.auto_generate_caption_text_override,fg=self.dark_mode_title_var, bg=self.dark_mode_var, activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var, selectcolor=self.dark_mode_var)
         self.auto_generate_caption_checkbox_text_override.pack(side="right")
         #add a checkbox to toggle auto generate caption
         self.auto_generate_caption = tk.BooleanVar(self.top_frame)
