@@ -67,6 +67,7 @@ class ScrollableFrame(ttk.Frame):
             width=10, corner_radius=10)
 
         self.scrollable_frame = ttk.Frame(self.canvas,style='new.TFrame')
+        self.scrollable_frame.pack(fill="both", expand=True)
         #set background color of the scrollable frame
         #self.scrollable_frame.config(background="#333333")
         self.scrollable_frame.bind("<Configure>",
@@ -214,11 +215,11 @@ class App(ctk.CTk):
         self.sidebar_button_3.grid(row=4, column=0, padx=20, pady=5)
         self.sidebar_button_4 = ctk.CTkButton(self.sidebar_frame,text='Sampling Settings',command=self.sampling_nav_button_event)
         self.sidebar_button_4.grid(row=5, column=0, padx=20, pady=5)
-        self.sidebar_button_5 = ctk.CTkButton(self.sidebar_frame,text='Data',command=self.training_nav_button_event)
+        self.sidebar_button_5 = ctk.CTkButton(self.sidebar_frame,text='Data',command=self.data_nav_button_event)
         self.sidebar_button_5.grid(row=6, column=0, padx=20, pady=5)
-        self.sidebar_button_6 = ctk.CTkButton(self.sidebar_frame,text='Model Playground',command=self.training_nav_button_event)
+        self.sidebar_button_6 = ctk.CTkButton(self.sidebar_frame,text='Model Playground',command=self.playground_nav_button_event)
         self.sidebar_button_6.grid(row=7, column=0, padx=20, pady=5)
-        self.sidebar_button_7 = ctk.CTkButton(self.sidebar_frame,text='Toolbox',command=self.training_nav_button_event)
+        self.sidebar_button_7 = ctk.CTkButton(self.sidebar_frame,text='Toolbox',command=self.toolbox_nav_button_event)
         self.sidebar_button_7.grid(row=8, column=0, padx=20, pady=5)
 
         self.general_frame = ctk.CTkFrame(self, width=140, corner_radius=0,fg_color='transparent')
@@ -273,12 +274,25 @@ class App(ctk.CTk):
         self.data_frame = ctk.CTkFrame(self, width=140, corner_radius=0,fg_color='transparent')
         self.data_frame.grid_columnconfigure(0, weight=1)
         #sub frame
-        self.data_frame_subframe = ctk.CTkFrame(self.data_frame,width=400, corner_radius=20)
+        #self.data_frame_subframe = ctk.CTkFrame(self.data_frame,width=400, corner_radius=20)
+        #self.data_frame_subframe.grid(row=0, column=0,sticky="nsew", padx=20, pady=20)
+        
+        self.data_frame_subframe = ScrollableFrame(self.data_frame, width=800, height=800)
+        self.data_frame_subframe.grid_columnconfigure(0, weight=1)
+        self.data_frame_subframe.scrollable_frame.grid(row=0, column=0,sticky="nsew", padx=20, pady=20)
+        self.data_frame_subframe.scrollable_frame.grid_columnconfigure(0, weight=1)
+        self.data_frame_subframe.grid(row=1, column=0,sticky="nsew", padx=20, pady=20)
+        self.dg_frame = DynamicGrid(self.data_frame_subframe.scrollable_frame, width=800, height=800)
+        self.dg_frame.pack(side="top", fill="both", expand=True)
+        #self.dg_frame.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")
+        #self.data_frame_subframe = ctk.CTkFrame(self.data_frame,width=400, corner_radius=20)
         #self.data_frame_subframe.grid_columnconfigure(0, weight=5)
         #self.data_frame_subframe.grid_columnconfigure(1, weight=1)
-        self.data_frame_subframe.grid(row=2, column=0,sticky="nsew", padx=20, pady=20)
+        
         #self.create_data_widgets()
-        self.apply_general_style_to_widgets(self.data_frame_subframe)
+        add_button  = tk.Button(self.data_frame, text="Add", command=self.dg_frame.add_box)
+        add_button.grid(row=0, column=0, padx=20, pady=20)
+        #self.apply_general_style_to_widgets(self.data_frame_subframe)
         
         self.playground_frame = ctk.CTkFrame(self, width=140, corner_radius=0,fg_color='transparent')
         self.playground_frame.grid_columnconfigure(0, weight=1)
@@ -630,6 +644,11 @@ class App(ctk.CTk):
         self.sidebar_button_1.configure(fg_color=("gray75", "gray25") if name == "general" else "transparent")
         self.sidebar_button_2.configure(fg_color=("gray75", "gray25") if name == "training" else "transparent")
         self.sidebar_button_3.configure(fg_color=("gray75", "gray25") if name == "dataset" else "transparent")
+        self.sidebar_button_4.configure(fg_color=("gray75", "gray25") if name == "sampling" else "transparent")
+        self.sidebar_button_5.configure(fg_color=("gray75", "gray25") if name == "data" else "transparent")
+        self.sidebar_button_6.configure(fg_color=("gray75", "gray25") if name == "playground" else "transparent")
+        self.sidebar_button_7.configure(fg_color=("gray75", "gray25") if name == "toolbox" else "transparent")
+
 
         # show selected frame
         if name == "general":
@@ -658,6 +677,8 @@ class App(ctk.CTk):
             self.playground_frame.grid_forget()
         if name == "toolbox":
             self.toolbox_frame.grid(row=0, column=1, sticky="nsew")
+        else:
+            self.toolbox_frame.grid_forget()
 
     def general_nav_button_event(self):
         self.select_frame_by_name("general")
@@ -732,7 +753,7 @@ class App(ctk.CTk):
             elif val == 'Stable Diffusion 2.1 (768)':
                 self.input_model_path_entry.insert(0,"stabilityai/stable-diffusion-2-1")
                 self.resolution_var.set("768")
-            self.master.update()
+            #self.master.update()
     
     def apply_general_style_to_widgets(self,frame):
         for i in frame.children.values():
@@ -838,12 +859,6 @@ class App(ctk.CTk):
         self.convert_to_ckpt_after_training_checkbox = ctk.CTkSwitch(self.general_frame_subframe,text='',variable=self.convert_to_ckpt_after_training_var)
         self.convert_to_ckpt_after_training_checkbox.grid(row=4, column=1, sticky="nsew",padx=10)
         
-        self.convert_to_ckpt_after_training_label = ctk.CTkLabel(self.general_frame_subframe, text="Convert to CKPT after training?")
-        convert_to_ckpt_label_ttp = CreateToolTip(self.convert_to_ckpt_after_training_label, "Convert the model to a tensorflow checkpoint after training.")
-        self.convert_to_ckpt_after_training_label.grid(row=5, column=0, sticky="nsew")
-        self.convert_to_ckpt_after_training_var = tk.IntVar()
-        self.convert_to_ckpt_after_training_checkbox = ctk.CTkSwitch(self.general_frame_subframe,variable=self.convert_to_ckpt_after_training_var)
-        self.convert_to_ckpt_after_training_checkbox.grid(row=5, column=1, sticky="nsew")
         #use telegram updates dark mode
         self.send_telegram_updates_label = ctk.CTkLabel(self.general_frame_subframe, text="Send Telegram Updates")
         send_telegram_updates_label_ttp = CreateToolTip(self.send_telegram_updates_label, "Use Telegram updates to monitor training progress, must have a Telegram bot set up.")
@@ -2079,15 +2094,15 @@ class App(ctk.CTk):
             #print(self.sample_prompts)
             #print(self.sample_prompt_entries)
             #self.canvas.configure(scrollregion=self.canvas.bbox("all"))
-        for i in self.controlled_seed_buttons:
-            #push to next row
-            i.grid(row=i.grid_info()["row"] - 1, column=i.grid_info()["column"], sticky="nsew")
-        for i in self.controlled_seed_sample_labels:
-            #push to next row
-            i.grid(row=i.grid_info()["row"] - 1, column=i.grid_info()["column"], sticky="nsew")
-        for i in self.controlled_seed_sample_entries:
-            #push to next row
-            i.grid(row=i.grid_info()["row"] - 1, column=i.grid_info()["column"], sticky="nsew")
+            for i in self.controlled_seed_buttons:
+                #push to next row
+                i.grid(row=i.grid_info()["row"] - 1, column=i.grid_info()["column"], sticky="nsew")
+            for i in self.controlled_seed_sample_labels:
+                #push to next row
+                i.grid(row=i.grid_info()["row"] - 1, column=i.grid_info()["column"], sticky="nsew")
+            for i in self.controlled_seed_sample_entries:
+                #push to next row
+                i.grid(row=i.grid_info()["row"] - 1, column=i.grid_info()["column"], sticky="nsew")
 
 
     def add_sample_prompt(self,value=""):
