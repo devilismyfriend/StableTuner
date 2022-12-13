@@ -13,13 +13,45 @@ import glob
 #import converters
 import shutil
 import customtkinter as ctk
+import random
 ctk.set_appearance_mode("System")
 ctk.set_default_color_theme("blue")
 #from scripts import converters
 #work in progress code, not finished, credits will be added at a later date.
 
 #class to make popup right click menu with select all, copy, paste, cut, and delete when right clicked on an entry box
+class DynamicGrid(ctk.CTkFrame):
+    def __init__(self, parent, *args, **kwargs):
+        ctk.CTkFrame.__init__(self, parent, *args, **kwargs)
+        self.text = tk.Text(self, wrap="char", borderwidth=0, highlightthickness=0,
+                            state="disabled")
+        self.text.pack(fill="both", expand=True)
+        self.boxes = []
 
+    def add_box(self, color=None):
+        #bg = color if color else random.choice(("red", "orange", "green", "blue", "violet"))
+        box = ctk.CTkFrame(self.text,width=100, height=100)
+        #add a ctkbutton to the frame
+        #ctk.CTkButton(box,text="test",command=lambda:print("test")).pack()
+        #add a ctklabel to the frame
+        ctk.CTkLabel(box,text="test").pack()
+        #add a ctkentry to the frame
+        ctk.CTkEntry(box).pack()
+        #add a ctkcombobox to the frame
+        #add a button remove the frame
+        ctk.CTkButton(box,text="remove",command=lambda:self.remove_box(box)).pack()
+        self.boxes.append(box)
+        self.text.configure(state="normal")
+        self.text.window_create("end", window=box)
+        self.text.configure(state="disabled")
+    def remove_box(self,box):
+        self.boxes.remove(box)
+        box.destroy()
+        self.text.configure(state="normal")
+        self.text.delete("1.0", "end")
+        for box in self.boxes:
+            self.text.window_create("end", window=box)
+        self.text.configure(state="disabled")
 #class to make a title bar for the window instead of the default one with the minimize, maximize, and close buttons
 class ScrollableFrame(ttk.Frame):
     def __init__(self, container, *args, **kwargs):
@@ -180,6 +212,14 @@ class App(ctk.CTk):
         self.sidebar_button_2.grid(row=3, column=0, padx=20, pady=5)
         self.sidebar_button_3 = ctk.CTkButton(self.sidebar_frame,text='Dataset Settings',command=self.dataset_nav_button_event)
         self.sidebar_button_3.grid(row=4, column=0, padx=20, pady=5)
+        self.sidebar_button_4 = ctk.CTkButton(self.sidebar_frame,text='Sampling Settings',command=self.sampling_nav_button_event)
+        self.sidebar_button_4.grid(row=5, column=0, padx=20, pady=5)
+        self.sidebar_button_5 = ctk.CTkButton(self.sidebar_frame,text='Data',command=self.training_nav_button_event)
+        self.sidebar_button_5.grid(row=6, column=0, padx=20, pady=5)
+        self.sidebar_button_6 = ctk.CTkButton(self.sidebar_frame,text='Model Playground',command=self.training_nav_button_event)
+        self.sidebar_button_6.grid(row=7, column=0, padx=20, pady=5)
+        self.sidebar_button_7 = ctk.CTkButton(self.sidebar_frame,text='Toolbox',command=self.training_nav_button_event)
+        self.sidebar_button_7.grid(row=8, column=0, padx=20, pady=5)
 
         self.general_frame = ctk.CTkFrame(self, width=140, corner_radius=0,fg_color='transparent')
         self.general_frame.grid_columnconfigure(0, weight=5)
@@ -189,19 +229,78 @@ class App(ctk.CTk):
         self.general_frame_subframe = ctk.CTkFrame(self.general_frame,width=400, corner_radius=20)
         #self.general_frame_subframe.grid_columnconfigure(0, weight=1)
         self.general_frame_subframe.grid(row=2, column=0,sticky="nsew", padx=20, pady=20)
-        self.general_frame_subframe_side_guide = ctk.CTkFrame(self.general_frame,width=250, corner_radius=20)
-        self.general_frame_subframe_side_guide.grid(row=2, column=1,sticky="nsew", padx=20, pady=20)
-        self.create_general_settings_widgets()    
+        #self.general_frame_subframe_side_guide = ctk.CTkFrame(self.general_frame,width=250, corner_radius=20)
+        #self.general_frame_subframe_side_guide.grid(row=2, column=1,sticky="nsew", padx=20, pady=20)
+        #self.general_frame_subframe_side_guide.grid_columnconfigure(0, weight=1)
+        self.create_general_settings_widgets()   
+        self.apply_general_style_to_widgets(self.general_frame_subframe)
 
-        self.training_frame = ctk.CTkFrame(self, width=140, corner_radius=0,fg_color='transparent')
+        self.training_frame = ctk.CTkFrame(self, width=400, corner_radius=0,fg_color='transparent')
+        self.training_frame.grid_columnconfigure(0, weight=1)
         #self.training_frame.grid_columnconfigure(0, weight=1)
-        self.training_frame_title = ctk.CTkLabel(self.training_frame, text="Training Settings", font=ctk.CTkFont(size=20, weight="bold"))
-        self.training_frame_title.grid(row=0, column=0, padx=20, pady=20)   
-
+        #create sub frame
+        self.training_frame_subframe = ctk.CTkFrame(self.training_frame,width=400, corner_radius=20)
+        self.training_frame_subframe.grid_columnconfigure(0, weight=1)
+        self.training_frame_subframe.grid_columnconfigure(1, weight=1)
+        self.training_frame_subframe.grid(row=2, column=0,sticky="nsew", padx=20, pady=20)
+        self.create_trainer_settings_widgets()
+        self.grid_train_settings()
+        self.apply_general_style_to_widgets(self.training_frame_subframe)
+        #self.dg = DynamicGrid(self.training_frame, width=800, height=200)
+        #self.dg.grid(row=1, column=0, padx=20, pady=20, sticky="nsew")
+        #add_button  = tk.Button(self.training_frame, text="Add", command=self.dg.add_box)
+        #add_button.grid(row=2, column=0, padx=20, pady=20)
         self.dataset_frame = ctk.CTkFrame(self, width=140, corner_radius=0,fg_color='transparent')
         self.dataset_frame.grid_columnconfigure(0, weight=1)
-        self.dataset_frame_title = ctk.CTkLabel(self.dataset_frame, text="Dataset Settings", font=ctk.CTkFont(size=20, weight="bold"))
-        self.dataset_frame_title.grid(row=0, column=0, padx=20, pady=20)  
+        #sub frame
+        self.dataset_frame_subframe = ctk.CTkFrame(self.dataset_frame,width=400, corner_radius=20)
+        #self.dataset_frame_subframe.grid_columnconfigure(0, weight=5)
+        #self.dataset_frame_subframe.grid_columnconfigure(1, weight=1)
+        self.dataset_frame_subframe.grid(row=2, column=0,sticky="nsew", padx=20, pady=20)
+        self.create_dataset_settings_widgets()
+        self.apply_general_style_to_widgets(self.dataset_frame_subframe)
+
+        self.sampling_frame = ctk.CTkFrame(self, width=140, corner_radius=0,fg_color='transparent')
+        self.sampling_frame.grid_columnconfigure(0, weight=1)
+        #sub frame
+        self.sampling_frame_subframe = ctk.CTkFrame(self.sampling_frame,width=400, corner_radius=20)
+        #self.sampling_frame_subframe.grid_columnconfigure(0, weight=5)
+        #self.sampling_frame_subframe.grid_columnconfigure(1, weight=1)
+        self.sampling_frame_subframe.grid(row=2, column=0,sticky="nsew", padx=20, pady=20)
+        self.create_sampling_settings_widgets()
+        self.apply_general_style_to_widgets(self.sampling_frame_subframe)
+
+        self.data_frame = ctk.CTkFrame(self, width=140, corner_radius=0,fg_color='transparent')
+        self.data_frame.grid_columnconfigure(0, weight=1)
+        #sub frame
+        self.data_frame_subframe = ctk.CTkFrame(self.data_frame,width=400, corner_radius=20)
+        #self.data_frame_subframe.grid_columnconfigure(0, weight=5)
+        #self.data_frame_subframe.grid_columnconfigure(1, weight=1)
+        self.data_frame_subframe.grid(row=2, column=0,sticky="nsew", padx=20, pady=20)
+        #self.create_data_widgets()
+        self.apply_general_style_to_widgets(self.data_frame_subframe)
+        
+        self.playground_frame = ctk.CTkFrame(self, width=140, corner_radius=0,fg_color='transparent')
+        self.playground_frame.grid_columnconfigure(0, weight=1)
+        #sub frame
+        self.playground_frame_subframe = ctk.CTkFrame(self.playground_frame,width=400, corner_radius=20)
+        #self.playground_frame_subframe.grid_columnconfigure(0, weight=5)
+        #self.playground_frame_subframe.grid_columnconfigure(1, weight=1)
+        self.playground_frame_subframe.grid(row=2, column=0,sticky="nsew", padx=20, pady=20)
+        #self.create_playground_widgets()
+        self.apply_general_style_to_widgets(self.playground_frame_subframe)
+        
+        self.toolbox_frame = ctk.CTkFrame(self, width=140, corner_radius=0,fg_color='transparent')
+        self.toolbox_frame.grid_columnconfigure(0, weight=1)
+        #sub frame
+        self.toolbox_frame_subframe = ctk.CTkFrame(self.toolbox_frame,width=400, corner_radius=20)
+        #self.toolbox_frame_subframe.grid_columnconfigure(0, weight=5)
+        #self.toolbox_frame_subframe.grid_columnconfigure(1, weight=1)
+        self.toolbox_frame_subframe.grid(row=2, column=0,sticky="nsew", padx=20, pady=20)
+        #self.create_toolbox_frame_widgets()
+        self.apply_general_style_to_widgets(self.toolbox_frame_subframe)
+
+        
 
         self.select_frame_by_name('general') 
         self.update()
@@ -239,10 +338,10 @@ class App(ctk.CTk):
         #self.training_tabl_scroll.place(relx=0.98, rely=0.05, relheight=0.9, anchor='ne')
         
         self.dataset_tab = self.notebook.tab('Dataset Settings')
-        #self.sample_tab = self.notebook.tab('Sample Settings')
-        self.sample_tab_host = ScrollableFrame(self.notebook.tab('Sample Settings'),style='new.TFrame')
-        self.sample_tab_host.pack(fill="both", expand=True)
-        self.sample_tab = self.sample_tab_host.scrollable_frame
+        #self.sampling_frame_subframe = self.notebook.tab('Sample Settings')
+        self.sampling_frame_subframe_host = ScrollableFrame(self.notebook.tab('Sample Settings'),style='new.TFrame')
+        self.sampling_frame_subframe_host.pack(fill="both", expand=True)
+        self.sampling_frame_subframe = self.sampling_frame_subframe_host.scrollable_frame
         #self.concepts_tab = self.notebook.tab('Concepts Settings')
         self.concepts_tab_host = ScrollableFrame(self.notebook.tab('Concepts Settings'),style='new.TFrame')
         self.concepts_tab_host.pack(fill="both", expand=True)
@@ -253,7 +352,7 @@ class App(ctk.CTk):
         #self.notebook.add(self.general_tab, text="General Settings",sticky="n")
         #self.notebook.add(self.training_tab, text="Training Settings",sticky="n")
         #self.notebook.add(self.dataset_tab, text="Dataset Settings",sticky="n")
-        #self.notebook.add(self.sample_tab, text="Sample Settings",sticky="n")
+        #self.notebook.add(self.sampling_frame_subframe, text="Sample Settings",sticky="n")
         #self.notebook.add(self.concepts_tab, text="Training Data",sticky="nw")
         #self.notebook.add(self.play_tab, text="Model Playground",sticky="n")
         #self.notebook.add(self.tools_tab, text="Toolbox",sticky="n")
@@ -354,14 +453,14 @@ class App(ctk.CTk):
             child.configure(bg_color='#333333')
             #print type of l
             #print(type(l))
-            if type(child) == ctk.CTkCheckBox:
+            if type(child) == ctk.CTkSwitch:
                 child.configure(text='')
                 child.grid(sticky="e")
         for child in self.concepts_tab.children.values():
             child.configure(bg_color='#333333')
             #print type of l
             #print(type(l))
-            if type(child) == ctk.CTkCheckBox:
+            if type(child) == ctk.CTkSwitch:
                 child.configure(text='')
                 child.grid(sticky="e")
         for child in self.play_tab.children.values():
@@ -369,7 +468,7 @@ class App(ctk.CTk):
                 child.configure(bg_color='#333333')
                 #print type of l
                 #print(type(l))
-                if type(child) == ctk.CTkCheckBox:
+                if type(child) == ctk.CTkSwitch:
                     child.configure(text='')
                     child.grid(sticky="we")
             except:
@@ -379,7 +478,7 @@ class App(ctk.CTk):
                 child.configure(bg_color='#333333')
                 #print type of l
                 #print(type(l))
-                if type(child) == ctk.CTkCheckBox:
+                if type(child) == ctk.CTkSwitch:
                     child.configure(text='')
                     child.grid(sticky="we")
             except:
@@ -389,7 +488,7 @@ class App(ctk.CTk):
                 child.configure(bg_color='#333333')
                 #print type of l
                 #print(type(l))
-                if type(child) == ctk.CTkCheckBox:
+                if type(child) == ctk.CTkSwitch:
                     child.configure(text='')
                     child.grid(sticky="we")
             except:
@@ -399,16 +498,16 @@ class App(ctk.CTk):
                 child.configure(bg_color='#333333')
                 #print type of l
                 #print(type(l))
-                if type(child) == ctk.CTkCheckBox:
+                if type(child) == ctk.CTkSwitch:
                     child.configure(text='')
                     child.grid(sticky="we")
             except:
                 pass  
-        for child in self.sample_tab.children.values():
+        for child in self.sampling_frame_subframe.children.values():
             child.configure(bg_color='#333333')
             #print type of l
             #print(type(l))
-            if type(child) == ctk.CTkCheckBox:
+            if type(child) == ctk.CTkSwitch:
                 child.configure(text='')
                 child.grid(sticky="e")
         #apply dark theme to scrollable frame
@@ -545,6 +644,20 @@ class App(ctk.CTk):
             self.dataset_frame.grid(row=0, column=1, sticky="nsew")
         else:
             self.dataset_frame.grid_forget()
+        if name == "sampling":
+            self.sampling_frame.grid(row=0, column=1, sticky="nsew")
+        else:
+            self.sampling_frame.grid_forget()
+        if name == "data":
+            self.data_frame.grid(row=0, column=1, sticky="nsew")
+        else:
+            self.data_frame.grid_forget()
+        if name == "playground":
+            self.playground_frame.grid(row=0, column=1, sticky="nsew")
+        else:
+            self.playground_frame.grid_forget()
+        if name == "toolbox":
+            self.toolbox_frame.grid(row=0, column=1, sticky="nsew")
 
     def general_nav_button_event(self):
         self.select_frame_by_name("general")
@@ -554,6 +667,14 @@ class App(ctk.CTk):
 
     def dataset_nav_button_event(self):
         self.select_frame_by_name("dataset")
+    def sampling_nav_button_event(self):
+        self.select_frame_by_name("sampling")
+    def data_nav_button_event(self):
+        self.select_frame_by_name("data")
+    def playground_nav_button_event(self):
+        self.select_frame_by_name("playground")
+    def toolbox_nav_button_event(self):
+        self.select_frame_by_name("toolbox")
 
     #create a right click menu for entry widgets
     def create_right_click_menu(self, event):
@@ -590,19 +711,6 @@ class App(ctk.CTk):
         
     def open_file(self):
         print("open file")
-    def create_menu(self):
-        #deprecated
-        #menu frame dark mode
-        self.menubar = tk.Menu(self.master,tearoff=0)
-        self.filemenu = tk.Menu(self.menubar, tearoff=0)
-        self.filemenu.add_command(label="Open", command=self.load_config)
-        self.filemenu.add_command(label="Save", command=self.save_config)
-        #add clear settings
-        #self.filemenu.add_command(label="Clear Settings", command=self.clear_settings)
-        self.filemenu.add_separator()
-        self.filemenu.add_command(label="Exit", command=self.master.quit)
-        self.menubar.add_cascade(label="File", menu=self.filemenu)
-
 
         self.master.configure(menu=self.menubar)
     def quick_select_model(self,*args):
@@ -626,6 +734,56 @@ class App(ctk.CTk):
                 self.resolution_var.set("768")
             self.master.update()
     
+    def apply_general_style_to_widgets(self,frame):
+        for i in frame.children.values():
+            print(i)
+            if 'ctkbutton' in str(i):
+                #print(i)
+                i.grid(padx=5, pady=10,sticky="w")
+            if 'ctkoptionmenu' in str(i):
+                #print(i)
+                i.grid(padx=10, pady=10,sticky="w")
+            if 'ctkentry' in str(i):
+                #print(i)
+                i.configure(width=160)
+                i.grid(padx=10, pady=5,sticky="w")
+            if 'ctkswitch' in str(i):
+                #print(i)
+                i.configure(text='')
+                i.grid(padx=10, pady=10,sticky="e")
+            if 'ctklabel' in str(i):
+                #print(i)
+                i.grid(padx=10,sticky="w")
+
+    def grid_train_settings(self):
+        #define grid row and column
+        self.training_frame_subframe.grid_columnconfigure(0, weight=1)
+        self.training_frame_subframe.grid_columnconfigure(1, weight=1)
+        self.training_frame_subframe.grid_columnconfigure(2, weight=1)
+        self.training_frame_subframe.grid_columnconfigure(3, weight=1)
+        rows = 10
+        columns = 4
+        widgets = self.training_frame_subframe.children.values()
+        #organize widgets in grid
+        curRow = 0
+        curColumn = 0
+        #make widgets a list
+        widgets = list(widgets)[1:]
+        #find ctkcanvas in widgets and remove it
+        for i in widgets:
+            if 'ctkcanvas' in str(i):
+                widgets.remove(i)
+        #create pairs of widgets
+        pairs = []
+        for i in range(0,len(widgets),2):
+            pairs.append([widgets[i],widgets[i+1]])
+        for p in pairs:
+            p[0].grid(row=curRow, column=curColumn, sticky="w")
+            p[1].grid(row=curRow, column=curColumn+1, sticky="w")
+            curRow += 1
+            if curRow == rows:
+                curRow = 0
+                curColumn += 2
     def create_general_settings_widgets(self):
         self.general_frame_title = ctk.CTkLabel(self.general_frame, text="General Settings", font=ctk.CTkFont(size=20, weight="bold"))
         self.general_frame_title.grid(row=0, column=0,columnspan=2, padx=20, pady=20)    
@@ -634,13 +792,13 @@ class App(ctk.CTk):
         self.quick_select_var = tk.StringVar(self.master)
         self.quick_select_var.set('Quick Select Base Model')
         self.quick_select_dropdown = ctk.CTkOptionMenu(self.general_frame_subframe, variable=self.quick_select_var, values=self.quick_select_models, command=self.quick_select_model,dynamic_resizing=False, width=200)
-        self.quick_select_dropdown.grid(row=0, column=0,padx=20, pady=20, sticky="nsew")
+        self.quick_select_dropdown.grid(row=0, column=0, sticky="nsew")
         self.load_config_button = ctk.CTkButton(self.general_frame_subframe, text="Load Config", command=self.load_config)
-        self.load_config_button.grid(row=0, column=1,padx=20, pady=5, sticky="nsew")
+        self.load_config_button.grid(row=0, column=1, sticky="nsew")
         #self.load_config_button.grid(row=2, column=1, sticky="nsew")
         #get the location of load config button in the frame
         self.save_config_button = ctk.CTkButton(self.general_frame_subframe, text="Save Config", command=self.save_config)
-        self.save_config_button.grid(row=0, column=2,padx=20, pady=5, sticky="nsew")
+        self.save_config_button.grid(row=0, column=2, sticky="nsew")
         #self.save_config_button.grid(row=2, column=2, sticky="nsew")
 
         self.input_model_path_label = ctk.CTkLabel(self.general_frame_subframe, text="Input Model / HuggingFace Repo")
@@ -648,37 +806,73 @@ class App(ctk.CTk):
         self.input_model_path_label.grid(row=1, column=0, sticky="nsew")
         self.input_model_path_entry = ctk.CTkEntry(self.general_frame_subframe,width=30)
         
-        self.input_model_path_entry.grid(row=1, column=1, sticky="nsew",padx=20,pady=5)
+        self.input_model_path_entry.grid(row=1, column=1, sticky="nsew")
         self.input_model_path_entry.insert(0, self.input_model_path)
         #make a button to open a file dialog
         self.input_model_path_button = ctk.CTkButton(self.general_frame_subframe,width=30, text="...", command=self.choose_model)
-        self.input_model_path_button.grid(row=1, column=2, sticky="w",pady=5)
+        self.input_model_path_button.grid(row=1, column=2, sticky="w")
         self.vae_model_path_label = ctk.CTkLabel(self.general_frame_subframe, text="VAE model path / HuggingFace Repo")
         vae_model_path_label_ttp = CreateToolTip(self.vae_model_path_label, "OPTINAL The path to the VAE model to use. Can be a local path or a HuggingFace repo path.")
         self.vae_model_path_label.grid(row=2, column=0, sticky="nsew")
         self.vae_model_path_entry = ctk.CTkEntry(self.general_frame_subframe)
-        self.vae_model_path_entry.grid(row=2, column=1, sticky="nsew",padx=20,pady=5)
+        self.vae_model_path_entry.grid(row=2, column=1, sticky="nsew")
         self.vae_model_path_entry.insert(0, self.vae_model_path)
         #make a button to open a file dialog
         self.vae_model_path_button = ctk.CTkButton(self.general_frame_subframe,width=30, text="...", command=lambda: self.open_file_dialog(self.vae_model_path_entry))
-        self.vae_model_path_button.grid(row=2, column=2, sticky="w",pady=5)
+        self.vae_model_path_button.grid(row=2, column=2, sticky="w")
 
         self.output_path_label = ctk.CTkLabel(self.general_frame_subframe, text="Output Path")
         output_path_label_ttp = CreateToolTip(self.output_path_label, "The path to the output directory. If it doesn't exist, it will be created.")
-        self.output_path_label.grid(row=3, column=0, sticky="nsew",padx=20,pady=5)
+        self.output_path_label.grid(row=3, column=0, sticky="nsew")
         self.output_path_entry = ctk.CTkEntry(self.general_frame_subframe)
-        self.output_path_entry.grid(row=3, column=1, sticky="nsew",padx=20,pady=5)
+        self.output_path_entry.grid(row=3, column=1, sticky="nsew")
         self.output_path_entry.insert(0, self.output_path)
         #make a button to open a file dialog
         self.output_path_button = ctk.CTkButton(self.general_frame_subframe,width=30, text="...", command=lambda: self.open_file_dialog(self.output_path_entry))
-        self.output_path_button.grid(row=3, column=2, sticky="w",pady=5)
+        self.output_path_button.grid(row=3, column=2, sticky="w")
 
         self.convert_to_ckpt_after_training_label = ctk.CTkLabel(self.general_frame_subframe, text="Convert to CKPT after training?")
         convert_to_ckpt_label_ttp = CreateToolTip(self.convert_to_ckpt_after_training_label, "Convert the model to a tensorflow checkpoint after training.")
-        self.convert_to_ckpt_after_training_label.grid(row=4, column=0, sticky="nsew",pady=5)
+        self.convert_to_ckpt_after_training_label.grid(row=4, column=0, sticky="nsew")
         self.convert_to_ckpt_after_training_var = tk.IntVar()
         self.convert_to_ckpt_after_training_checkbox = ctk.CTkSwitch(self.general_frame_subframe,text='',variable=self.convert_to_ckpt_after_training_var)
-        self.convert_to_ckpt_after_training_checkbox.grid(row=4, column=1, sticky="nsew",padx=10,pady=5)
+        self.convert_to_ckpt_after_training_checkbox.grid(row=4, column=1, sticky="nsew",padx=10)
+        
+        self.convert_to_ckpt_after_training_label = ctk.CTkLabel(self.general_frame_subframe, text="Convert to CKPT after training?")
+        convert_to_ckpt_label_ttp = CreateToolTip(self.convert_to_ckpt_after_training_label, "Convert the model to a tensorflow checkpoint after training.")
+        self.convert_to_ckpt_after_training_label.grid(row=5, column=0, sticky="nsew")
+        self.convert_to_ckpt_after_training_var = tk.IntVar()
+        self.convert_to_ckpt_after_training_checkbox = ctk.CTkSwitch(self.general_frame_subframe,variable=self.convert_to_ckpt_after_training_var)
+        self.convert_to_ckpt_after_training_checkbox.grid(row=5, column=1, sticky="nsew")
+        #use telegram updates dark mode
+        self.send_telegram_updates_label = ctk.CTkLabel(self.general_frame_subframe, text="Send Telegram Updates")
+        send_telegram_updates_label_ttp = CreateToolTip(self.send_telegram_updates_label, "Use Telegram updates to monitor training progress, must have a Telegram bot set up.")
+        self.send_telegram_updates_label.grid(row=6, column=0, sticky="nsew")
+        #create checkbox to toggle telegram updates and show telegram token and chat id
+        self.send_telegram_updates_var = tk.IntVar()
+        self.send_telegram_updates_checkbox = ctk.CTkSwitch(self.general_frame_subframe,variable=self.send_telegram_updates_var, command=self.toggle_telegram_settings)
+        self.send_telegram_updates_checkbox.grid(row=6, column=1, sticky="nsew")
+        #create telegram token dark mode
+        self.telegram_token_label = ctk.CTkLabel(self.general_frame_subframe, text="Telegram Token",  state="disabled")
+        telegram_token_label_ttp = CreateToolTip(self.telegram_token_label, "The Telegram token for your bot.")
+        self.telegram_token_label.grid(row=7, column=0, sticky="nsew")
+        self.telegram_token_entry = ctk.CTkEntry(self.general_frame_subframe,  state="disabled")
+        self.telegram_token_entry.grid(row=7, column=1, sticky="nsew")
+        self.telegram_token_entry.insert(0, self.telegram_token)
+        #create telegram chat id dark mode
+        self.telegram_chat_id_label = ctk.CTkLabel(self.general_frame_subframe, text="Telegram Chat ID",  state="disabled")
+        telegram_chat_id_label_ttp = CreateToolTip(self.telegram_chat_id_label, "The Telegram chat ID to send updates to.")
+        self.telegram_chat_id_label.grid(row=8, column=0, sticky="nsew")
+        self.telegram_chat_id_entry = ctk.CTkEntry(self.general_frame_subframe,  state="disabled")
+        self.telegram_chat_id_entry.grid(row=8, column=1, sticky="nsew")
+        self.telegram_chat_id_entry.insert(0, self.telegram_chat_id)
+        
+        #create a label for the subframe guide
+        #self.general_frame_subframe_guide_label = ctk.CTkLabel(self.general_frame_subframe_side_guide, text="Welcome!", font=ctk.CTkFont(family="Arial", size=20, weight="bold"))
+        #self.general_frame.pack(side="top", fill="both", expand=True)
+        #self.general_frame_subframe_guide_label.grid(row=0, column=0, sticky="nsew")
+        #self.general_frame_subframe_guide_label = ctk.CTkLabel(self.general_frame_subframe_side_guide, text="This is the general settings page, here you can set the general settings for the training.")
+        #self.general_frame_subframe_guide_label.grid(row=1, column=0, sticky="nsew")
         return
         #add tip label
         #create vae model path dark mode
@@ -690,7 +884,7 @@ class App(ctk.CTk):
         convert_to_ckpt_label_ttp = CreateToolTip(self.convert_to_ckpt_after_training_label, "Convert the model to a tensorflow checkpoint after training.")
         self.convert_to_ckpt_after_training_label.grid(row=6, column=0, sticky="nsew")
         self.convert_to_ckpt_after_training_var = tk.IntVar()
-        self.convert_to_ckpt_after_training_checkbox = ctk.CTkCheckBox(self.general_frame_subframe,variable=self.convert_to_ckpt_after_training_var)
+        self.convert_to_ckpt_after_training_checkbox = ctk.CTkSwitch(self.general_frame_subframe,variable=self.convert_to_ckpt_after_training_var)
         self.convert_to_ckpt_after_training_checkbox.grid(row=6, column=1, sticky="nsew")
         #use telegram updates dark mode
         self.send_telegram_updates_label = ctk.CTkLabel(self.general_frame_subframe, text="Send Telegram Updates")
@@ -698,7 +892,7 @@ class App(ctk.CTk):
         self.send_telegram_updates_label.grid(row=7, column=0, sticky="nsew")
         #create checkbox to toggle telegram updates and show telegram token and chat id
         self.send_telegram_updates_var = tk.IntVar()
-        self.send_telegram_updates_checkbox = ctk.CTkCheckBox(self.general_frame_subframe,variable=self.send_telegram_updates_var, command=self.toggle_telegram_settings)
+        self.send_telegram_updates_checkbox = ctk.CTkSwitch(self.general_frame_subframe,variable=self.send_telegram_updates_var, command=self.toggle_telegram_settings)
         self.send_telegram_updates_checkbox.grid(row=7, column=1, sticky="nsew")
         #create telegram token dark mode
         self.telegram_token_label = ctk.CTkLabel(self.general_frame_subframe, text="Telegram Token",  state="disabled")
@@ -714,246 +908,165 @@ class App(ctk.CTk):
         self.telegram_chat_id_entry = ctk.CTkEntry(self.general_frame_subframe,  state="disabled")
         self.telegram_chat_id_entry.grid(row=9, column=1, sticky="nsew")
         self.telegram_chat_id_entry.insert(0, self.telegram_chat_id)
-    def create_widgets(self):
-        #create grid one side for labels the other for inputs
-        #make the second column size 2x the first
-        #create a model settings label in bold
-        #add button to load configure
-        #add button to save configure
-        self.model_settings_label = ctk.CTkLabel(self.general_tab, text="StableTune Settings",  font=("Arial", 12, "bold"))
-        self.model_settings_label.grid(row=0, column=0, sticky="nsew")
-        self.load_config_button = ctk.CTkButton(self.general_tab, text="Load Config", command=self.load_config)
-        self.load_config_button.grid(row=0, column=1, sticky="nw")
-        self.save_config_button = ctk.CTkButton(self.general_tab, text="Save Config", command=self.save_config)
-        self.save_config_button.grid(row=0, column=2, sticky="ne")
-        #add tip label
-        self.tip_label = ctk.CTkLabel(self.general_tab, text="Tip: Hover over settings for information ;)",  font=("Arial", 10))
-        self.tip_label.grid(row=1, column=0,columnspan=3, sticky="nsew",pady=(0,10))
-        self.quick_select_label = ctk.CTkLabel(self.general_tab, text="Quick Select Model",  font=("Arial", 10, "bold"))
-        quick_select_label_ttp = CreateToolTip(self.quick_select_label, "Quick select another model to use.")
-        self.quick_select_label.grid(row=2, column=0, sticky="nsew")
-        self.quick_select_var = tk.StringVar(self.master)
-        self.quick_select_var.set('Click to select')
-        self.quick_select_dropdown = ctk.CTkOptionMenu(self.general_tab, variable=self.quick_select_var, values=self.quick_select_models, command=self.quick_select_model,dynamic_resizing=False, width=200)
-        self.quick_select_dropdown.grid(row=2, column=1, sticky="nsew")
-        
-        self.input_model_path_label = ctk.CTkLabel(self.general_tab, text="Input Model / HuggingFace Repo")
-        input_model_path_label_ttp = CreateToolTip(self.input_model_path_label, "The path to the diffusers model to use. Can be a local path or a HuggingFace repo path.")
-        self.input_model_path_label.grid(row=3, column=0, sticky="nsew")
-        self.input_model_path_entry = ctk.CTkEntry(self.general_tab,width=30)
-        
-        self.input_model_path_entry.grid(row=3, column=1, sticky="nsew")
-        self.input_model_path_entry.insert(0, self.input_model_path)
-        #make a button to open a file dialog
-        self.input_model_path_button = ctk.CTkButton(self.general_tab, text="...", command=self.choose_model)
-        self.input_model_path_button.grid(row=3, column=2, sticky="nwse")
-        #create vae model path dark mode
-        self.vae_model_path_label = ctk.CTkLabel(self.general_tab, text="VAE model path / HuggingFace Repo")
-        vae_model_path_label_ttp = CreateToolTip(self.vae_model_path_label, "OPTINAL The path to the VAE model to use. Can be a local path or a HuggingFace repo path.")
-        self.vae_model_path_label.grid(row=4, column=0, sticky="nsew")
-        self.vae_model_path_entry = ctk.CTkEntry(self.general_tab)
-        self.vae_model_path_entry.grid(row=4, column=1, sticky="nsew")
-        self.vae_model_path_entry.insert(0, self.vae_model_path)
-        #make a button to open a file dialog
-        self.vae_model_path_button = ctk.CTkButton(self.general_tab, text="...", command=lambda: self.open_file_dialog(self.vae_model_path_entry))
-        self.vae_model_path_button.grid(row=4, column=2, sticky="nsew")
-        #create output path dark mode
-        self.output_path_label = ctk.CTkLabel(self.general_tab, text="Output Path")
-        output_path_label_ttp = CreateToolTip(self.output_path_label, "The path to the output directory. If it doesn't exist, it will be created.")
-        self.output_path_label.grid(row=5, column=0, sticky="nsew")
-        self.output_path_entry = ctk.CTkEntry(self.general_tab)
-        self.output_path_entry.grid(row=5, column=1, sticky="nsew")
-        self.output_path_entry.insert(0, self.output_path)
-        #make a button to open a file dialog
-        self.output_path_button = ctk.CTkButton(self.general_tab, text="...", command=lambda: self.open_file_dialog(self.output_path_entry))
-        self.output_path_button.grid(row=5, column=2, sticky="nsew")
-        #create a checkbox wether to convert to ckpt after training
-        self.convert_to_ckpt_after_training_label = ctk.CTkLabel(self.general_tab, text="Convert to CKPT after training?")
-        convert_to_ckpt_label_ttp = CreateToolTip(self.convert_to_ckpt_after_training_label, "Convert the model to a tensorflow checkpoint after training.")
-        self.convert_to_ckpt_after_training_label.grid(row=6, column=0, sticky="nsew")
-        self.convert_to_ckpt_after_training_var = tk.IntVar()
-        self.convert_to_ckpt_after_training_checkbox = ctk.CTkCheckBox(self.general_tab,variable=self.convert_to_ckpt_after_training_var)
-        self.convert_to_ckpt_after_training_checkbox.grid(row=6, column=1, sticky="nsew")
-        #use telegram updates dark mode
-        self.send_telegram_updates_label = ctk.CTkLabel(self.general_tab, text="Send Telegram Updates")
-        send_telegram_updates_label_ttp = CreateToolTip(self.send_telegram_updates_label, "Use Telegram updates to monitor training progress, must have a Telegram bot set up.")
-        self.send_telegram_updates_label.grid(row=7, column=0, sticky="nsew")
-        #create checkbox to toggle telegram updates and show telegram token and chat id
-        self.send_telegram_updates_var = tk.IntVar()
-        self.send_telegram_updates_checkbox = ctk.CTkCheckBox(self.general_tab,variable=self.send_telegram_updates_var, command=self.toggle_telegram_settings)
-        self.send_telegram_updates_checkbox.grid(row=7, column=1, sticky="nsew")
-        #create telegram token dark mode
-        self.telegram_token_label = ctk.CTkLabel(self.general_tab, text="Telegram Token",  state="disabled")
-        telegram_token_label_ttp = CreateToolTip(self.telegram_token_label, "The Telegram token for your bot.")
-        self.telegram_token_label.grid(row=8, column=0, sticky="nsew")
-        self.telegram_token_entry = ctk.CTkEntry(self.general_tab,  state="disabled")
-        self.telegram_token_entry.grid(row=8, column=1, sticky="nsew")
-        self.telegram_token_entry.insert(0, self.telegram_token)
-        #create telegram chat id dark mode
-        self.telegram_chat_id_label = ctk.CTkLabel(self.general_tab, text="Telegram Chat ID",  state="disabled")
-        telegram_chat_id_label_ttp = CreateToolTip(self.telegram_chat_id_label, "The Telegram chat ID to send updates to.")
-        self.telegram_chat_id_label.grid(row=9, column=0, sticky="nsew")
-        self.telegram_chat_id_entry = ctk.CTkEntry(self.general_tab,  state="disabled")
-        self.telegram_chat_id_entry.grid(row=9, column=1, sticky="nsew")
-        self.telegram_chat_id_entry.insert(0, self.telegram_chat_id)
-        #Training settings label in bold
-        self.training_settings_label = ctk.CTkLabel(self.training_tab, text="Training Settings",  font=("Helvetica", 12, "bold"))
-        self.training_settings_label.grid(row=0, column=0, sticky="nsew")
+    
+    def create_trainer_settings_widgets(self):
+        self.training_frame_title = ctk.CTkLabel(self.training_frame, text="Training Settings", font=ctk.CTkFont(size=20, weight="bold"))
+        self.training_frame_title.grid(row=0, column=0, padx=20, pady=20)   
         #add a seed entry
-        self.seed_label = ctk.CTkLabel(self.training_tab, text="Seed")
-        seed_label_ttp = CreateToolTip(self.seed_label, "The seed to use for training.")
-        self.seed_label.grid(row=1, column=0, sticky="nsew")
-        self.seed_entry = ctk.CTkEntry(self.training_tab)
-        self.seed_entry.grid(row=1, column=1, sticky="nsew")
-        self.seed_entry.insert(0, self.seed_number)
-
+        self.seed_label = ctk.CTkLabel(self.training_frame_subframe, text="Seed")
+        #seed_label_ttp = CreateToolTip(self.seed_label, "The seed to use for training.")
+        #self.seed_label.grid(row=1, column=0, sticky="nsew")
+        self.seed_entry = ctk.CTkEntry(self.training_frame_subframe)
+        #self.seed_entry.grid(row=1, column=1, sticky="nsew")
+        #self.seed_entry.insert(0, self.seed_number)
         #create resolution dark mode dropdown
-        self.resolution_label = ctk.CTkLabel(self.training_tab, text="Resolution")
-        resolution_label_ttp = CreateToolTip(self.resolution_label, "The resolution of the images to train on.")
-        self.resolution_label.grid(row=2, column=0, sticky="nsew")
+        self.resolution_label = ctk.CTkLabel(self.training_frame_subframe, text="Resolution")
+        #resolution_label_ttp = CreateToolTip(self.resolution_label, "The resolution of the images to train on.")
+        #self.resolution_label.grid(row=2, column=0, sticky="nsew")
         self.resolution_var = tk.StringVar()
-        self.resolution_var.set(self.resolution)
-        self.resolution_dropdown = ctk.CTkOptionMenu(self.training_tab, variable=self.resolution_var, values=["256", "320", "384", "448","512", "576", "640", "704", "768", "832", "896", "960", "1024"])
-        self.resolution_dropdown.grid(row=2, column=1, sticky="nsew")
-        
+        #self.resolution_var.set(self.resolution)
+        self.resolution_dropdown = ctk.CTkOptionMenu(self.training_frame_subframe, variable=self.resolution_var, values=["256", "320", "384", "448","512", "576", "640", "704", "768", "832", "896", "960", "1024"])
+        #self.resolution_dropdown.grid(row=2, column=1, sticky="nsew")
         
         #create train batch size dark mode dropdown with values from 1 to 60
-        self.train_batch_size_label = ctk.CTkLabel(self.training_tab, text="Train Batch Size")
-        train_batch_size_label_ttp = CreateToolTip(self.train_batch_size_label, "The batch size to use for training.")
-        self.train_batch_size_label.grid(row=3, column=0, sticky="nsew")
+        self.train_batch_size_label = ctk.CTkLabel(self.training_frame_subframe, text="Train Batch Size")
+        #train_batch_size_label_ttp = CreateToolTip(self.train_batch_size_label, "The batch size to use for training.")
+        #self.train_batch_size_label.grid(row=3, column=0, sticky="nsew")
         self.train_batch_size_var = tk.StringVar()
-        self.train_batch_size_var.set(self.batch_size)
-        #self.train_batch_size_dropdown = ctk.CTkOptionMenu(self.training_tab, self.train_batch_size_var, *range(1, 61))
+        #self.train_batch_size_var.set(self.batch_size)
+        #make a list of values from 1 to 60 that are strings
+        #train_batch_size_values = 
+        self.train_batch_size_dropdown = ctk.CTkOptionMenu(self.training_frame_subframe, variable=self.train_batch_size_var, values=[str(i) for i in range(1,61)])
         #self.train_batch_size_dropdown.grid(row=3, column=1, sticky="nsew")
 
         #create train epochs dark mode 
-        self.train_epochs_label = ctk.CTkLabel(self.training_tab, text="Train Epochs")
-        train_epochs_label_ttp = CreateToolTip(self.train_epochs_label, "The number of epochs to train for. An epoch is one pass through the entire dataset.")
-        self.train_epochs_label.grid(row=4, column=0, sticky="nsew")
-        self.train_epochs_entry = ctk.CTkEntry(self.training_tab)
-        self.train_epochs_entry.grid(row=4, column=1, sticky="nsew")
-        self.train_epochs_entry.insert(0, self.num_train_epochs)
+        self.train_epochs_label = ctk.CTkLabel(self.training_frame_subframe, text="Train Epochs")
+        #train_epochs_label_ttp = CreateToolTip(self.train_epochs_label, "The number of epochs to train for. An epoch is one pass through the entire dataset.")
+        #self.train_epochs_label.grid(row=4, column=0, sticky="nsew")
+        self.train_epochs_entry = ctk.CTkEntry(self.training_frame_subframe)
+        #self.train_epochs_entry.grid(row=4, column=1, sticky="nsew")
+        #self.train_epochs_entry.insert(0, self.num_train_epochs)
         
         #create mixed precision dark mode dropdown
-        self.mixed_precision_label = ctk.CTkLabel(self.training_tab, text="Mixed Precision")
-        mixed_precision_label_ttp = CreateToolTip(self.mixed_precision_label, "Use mixed precision training to speed up training, FP16 is recommended but requires a GPU with Tensor Cores.")
-        self.mixed_precision_label.grid(row=5, column=0, sticky="nsew")
+        self.mixed_precision_label = ctk.CTkLabel(self.training_frame_subframe, text="Mixed Precision")
+        #mixed_precision_label_ttp = CreateToolTip(self.mixed_precision_label, "Use mixed precision training to speed up training, FP16 is recommended but requires a GPU with Tensor Cores.")
+        #self.mixed_precision_label.grid(row=5, column=0, sticky="nsew")
         self.mixed_precision_var = tk.StringVar()
-        self.mixed_precision_var.set(self.mixed_precision)
-        #self.mixed_precision_dropdown = ctk.CTkOptionMenu(self.training_tab, self.mixed_precision_var, "fp16", "fp32")
+        #self.mixed_precision_var.set(self.mixed_precision)
+        self.mixed_precision_dropdown = ctk.CTkOptionMenu(self.training_frame_subframe, variable=self.mixed_precision_var,values=["fp16", "fp32"])
         #self.mixed_precision_dropdown.grid(row=5, column=1, sticky="nsew")
 
         #create use 8bit adam checkbox
         self.use_8bit_adam_var = tk.IntVar()
-        self.use_8bit_adam_var.set(self.use_8bit_adam)
+        #self.use_8bit_adam_var.set(self.use_8bit_adam)
         #create label
-        self.use_8bit_adam_label = ctk.CTkLabel(self.training_tab, text="Use 8bit Adam")
-        use_8bit_adam_label_ttp = CreateToolTip(self.use_8bit_adam_label, "Use 8bit Adam to speed up training, requires bytsandbytes.")
-        self.use_8bit_adam_label.grid(row=6, column=0, sticky="nsew")
+        self.use_8bit_adam_label = ctk.CTkLabel(self.training_frame_subframe, text="Use 8bit Adam")
+        #use_8bit_adam_label_ttp = CreateToolTip(self.use_8bit_adam_label, "Use 8bit Adam to speed up training, requires bytsandbytes.")
+        #self.use_8bit_adam_label.grid(row=6, column=0, sticky="nsew")
         #create checkbox
-        self.use_8bit_adam_checkbox = ctk.CTkCheckBox(self.training_tab, variable=self.use_8bit_adam_var,text='')
-        self.use_8bit_adam_checkbox.grid(row=6, column=1, sticky="nsew")
+        self.use_8bit_adam_checkbox = ctk.CTkSwitch(self.training_frame_subframe, variable=self.use_8bit_adam_var,text='')
+        #self.use_8bit_adam_checkbox.grid(row=6, column=1, sticky="nsew")
         #create use gradient checkpointing checkbox
         self.use_gradient_checkpointing_var = tk.IntVar()
-        self.use_gradient_checkpointing_var.set(self.use_gradient_checkpointing)
+        #self.use_gradient_checkpointing_var.set(self.use_gradient_checkpointing)
         #create label
-        self.use_gradient_checkpointing_label = ctk.CTkLabel(self.training_tab, text="Use Gradient Checkpointing")
-        use_gradient_checkpointing_label_ttp = CreateToolTip(self.use_gradient_checkpointing_label, "Use gradient checkpointing to reduce RAM usage.")
-        self.use_gradient_checkpointing_label.grid(row=7, column=0, sticky="nsew")
+        self.use_gradient_checkpointing_label = ctk.CTkLabel(self.training_frame_subframe, text="Use Gradient Checkpointing")
+        #use_gradient_checkpointing_label_ttp = CreateToolTip(self.use_gradient_checkpointing_label, "Use gradient checkpointing to reduce RAM usage.")
+        #self.use_gradient_checkpointing_label.grid(row=7, column=0, sticky="nsew")
         #create checkbox
-        self.use_gradient_checkpointing_checkbox = ctk.CTkCheckBox(self.training_tab, variable=self.use_gradient_checkpointing_var)
-        self.use_gradient_checkpointing_checkbox.grid(row=7, column=1, sticky="nsew")
+        self.use_gradient_checkpointing_checkbox = ctk.CTkSwitch(self.training_frame_subframe, variable=self.use_gradient_checkpointing_var)
+        #self.use_gradient_checkpointing_checkbox.grid(row=7, column=1, sticky="nsew")
         #create gradient accumulation steps dark mode dropdown with values from 1 to 60
-        self.gradient_accumulation_steps_label = ctk.CTkLabel(self.training_tab, text="Gradient Accumulation Steps")
-        gradient_accumulation_steps_label_ttp = CreateToolTip(self.gradient_accumulation_steps_label, "The number of gradient accumulation steps to use, this is useful for training with limited GPU memory.")
-        self.gradient_accumulation_steps_label.grid(row=8, column=0, sticky="nsew")
+        self.gradient_accumulation_steps_label = ctk.CTkLabel(self.training_frame_subframe, text="Gradient Accumulation Steps")
+        #gradient_accumulation_steps_label_ttp = CreateToolTip(self.gradient_accumulation_steps_label, "The number of gradient accumulation steps to use, this is useful for training with limited GPU memory.")
+        #self.gradient_accumulation_steps_label.grid(row=8, column=0, sticky="nsew")
         self.gradient_accumulation_steps_var = tk.StringVar()
-        self.gradient_accumulation_steps_var.set(self.accumulation_steps)
-        #self.gradient_accumulation_steps_dropdown = ctk.CTkOptionMenu(self.training_tab, self.gradient_accumulation_steps_var, *range(1, 61))
+        #self.gradient_accumulation_steps_var.set(self.accumulation_steps)
+        self.gradient_accumulation_steps_dropdown = ctk.CTkOptionMenu(self.training_frame_subframe, variable=self.gradient_accumulation_steps_var, values=['0','1','2','3','4','5','6','7','8','9','10'])
         #self.gradient_accumulation_steps_dropdown.grid(row=8, column=1, sticky="nsew")
         #create learning rate dark mode entry
-        self.learning_rate_label = ctk.CTkLabel(self.training_tab, text="Learning Rate")
-        learning_rate_label_ttp = CreateToolTip(self.learning_rate_label, "The learning rate to use for training.")
-        self.learning_rate_label.grid(row=9, column=0, sticky="nsew")
-        self.learning_rate_entry = ctk.CTkEntry(self.training_tab)
-        self.learning_rate_entry.grid(row=9, column=1, sticky="nsew")
-        self.learning_rate_entry.insert(0, self.learning_rate)
+        self.learning_rate_label = ctk.CTkLabel(self.training_frame_subframe, text="Learning Rate")
+        #learning_rate_label_ttp = CreateToolTip(self.learning_rate_label, "The learning rate to use for training.")
+        #self.learning_rate_label.grid(row=9, column=0, sticky="nsew")
+        self.learning_rate_entry = ctk.CTkEntry(self.training_frame_subframe)
+        #self.learning_rate_entry.grid(row=9, column=1, sticky="nsew")
+        #self.learning_rate_entry.insert(0, self.learning_rate)
         #create learning rate scheduler dropdown
-        self.learning_rate_scheduler_label = ctk.CTkLabel(self.training_tab, text="Learning Rate Scheduler")
-        learning_rate_scheduler_label_ttp = CreateToolTip(self.learning_rate_scheduler_label, "The learning rate scheduler to use for training.")
-        self.learning_rate_scheduler_label.grid(row=10, column=0, sticky="nsew")
+        self.learning_rate_scheduler_label = ctk.CTkLabel(self.training_frame_subframe, text="Learning Rate Scheduler")
+        #learning_rate_scheduler_label_ttp = CreateToolTip(self.learning_rate_scheduler_label, "The learning rate scheduler to use for training.")
+        #self.learning_rate_scheduler_label.grid(row=10, column=0, sticky="nsew")
         self.learning_rate_scheduler_var = tk.StringVar()
-        self.learning_rate_scheduler_var.set(self.learning_rate_schedule)
-        #self.learning_rate_scheduler_dropdown = ctk.CTkOptionMenu(self.training_tab, self.learning_rate_scheduler_var, "linear", "cosine", "cosine_with_restarts", "polynomial", "constant", "constant_with_warmup")
+        #self.learning_rate_scheduler_var.set(self.learning_rate_schedule)
+        self.learning_rate_scheduler_dropdown = ctk.CTkOptionMenu(self.training_frame_subframe, variable=self.learning_rate_scheduler_var, values=["linear", "cosine", "cosine_with_restarts", "polynomial", "constant", "constant_with_warmup"])
         #self.learning_rate_scheduler_dropdown.grid(row=10, column=1, sticky="nsew")
         #create num warmup steps dark mode entry
-        self.num_warmup_steps_label = ctk.CTkLabel(self.training_tab, text="LR Warmup Steps")
-        num_warmup_steps_label_ttp = CreateToolTip(self.num_warmup_steps_label, "The number of warmup steps to use for the learning rate scheduler.")
-        self.num_warmup_steps_label.grid(row=11, column=0, sticky="nsew")
-        self.num_warmup_steps_entry = ctk.CTkEntry(self.training_tab)
-        self.num_warmup_steps_entry.grid(row=11, column=1, sticky="nsew")
-        self.num_warmup_steps_entry.insert(0, self.learning_rate_warmup_steps)
+        self.num_warmup_steps_label = ctk.CTkLabel(self.training_frame_subframe, text="LR Warmup Steps")
+        #num_warmup_steps_label_ttp = CreateToolTip(self.num_warmup_steps_label, "The number of warmup steps to use for the learning rate scheduler.")
+        #self.num_warmup_steps_label.grid(row=11, column=0, sticky="nsew")
+        self.num_warmup_steps_entry = ctk.CTkEntry(self.training_frame_subframe)
+        #self.num_warmup_steps_entry.grid(row=11, column=1, sticky="nsew")
+        #self.num_warmup_steps_entry.insert(0, self.learning_rate_warmup_steps)
         #create use latent cache checkbox
         self.use_latent_cache_var = tk.IntVar()
-        self.use_latent_cache_var.set(self.do_not_use_latents_cache)
+        #self.use_latent_cache_var.set(self.do_not_use_latents_cache)
         #create label
-        self.use_latent_cache_label = ctk.CTkLabel(self.training_tab, text="Use Latent Cache")
-        use_latent_cache_label_ttp = CreateToolTip(self.use_latent_cache_label, "Cache the latents to speed up training.")
-        self.use_latent_cache_label.grid(row=12, column=0, sticky="nsew")
+        self.use_latent_cache_label = ctk.CTkLabel(self.training_frame_subframe, text="Use Latent Cache")
+        #use_latent_cache_label_ttp = CreateToolTip(self.use_latent_cache_label, "Cache the latents to speed up training.")
+        #self.use_latent_cache_label.grid(row=12, column=0, sticky="nsew")
         #create checkbox
-        self.use_latent_cache_checkbox = ctk.CTkCheckBox(self.training_tab, variable=self.use_latent_cache_var)
-        self.use_latent_cache_checkbox.grid(row=12, column=1, sticky="nsew")
+        self.use_latent_cache_checkbox = ctk.CTkSwitch(self.training_frame_subframe, variable=self.use_latent_cache_var)
+        #self.use_latent_cache_checkbox.grid(row=12, column=1, sticky="nsew")
         #create save latent cache checkbox
         self.save_latent_cache_var = tk.IntVar()
-        self.save_latent_cache_var.set(self.save_latents_cache)
+        #self.save_latent_cache_var.set(self.save_latents_cache)
         #create label
-        self.save_latent_cache_label = ctk.CTkLabel(self.training_tab, text="Save Latent Cache")
-        save_latent_cache_label_ttp = CreateToolTip(self.save_latent_cache_label, "Save the latents cache to disk after generation, will be remade if batch size changes.")
-        self.save_latent_cache_label.grid(row=13, column=0, sticky="nsew")
+        self.save_latent_cache_label = ctk.CTkLabel(self.training_frame_subframe, text="Save Latent Cache")
+        #save_latent_cache_label_ttp = CreateToolTip(self.save_latent_cache_label, "Save the latents cache to disk after generation, will be remade if batch size changes.")
+        #self.save_latent_cache_label.grid(row=13, column=0, sticky="nsew")
         #create checkbox
-        self.save_latent_cache_checkbox = ctk.CTkCheckBox(self.training_tab, variable=self.save_latent_cache_var)
-        self.save_latent_cache_checkbox.grid(row=13, column=1, sticky="nsew")
+        self.save_latent_cache_checkbox = ctk.CTkSwitch(self.training_frame_subframe, variable=self.save_latent_cache_var)
+        #self.save_latent_cache_checkbox.grid(row=13, column=1, sticky="nsew")
         #create regnerate latent cache checkbox
         self.regenerate_latent_cache_var = tk.IntVar()
-        self.regenerate_latent_cache_var.set(self.regenerate_latents_cache)
+        #self.regenerate_latent_cache_var.set(self.regenerate_latents_cache)
         #create label
-        self.regenerate_latent_cache_label = ctk.CTkLabel(self.training_tab, text="Regenerate Latent Cache")
-        regenerate_latent_cache_label_ttp = CreateToolTip(self.regenerate_latent_cache_label, "Force the latents cache to be regenerated.")
-        self.regenerate_latent_cache_label.grid(row=14, column=0, sticky="nsew")
+        self.regenerate_latent_cache_label = ctk.CTkLabel(self.training_frame_subframe, text="Regenerate Latent Cache")
+        #regenerate_latent_cache_label_ttp = CreateToolTip(self.regenerate_latent_cache_label, "Force the latents cache to be regenerated.")
+        #self.regenerate_latent_cache_label.grid(row=14, column=0, sticky="nsew")
         #create checkbox
-        self.regenerate_latent_cache_checkbox = ctk.CTkCheckBox(self.training_tab, variable=self.regenerate_latent_cache_var)
-        self.regenerate_latent_cache_checkbox.grid(row=14, column=1, sticky="nsew")
+        self.regenerate_latent_cache_checkbox = ctk.CTkSwitch(self.training_frame_subframe, variable=self.regenerate_latent_cache_var)
+        #self.regenerate_latent_cache_checkbox.grid(row=14, column=1, sticky="nsew")
         #create train text encoder checkbox
         self.train_text_encoder_var = tk.IntVar()
-        self.train_text_encoder_var.set(self.train_text_encoder)
+        #self.train_text_encoder_var.set(self.train_text_encoder)
         #create label
-        self.train_text_encoder_label = ctk.CTkLabel(self.training_tab, text="Train Text Encoder")
-        train_text_encoder_label_ttp = CreateToolTip(self.train_text_encoder_label, "Train the text encoder along with the UNET.")
-        self.train_text_encoder_label.grid(row=15, column=0, sticky="nsew")
+        self.train_text_encoder_label = ctk.CTkLabel(self.training_frame_subframe, text="Train Text Encoder")
+        #train_text_encoder_label_ttp = CreateToolTip(self.train_text_encoder_label, "Train the text encoder along with the UNET.")
+        #self.train_text_encoder_label.grid(row=15, column=0, sticky="nsew")
         #create checkbox
-        self.train_text_encoder_checkbox = ctk.CTkCheckBox(self.training_tab, variable=self.train_text_encoder_var)
-        self.train_text_encoder_checkbox.grid(row=15, column=1, sticky="nsew")
+        self.train_text_encoder_checkbox = ctk.CTkSwitch(self.training_frame_subframe, variable=self.train_text_encoder_var)
+        #self.train_text_encoder_checkbox.grid(row=15, column=1, sticky="nsew")
         #create limit text encoder encoder entry
         self.limit_text_encoder_var = tk.StringVar()
-        self.limit_text_encoder_var.set(self.limit_text_encoder)
+        #self.limit_text_encoder_var.set(self.limit_text_encoder)
         #create label
-        self.limit_text_encoder_label = ctk.CTkLabel(self.training_tab, text="Limit Text Encoder")
-        limit_text_encoder_label_ttp = CreateToolTip(self.limit_text_encoder_label, "Stop training the text encoder after this many epochs, use % to train for a percentage of the total epochs.")
-        self.limit_text_encoder_label.grid(row=16, column=0, sticky="nsew")
+        self.limit_text_encoder_label = ctk.CTkLabel(self.training_frame_subframe, text="Limit Text Encoder")
+        #limit_text_encoder_label_ttp = CreateToolTip(self.limit_text_encoder_label, "Stop training the text encoder after this many epochs, use % to train for a percentage of the total epochs.")
+        #self.limit_text_encoder_label.grid(row=16, column=0, sticky="nsew")
         #create entry
-        self.limit_text_encoder_entry = ctk.CTkEntry(self.training_tab, textvariable=self.limit_text_encoder_var)
-        self.limit_text_encoder_entry.grid(row=16, column=1, sticky="nsew")
+        self.limit_text_encoder_entry = ctk.CTkEntry(self.training_frame_subframe, textvariable=self.limit_text_encoder_var)
+        #self.limit_text_encoder_entry.grid(row=16, column=1, sticky="nsew")
         
         #create checkbox disable cudnn benchmark
         self.disable_cudnn_benchmark_var = tk.IntVar()
-        self.disable_cudnn_benchmark_var.set(self.disable_cudnn_benchmark)
+        #self.disable_cudnn_benchmark_var.set(self.disable_cudnn_benchmark)
         #create label for checkbox
-        self.disable_cudnn_benchmark_label = ctk.CTkLabel(self.training_tab, text="EXPERIMENTAL: Disable cuDNN Benchmark")
-        disable_cudnn_benchmark_label_ttp = CreateToolTip(self.disable_cudnn_benchmark_label, "Disable cuDNN benchmarking, may offer 2x performance on some systems and stop OOM errors.")
-        self.disable_cudnn_benchmark_label.grid(row=17, column=0, sticky="nsew")
+        self.disable_cudnn_benchmark_label = ctk.CTkLabel(self.training_frame_subframe, text="EXPERIMENTAL: Disable cuDNN Benchmark")
+        #disable_cudnn_benchmark_label_ttp = CreateToolTip(self.disable_cudnn_benchmark_label, "Disable cuDNN benchmarking, may offer 2x performance on some systems and stop OOM errors.")
+        #self.disable_cudnn_benchmark_label.grid(row=17, column=0, sticky="nsew")
         #create checkbox
-        self.disable_cudnn_benchmark_checkbox = ctk.CTkCheckBox(self.training_tab, variable=self.disable_cudnn_benchmark_var)
-        self.disable_cudnn_benchmark_checkbox.grid(row=17, column=1, sticky="nsew")
+        self.disable_cudnn_benchmark_checkbox = ctk.CTkSwitch(self.training_frame_subframe, variable=self.disable_cudnn_benchmark_var)
+        #self.disable_cudnn_benchmark_checkbox.grid(row=17, column=1, sticky="nsew")
         #list of label and entries that attach to the training tab
   
         #create label
@@ -961,76 +1074,77 @@ class App(ctk.CTk):
         self.with_prior_loss_preservation_var = tk.IntVar()
         self.with_prior_loss_preservation_var.set(self.with_prior_reservation)
         #create label
-        self.with_prior_loss_preservation_label = ctk.CTkLabel(self.training_tab, text="With Prior Loss Preservation")
+        self.with_prior_loss_preservation_label = ctk.CTkLabel(self.training_frame_subframe, text="With Prior Loss Preservation")
         with_prior_loss_preservation_label_ttp = CreateToolTip(self.with_prior_loss_preservation_label, "Use the prior loss preservation method. part of Dreambooth.")
         self.with_prior_loss_preservation_label.grid(row=18, column=0, sticky="nsew")
         #create checkbox
-        self.with_prior_loss_preservation_checkbox = ctk.CTkCheckBox(self.training_tab, variable=self.with_prior_loss_preservation_var)
+        self.with_prior_loss_preservation_checkbox = ctk.CTkSwitch(self.training_frame_subframe, variable=self.with_prior_loss_preservation_var)
         self.with_prior_loss_preservation_checkbox.grid(row=18, column=1, sticky="nsew")
         #create prior loss preservation weight entry
-        self.prior_loss_preservation_weight_label = ctk.CTkLabel(self.training_tab, text="Weight")
+        self.prior_loss_preservation_weight_label = ctk.CTkLabel(self.training_frame_subframe, text="Weight")
         prior_loss_preservation_weight_label_ttp = CreateToolTip(self.prior_loss_preservation_weight_label, "The weight of the prior loss preservation loss.")
         self.prior_loss_preservation_weight_label.grid(row=18, column=1, sticky="e")
-        self.prior_loss_preservation_weight_entry = ctk.CTkEntry(self.training_tab)
+        self.prior_loss_preservation_weight_entry = ctk.CTkEntry(self.training_frame_subframe)
         self.prior_loss_preservation_weight_entry.grid(row=18, column=3, sticky="w")
         self.prior_loss_preservation_weight_entry.insert(0, self.prior_loss_weight)
- 
-        #create Dataset Settings label like the model settings label
-        self.dataset_settings_label = ctk.CTkLabel(self.dataset_tab, text="Dataset Settings", font=("Arial", 12, "bold"))
-        self.dataset_settings_label.grid(row=0, column=0, sticky="nsew")
-        
+
+    def create_dataset_settings_widgets(self):
+        #self.dataset_settings_label = ctk.CTkLabel(self.dataset_tab, text="Dataset Settings", font=("Arial", 12, "bold"))
+        #self.dataset_settings_label.grid(row=0, column=0, sticky="nsew")
+        self.dataset_frame_title = ctk.CTkLabel(self.dataset_frame, text="Dataset Settings", font=ctk.CTkFont(size=20, weight="bold"))
+        self.dataset_frame_title.grid(row=0, column=0, padx=20, pady=20)  
         #create use text files as captions checkbox
         self.use_text_files_as_captions_var = tk.IntVar()
         self.use_text_files_as_captions_var.set(self.use_text_files_as_captions)
         #create label
-        self.use_text_files_as_captions_label = ctk.CTkLabel(self.dataset_tab, text="Use Text Files as Captions")
+        self.use_text_files_as_captions_label = ctk.CTkLabel(self.dataset_frame_subframe, text="Use Text Files as Captions")
         use_text_files_as_captions_label_ttp = CreateToolTip(self.use_text_files_as_captions_label, "Use the text files as captions for training, text files must have same name as image, instance prompt/token will be ignored.")
         self.use_text_files_as_captions_label.grid(row=1, column=0, sticky="nsew")
         #create checkbox
-        self.use_text_files_as_captions_checkbox = ctk.CTkCheckBox(self.dataset_tab, variable=self.use_text_files_as_captions_var)
+        self.use_text_files_as_captions_checkbox = ctk.CTkSwitch(self.dataset_frame_subframe, variable=self.use_text_files_as_captions_var)
         self.use_text_files_as_captions_checkbox.grid(row=1, column=1, sticky="nsew")
         # create use image names as captions checkbox
         self.use_image_names_as_captions_var = tk.IntVar()
         self.use_image_names_as_captions_var.set(self.use_image_names_as_captions)
         # create label
-        self.use_image_names_as_captions_label = ctk.CTkLabel(self.dataset_tab, text="Use Image Names as Captions")
+        self.use_image_names_as_captions_label = ctk.CTkLabel(self.dataset_frame_subframe, text="Use Image Names as Captions")
         use_image_names_as_captions_label_ttp = CreateToolTip(self.use_image_names_as_captions_label, "Use the image names as captions for training, instance prompt/token will be ignored.")
         self.use_image_names_as_captions_label.grid(row=2, column=0, sticky="nsew")
         # create checkbox
-        self.use_image_names_as_captions_checkbox = ctk.CTkCheckBox(self.dataset_tab, variable=self.use_image_names_as_captions_var)
+        self.use_image_names_as_captions_checkbox = ctk.CTkSwitch(self.dataset_frame_subframe, variable=self.use_image_names_as_captions_var)
         self.use_image_names_as_captions_checkbox.grid(row=2, column=1, sticky="nsew")
         # create auto balance dataset checkbox
         self.auto_balance_dataset_var = tk.IntVar()
         self.auto_balance_dataset_var.set(self.auto_balance_concept_datasets)
         # create label
-        self.auto_balance_dataset_label = ctk.CTkLabel(self.dataset_tab, text="Auto Balance Dataset")
+        self.auto_balance_dataset_label = ctk.CTkLabel(self.dataset_frame_subframe, text="Auto Balance Dataset")
         auto_balance_dataset_label_ttp = CreateToolTip(self.auto_balance_dataset_label, "Will use the concept with the least amount of images to balance the dataset by removing images from the other concepts.")
         self.auto_balance_dataset_label.grid(row=3, column=0, sticky="nsew")
         # create checkbox
-        self.auto_balance_dataset_checkbox = ctk.CTkCheckBox(self.dataset_tab, variable=self.auto_balance_dataset_var)
+        self.auto_balance_dataset_checkbox = ctk.CTkSwitch(self.dataset_frame_subframe, variable=self.auto_balance_dataset_var)
         self.auto_balance_dataset_checkbox.grid(row=3, column=1, sticky="nsew")
         #create add class images to dataset checkbox
         self.add_class_images_to_dataset_var = tk.IntVar()
         self.add_class_images_to_dataset_var.set(self.add_class_images_to_training)
         #create label
-        self.add_class_images_to_dataset_label = ctk.CTkLabel(self.dataset_tab, text="Add Class Images to Dataset")
+        self.add_class_images_to_dataset_label = ctk.CTkLabel(self.dataset_frame_subframe, text="Add Class Images to Dataset")
         add_class_images_to_dataset_label_ttp = CreateToolTip(self.add_class_images_to_dataset_label, "Will add class images without prior preservation to the dataset.")
         self.add_class_images_to_dataset_label.grid(row=4, column=0, sticky="nsew")
         #create checkbox
-        self.add_class_images_to_dataset_checkbox = ctk.CTkCheckBox(self.dataset_tab, variable=self.add_class_images_to_dataset_var)
+        self.add_class_images_to_dataset_checkbox = ctk.CTkSwitch(self.dataset_frame_subframe, variable=self.add_class_images_to_dataset_var)
         self.add_class_images_to_dataset_checkbox.grid(row=4, column=1, sticky="nsew")
         #create number of class images entry
-        self.number_of_class_images_label = ctk.CTkLabel(self.dataset_tab, text="Number of Class Images")
+        self.number_of_class_images_label = ctk.CTkLabel(self.dataset_frame_subframe, text="Number of Class Images")
         number_of_class_images_label_ttp = CreateToolTip(self.number_of_class_images_label, "The number of class images to add to the dataset, if they don't exist in the class directory they will be generated.")
         self.number_of_class_images_label.grid(row=5, column=0, sticky="nsew")
-        self.number_of_class_images_entry = ctk.CTkEntry(self.dataset_tab)
+        self.number_of_class_images_entry = ctk.CTkEntry(self.dataset_frame_subframe)
         self.number_of_class_images_entry.grid(row=5, column=1, sticky="nsew")
         self.number_of_class_images_entry.insert(0, self.num_class_images)
         #create dataset repeat entry
-        self.dataset_repeats_label = ctk.CTkLabel(self.dataset_tab, text="Dataset Repeats")
+        self.dataset_repeats_label = ctk.CTkLabel(self.dataset_frame_subframe, text="Dataset Repeats")
         dataset_repeat_label_ttp = CreateToolTip(self.dataset_repeats_label, "The number of times to repeat the dataset, this will increase the number of images in the dataset.")
         self.dataset_repeats_label.grid(row=6, column=0, sticky="nsew")
-        self.dataset_repeats_entry = ctk.CTkEntry(self.dataset_tab)
+        self.dataset_repeats_entry = ctk.CTkEntry(self.dataset_frame_subframe)
         self.dataset_repeats_entry.grid(row=6, column=1, sticky="nsew")
         self.dataset_repeats_entry.insert(0, self.dataset_repeats)
 
@@ -1038,53 +1152,51 @@ class App(ctk.CTk):
         self.use_aspect_ratio_bucketing_var = tk.IntVar()
         self.use_aspect_ratio_bucketing_var.set(self.use_aspect_ratio_bucketing)
         #create label
-        self.use_aspect_ratio_bucketing_label = ctk.CTkLabel(self.dataset_tab, text="Use Aspect Ratio Bucketing")
+        self.use_aspect_ratio_bucketing_label = ctk.CTkLabel(self.dataset_frame_subframe, text="Use Aspect Ratio Bucketing")
         use_aspect_ratio_bucketing_label_ttp = CreateToolTip(self.use_aspect_ratio_bucketing_label, "Will use aspect ratio bucketing, may improve aspect ratio generations.")
         self.use_aspect_ratio_bucketing_label.grid(row=7, column=0, sticky="nsew")
         #create checkbox
-        self.use_aspect_ratio_bucketing_checkbox = ctk.CTkCheckBox(self.dataset_tab, variable=self.use_aspect_ratio_bucketing_var)
+        self.use_aspect_ratio_bucketing_checkbox = ctk.CTkSwitch(self.dataset_frame_subframe, variable=self.use_aspect_ratio_bucketing_var)
         self.use_aspect_ratio_bucketing_checkbox.grid(row=7, column=1, sticky="nsew")
         #do something on checkbox click
         self.use_aspect_ratio_bucketing_checkbox.bind("<Button-1>", self.disable_with_prior_loss)
         #add download dataset entry
-        
-        #add download dataset entry
-        #create Sampling Settings label like the model settings label
-        self.sampling_settings_label = ctk.CTkLabel(self.sample_tab, text="Sampling Settings", font=("Arial", 12, "bold"))
+    def create_sampling_settings_widgets(self):
+        self.sampling_settings_label = ctk.CTkLabel(self.sampling_frame_subframe, text="Sampling Settings", font=("Arial", 12, "bold"))
         self.sampling_settings_label.grid(row=0, column=0, sticky="nsew")
         #create sample every n steps entry
-        self.sample_step_interval_label = ctk.CTkLabel(self.sample_tab, text="Sample Every N Steps")
+        self.sample_step_interval_label = ctk.CTkLabel(self.sampling_frame_subframe, text="Sample Every N Steps")
         sample_step_interval_label_ttp = CreateToolTip(self.sample_step_interval_label, "Will sample the model every N steps.")
         self.sample_step_interval_label.grid(row=1, column=0, sticky="nsew")
-        self.sample_step_interval_entry = ctk.CTkEntry(self.sample_tab)
+        self.sample_step_interval_entry = ctk.CTkEntry(self.sampling_frame_subframe)
         self.sample_step_interval_entry.grid(row=1, column=1, sticky="nsew")
         self.sample_step_interval_entry.insert(0, self.sample_step_interval)
         #create saver every n epochs entry
-        self.save_every_n_epochs_label = ctk.CTkLabel(self.sample_tab, text="Save and sample Every N Epochs")
+        self.save_every_n_epochs_label = ctk.CTkLabel(self.sampling_frame_subframe, text="Save and sample Every N Epochs")
         save_every_n_epochs_label_ttp = CreateToolTip(self.save_every_n_epochs_label, "Will save and sample the model every N epochs.")
         self.save_every_n_epochs_label.grid(row=2, column=0, sticky="nsew")
-        self.save_every_n_epochs_entry = ctk.CTkEntry(self.sample_tab)
+        self.save_every_n_epochs_entry = ctk.CTkEntry(self.sampling_frame_subframe)
         self.save_every_n_epochs_entry.grid(row=2, column=1, sticky="nsew")
         self.save_every_n_epochs_entry.insert(0, self.save_and_sample_every_x_epochs)
         #create number of samples to generate entry
-        self.number_of_samples_to_generate_label = ctk.CTkLabel(self.sample_tab, text="Number of Samples to Generate")
+        self.number_of_samples_to_generate_label = ctk.CTkLabel(self.sampling_frame_subframe, text="Number of Samples to Generate")
         number_of_samples_to_generate_label_ttp = CreateToolTip(self.number_of_samples_to_generate_label, "The number of samples to generate per prompt.")
         self.number_of_samples_to_generate_label.grid(row=3, column=0, sticky="nsew")
-        self.number_of_samples_to_generate_entry = ctk.CTkEntry(self.sample_tab)
+        self.number_of_samples_to_generate_entry = ctk.CTkEntry(self.sampling_frame_subframe)
         self.number_of_samples_to_generate_entry.grid(row=3, column=1, sticky="nsew")
         self.number_of_samples_to_generate_entry.insert(0, self.num_samples_to_generate)
         #create sample width entry
-        self.sample_width_label = ctk.CTkLabel(self.sample_tab, text="Sample Width")
+        self.sample_width_label = ctk.CTkLabel(self.sampling_frame_subframe, text="Sample Width")
         sample_width_label_ttp = CreateToolTip(self.sample_width_label, "The width of the generated samples.")
         self.sample_width_label.grid(row=4, column=0, sticky="nsew")
-        self.sample_width_entry = ctk.CTkEntry(self.sample_tab)
+        self.sample_width_entry = ctk.CTkEntry(self.sampling_frame_subframe)
         self.sample_width_entry.grid(row=4, column=1, sticky="nsew")
         self.sample_width_entry.insert(0, self.sample_width)
         #create sample height entry
-        self.sample_height_label = ctk.CTkLabel(self.sample_tab, text="Sample Height")
+        self.sample_height_label = ctk.CTkLabel(self.sampling_frame_subframe, text="Sample Height")
         sample_height_label_ttp = CreateToolTip(self.sample_height_label, "The height of the generated samples.")
         self.sample_height_label.grid(row=5, column=0, sticky="nsew")
-        self.sample_height_entry = ctk.CTkEntry(self.sample_tab)
+        self.sample_height_entry = ctk.CTkEntry(self.sampling_frame_subframe)
         self.sample_height_entry.grid(row=5, column=1, sticky="nsew")
         self.sample_height_entry.insert(0, self.sample_height)
         
@@ -1092,67 +1204,83 @@ class App(ctk.CTk):
         self.sample_on_training_start_var = tk.IntVar()
         self.sample_on_training_start_var.set(self.sample_on_training_start)
         #create label
-        self.sample_on_training_start_label = ctk.CTkLabel(self.sample_tab, text="Sample On Training Start")
+        self.sample_on_training_start_label = ctk.CTkLabel(self.sampling_frame_subframe, text="Sample On Training Start")
         sample_on_training_start_label_ttp = CreateToolTip(self.sample_on_training_start_label, "Will save and sample the model on training start, useful for debugging and comparison.")
         self.sample_on_training_start_label.grid(row=6, column=0, sticky="nsew")
         #create checkbox
-        self.sample_on_training_start_checkbox = ctk.CTkCheckBox(self.sample_tab, variable=self.sample_on_training_start_var)
+        self.sample_on_training_start_checkbox = ctk.CTkSwitch(self.sampling_frame_subframe, variable=self.sample_on_training_start_var)
         self.sample_on_training_start_checkbox.grid(row=6, column=1, sticky="nsew")
         #create sample random aspect ratio checkbox
         self.sample_random_aspect_ratio_var = tk.IntVar()
         self.sample_random_aspect_ratio_var.set(self.sample_random_aspect_ratio)
         #create label
-        self.sample_random_aspect_ratio_label = ctk.CTkLabel(self.sample_tab, text="Sample Random Aspect Ratio")
+        self.sample_random_aspect_ratio_label = ctk.CTkLabel(self.sampling_frame_subframe, text="Sample Random Aspect Ratio")
         sample_random_aspect_ratio_label_ttp = CreateToolTip(self.sample_random_aspect_ratio_label, "Will generate samples with random aspect ratios, useful to check aspect ratio bucketing.")
         self.sample_random_aspect_ratio_label.grid(row=7, column=0, sticky="nsew")
         #create checkbox
-        self.sample_random_aspect_ratio_checkbox = ctk.CTkCheckBox(self.sample_tab, variable=self.sample_random_aspect_ratio_var)
+        self.sample_random_aspect_ratio_checkbox = ctk.CTkSwitch(self.sampling_frame_subframe, variable=self.sample_random_aspect_ratio_var)
         self.sample_random_aspect_ratio_checkbox.grid(row=7, column=1, sticky="nsew")
         #create add sample prompt button
-        self.add_sample_prompt_button = ctk.CTkButton(self.sample_tab, text="Add Sample Prompt",  command=self.add_sample_prompt)
+        self.add_sample_prompt_button = ctk.CTkButton(self.sampling_frame_subframe, text="Add Sample Prompt",  command=self.add_sample_prompt)
         add_sample_prompt_button_ttp = CreateToolTip(self.add_sample_prompt_button, "Add a sample prompt to the list.")
-        self.add_sample_prompt_button.grid(row=8, column=0, sticky="nsew")
+        self.add_sample_prompt_button.grid(row=1, column=2, sticky="nsew")
         #create remove sample prompt button
-        self.remove_sample_prompt_button = ctk.CTkButton(self.sample_tab, text="Remove Sample Prompt",  command=self.remove_sample_prompt)
+        self.remove_sample_prompt_button = ctk.CTkButton(self.sampling_frame_subframe, text="Remove Sample Prompt",  command=self.remove_sample_prompt)
         remove_sample_prompt_button_ttp = CreateToolTip(self.remove_sample_prompt_button, "Remove a sample prompt from the list.")
-        self.remove_sample_prompt_button.grid(row=8, column=1, sticky="nsew")
+        self.remove_sample_prompt_button.grid(row=1, column=3, sticky="nsew")
 
         #for every prompt in self.sample_prompts, create a label and entry
         self.sample_prompt_labels = []
         self.sample_prompt_entries = []
-        self.sample_prompt_row = 9
+        self.sample_prompt_row = 2
         for i in range(len(self.sample_prompts)):
             #create label
-            self.sample_prompt_labels.append(ctk.CTkLabel(self.sample_tab, text="Sample Prompt " + str(i)))
-            self.sample_prompt_labels[i].grid(row=self.sample_prompt_row + i, column=0, sticky="nsew")
+            self.sample_prompt_labels.append(ctk.CTkLabel(self.sampling_frame_subframe, text="Sample Prompt " + str(i)))
+            self.sample_prompt_labels[i].grid(row=self.sample_prompt_row + i, column=2, sticky="nsew")
             #create entry
-            self.sample_prompt_entries.append(ctk.CTkEntry(self.sample_tab, width=70))
-            self.sample_prompt_entries[i].grid(row=self.sample_prompt_row + i, column=1, sticky="nsew")
+            self.sample_prompt_entries.append(ctk.CTkEntry(self.sampling_frame_subframe, width=70))
+            self.sample_prompt_entries[i].grid(row=self.sample_prompt_row + i, column=3, sticky="nsew")
             self.sample_prompt_entries[i].insert(0, self.sample_prompts[i])
         for i in self.sample_prompt_entries:
             i.bind("<Button-3>", self.create_right_click_menu)
-        self.controlled_sample_row = 30 + len(self.sample_prompts)
+        self.controlled_sample_row = 2 + len(self.sample_prompts)
         #create a button to add controlled seed sample
-        self.add_controlled_seed_sample_button = ctk.CTkButton(self.sample_tab, text="Add Controlled Seed Sample",  command=self.add_controlled_seed_sample)
+        self.add_controlled_seed_sample_button = ctk.CTkButton(self.sampling_frame_subframe, text="Add Controlled Seed Sample",  command=self.add_controlled_seed_sample)
         add_controlled_seed_sample_button_ttp = CreateToolTip(self.add_controlled_seed_sample_button, "Will generate a sample using the seed at every save interval.")
-        self.add_controlled_seed_sample_button.grid(row=self.controlled_sample_row + len(self.sample_prompts), column=0, sticky="nsew")
+        self.add_controlled_seed_sample_button.grid(row=self.controlled_sample_row + len(self.sample_prompts), column=2, sticky="nsew")
         #create a button to remove controlled seed sample
-        self.remove_controlled_seed_sample_button = ctk.CTkButton(self.sample_tab, text="Remove Controlled Seed Sample",  command=self.remove_controlled_seed_sample)
+        self.remove_controlled_seed_sample_button = ctk.CTkButton(self.sampling_frame_subframe, text="Remove Controlled Seed Sample",  command=self.remove_controlled_seed_sample)
         remove_controlled_seed_sample_button_ttp = CreateToolTip(self.remove_controlled_seed_sample_button, "Will remove the last controlled seed sample.")
-        self.remove_controlled_seed_sample_button.grid(row=self.controlled_sample_row + len(self.sample_prompts), column=1, sticky="nsew")
+        self.remove_controlled_seed_sample_button.grid(row=self.controlled_sample_row + len(self.sample_prompts), column=3, sticky="nsew")
         #for every controlled seed sample in self.controlled_seed_samples, create a label and entry
         self.controlled_seed_sample_labels = []
         self.controlled_seed_sample_entries = []
+        self.controlled_seed_buttons = [self.add_controlled_seed_sample_button, self.remove_controlled_seed_sample_button]
+        
         for i in range(len(self.add_controlled_seed_to_sample)):
             #create label
-            self.controlled_seed_sample_labels.append(ctk.CTkLabel(self.sample_tab, text="Controlled Seed Sample " + str(i)))
-            self.controlled_seed_sample_labels[i].grid(row=self.controlled_sample_row + len(self.sample_prompts) + i, column=0, sticky="nsew")
+            self.controlled_seed_sample_labels.append(ctk.CTkLabel(self.sampling_frame_subframe, text="Controlled Seed Sample " + str(i)))
+            self.controlled_seed_sample_labels[i].grid(row=self.controlled_sample_row + len(self.sample_prompts) + i, column=2, sticky="nsew")
             #create entry
-            self.controlled_seed_sample_entries.append(ctk.CTkEntry(self.sample_tab))
-            self.controlled_seed_sample_entries[i].grid(row=self.controlled_sample_row + len(self.sample_prompts) + i, column=1, sticky="nsew")
+            self.controlled_seed_sample_entries.append(ctk.CTkEntry(self.sampling_frame_subframe))
+            self.controlled_seed_sample_entries[i].grid(row=self.controlled_sample_row + len(self.sample_prompts) + i, column=3, sticky="nsew")
             self.controlled_seed_sample_entries[i].insert(0, self.add_controlled_seed_to_sample[i])
         for i in self.controlled_seed_sample_entries:
             i.bind("<Button-3>", self.create_right_click_menu)
+    def create_widgets(self):
+        #create grid one side for labels the other for inputs
+        #make the second column size 2x the first
+        #create a model settings label in bold
+        #add button to load configure
+        #add button to save configure
+        
+ 
+        #create Dataset Settings label like the model settings label
+        
+        
+        #add download dataset entry
+        #create Sampling Settings label like the model settings label
+        
         
         #add concept settings label
         self.concept_settings_label = ctk.CTkLabel(self.concepts_tab, text="Training Data",  font=("Helvetica", 12, "bold"))
@@ -1647,7 +1775,7 @@ class App(ctk.CTk):
         do_not_balance_dataset_label = ctk.CTkLabel(self.concepts_tab, text="Do not balance dataset", bg_color='#333333')
         do_not_balance_dataset_label_ttp = CreateToolTip(do_not_balance_dataset_label, "If checked, the dataset will not be balanced. this settings overrides the global auto balance setting, if there's a concept you'd like to train without balance while the others will.")
         do_not_balance_dataset_label.grid(row=8 + (len(self.concept_labels)*6), column=0, sticky="nsew")
-        do_not_balance_dataset_checkbox = ctk.CTkCheckBox(self.concepts_tab, variable=do_not_balance_dataset_var, bg_color='#333333')
+        do_not_balance_dataset_checkbox = ctk.CTkSwitch(self.concepts_tab, variable=do_not_balance_dataset_var, bg_color='#333333')
         do_not_balance_dataset_checkbox.grid(row=8 + (len(self.concept_labels)*6), column=1, sticky="nsew")
         do_not_balance_dataset_var.set(0)
 
@@ -1916,13 +2044,13 @@ class App(ctk.CTk):
             self.telegram_chat_id_label.configure(state="disabled")
             self.telegram_chat_id_entry.configure(state="disabled")
     def add_controlled_seed_sample(self,value=""):
-        self.controlled_seed_sample_labels.append(ctk.CTkLabel(self.sample_tab,bg_color='#333333' ,text="Controlled Seed Sample " + str(len(self.controlled_seed_sample_labels))))
-        self.controlled_seed_sample_labels[-1].grid(row=self.controlled_sample_row + len(self.sample_prompts) + len(self.controlled_seed_sample_labels), column=0, sticky="nsew")
+        self.controlled_seed_sample_labels.append(ctk.CTkLabel(self.sampling_frame_subframe,bg_color='#333333' ,text="Controlled Seed Sample " + str(len(self.controlled_seed_sample_labels))))
+        self.controlled_seed_sample_labels[-1].grid(row=self.controlled_sample_row + len(self.sample_prompts) + len(self.controlled_seed_sample_labels), column=2, padx=10, pady=5,sticky="w")
         #create entry
-        entry = ctk.CTkEntry(self.sample_tab,bg_color='#333333')
+        entry = ctk.CTkEntry(self.sampling_frame_subframe,bg_color='#333333')
         entry.bind("<Button-3>",self.create_right_click_menu)
         self.controlled_seed_sample_entries.append(entry)
-        self.controlled_seed_sample_entries[-1].grid(row=self.controlled_sample_row + len(self.sample_prompts) + len(self.controlled_seed_sample_entries), column=1, sticky="nsew")
+        self.controlled_seed_sample_entries[-1].grid(row=self.controlled_sample_row + len(self.sample_prompts) + len(self.controlled_seed_sample_entries), column=3, padx=10, pady=5,sticky="w")
         if value != "":
             self.controlled_seed_sample_entries[-1].insert(0, value)
         self.add_controlled_seed_to_sample.append(value)
@@ -1951,21 +2079,39 @@ class App(ctk.CTk):
             #print(self.sample_prompts)
             #print(self.sample_prompt_entries)
             #self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        for i in self.controlled_seed_buttons:
+            #push to next row
+            i.grid(row=i.grid_info()["row"] - 1, column=i.grid_info()["column"], sticky="nsew")
+        for i in self.controlled_seed_sample_labels:
+            #push to next row
+            i.grid(row=i.grid_info()["row"] - 1, column=i.grid_info()["column"], sticky="nsew")
+        for i in self.controlled_seed_sample_entries:
+            #push to next row
+            i.grid(row=i.grid_info()["row"] - 1, column=i.grid_info()["column"], sticky="nsew")
 
 
     def add_sample_prompt(self,value=""):
         #add a new label and entry
-        self.sample_prompt_labels.append(ctk.CTkLabel(self.sample_tab, text="Sample Prompt " + str(len(self.sample_prompt_labels)),bg_color='#333333'))
-        self.sample_prompt_labels[-1].grid(row=self.sample_prompt_row + len(self.sample_prompt_labels) - 1, column=0, sticky="nsew")
-        entry = ctk.CTkEntry(self.sample_tab,bg_color='#333333')
+        self.sample_prompt_labels.append(ctk.CTkLabel(self.sampling_frame_subframe, text="Sample Prompt " + str(len(self.sample_prompt_labels)),bg_color='#333333'))
+        self.sample_prompt_labels[-1].grid(row=self.sample_prompt_row + len(self.sample_prompt_labels) - 1, column=2, padx=10, pady=5,sticky="w")
+        entry = ctk.CTkEntry(self.sampling_frame_subframe,bg_color='#333333')
         entry.bind("<Button-3>", self.create_right_click_menu)
         self.sample_prompt_entries.append(entry)
-        self.sample_prompt_entries[-1].grid(row=self.sample_prompt_row + len(self.sample_prompt_labels) - 1, column=1, sticky="nsew")
+        self.sample_prompt_entries[-1].grid(row=self.sample_prompt_row + len(self.sample_prompt_labels) - 1, column=3, padx=10, pady=5,sticky="w")
         
         if value != "":
             self.sample_prompt_entries[-1].insert(0, value)
         #update the sample prompts list
         self.sample_prompts.append(value)
+        for i in self.controlled_seed_buttons:
+            #push to next row
+            i.grid(row=i.grid_info()["row"] + 1, column=i.grid_info()["column"], sticky="nsew")
+        for i in self.controlled_seed_sample_labels:
+            #push to next row
+            i.grid(row=i.grid_info()["row"] + 1, column=i.grid_info()["column"], sticky="nsew")
+        for i in self.controlled_seed_sample_entries:
+            #push to next row
+            i.grid(row=i.grid_info()["row"] + 1, column=i.grid_info()["column"], sticky="nsew")
         #print(self.sample_prompts)
         #print(self.sample_prompt_entries)
         #update canvas scroll region
