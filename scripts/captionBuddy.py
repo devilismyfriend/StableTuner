@@ -94,20 +94,20 @@ class ImageBrowser(tk.Frame):
         self.mainProcess = mainProcess
         self.captioner_folder = os.path.dirname(os.path.realpath(__file__))
         self.master = master
-        self.master.overrideredirect(True)
-        self.title_bar = TitleBar(self.master)
-        self.title_bar.pack(side="top", fill="x")
+        #self.master.overrideredirect(True)
+        #self.title_bar = TitleBar(self.master)
+        #self.title_bar.pack(side="top", fill="x")
         #make not user resizable
         self.master.title("Caption Buddy")
-        self.master.resizable(False, False)
+        #self.master.resizable(False, False)
         self.master.geometry("820x820")
         self.top_frame = tk.Frame(self.master)
         self.top_frame.pack(side="top")
         self.tip_frame = tk.Frame(self.master)
         self.tip_frame.pack(side="top")
-        self.dark_mode_var = "#1e2124"
-        self.dark_purple_mode_var = "#1B0F1B"
-        self.dark_mode_title_var = "#7289da"
+        self.dark_mode_var = "#202020"
+        #self.dark_purple_mode_var = "#1B0F1B"
+        self.dark_mode_title_var = "#286aff"
         self.dark_mode_button_pressed_var = "#BB91B6"
         self.dark_mode_button_var = "#8ea0e1"
         self.dark_mode_text_var = "#c6c7c8"
@@ -167,11 +167,16 @@ class ImageBrowser(tk.Frame):
         self.canvas.bind("<Left>", self.prev_image)
         
     def create_widgets(self):
+        self.auto_generate_caption_text_override = tk.BooleanVar(self.top_frame)
+        self.auto_generate_caption_text_override.set(False)
+        self.auto_generate_caption_checkbox_text_override = tk.Checkbutton(self.top_frame, text="Skip Auto Generate If Text Caption Exists", variable=self.auto_generate_caption_text_override,fg=self.dark_mode_title_var, bg=self.dark_mode_var, activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var, selectcolor=self.dark_mode_var)
+        self.auto_generate_caption_checkbox_text_override.pack(side="right")
         #add a checkbox to toggle auto generate caption
         self.auto_generate_caption = tk.BooleanVar(self.top_frame)
         self.auto_generate_caption.set(True)
         self.auto_generate_caption_checkbox = tk.Checkbutton(self.top_frame, text="Auto Generate Caption", variable=self.auto_generate_caption,fg=self.dark_mode_title_var, bg=self.dark_mode_var, activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var, selectcolor=self.dark_mode_var)
         self.auto_generate_caption_checkbox.pack(side="right")
+
         #add a batch folder button
         self.batch_folder_button = tk.Button(self.top_frame,activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var, border=0, relief='flat', fg=self.dark_mode_title_var, bg=self.dark_mode_var, highlightthickness=2, highlightbackground=self.dark_mode_button_var)
         self.batch_folder_button["text"] = "Batch Folder"
@@ -201,12 +206,12 @@ class ImageBrowser(tk.Frame):
         self.image_label = tk.Label(self.canvas, bg=self.dark_mode_var)
         self.image_label.pack(side="top")
         #previous button
-        self.prev_button = tk.Button(self.frame,activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var, border=0, relief='flat', fg=self.dark_mode_title_var, bg=self.dark_mode_var, highlightthickness=2, highlightbackground=self.dark_mode_button_var)
+        self.prev_button = tk.Button(self.frame,command= lambda event=None: self.prev_image(event),activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var, border=0, relief='flat', fg=self.dark_mode_title_var, bg=self.dark_mode_var, highlightthickness=2, highlightbackground=self.dark_mode_button_var)
         #grid
         self.prev_button.grid(row=1, column=0, sticky="w")
 
         self.prev_button["text"] = "Previous"
-        self.prev_button["command"] = self.prev_image
+        #self.prev_button["command"] = self.prev_image
         #self.prev_button.pack(side="left")
         #self.prev_button.bind("<Left>", self.prev_image)
         self.caption_entry = tk.Entry(self.frame,fg=self.dark_mode_text_var, bg=self.dark_mode_var, relief='flat', highlightthickness=2, highlightbackground=self.dark_mode_button_var,insertbackground=self.dark_mode_text_var)
@@ -317,8 +322,15 @@ class ImageBrowser(tk.Frame):
             self.replace = self.replace_entry.get()
             self.replace_with = self.with_entry.get()
             self.suffix_var = self.suffix_entry.get()
+            self.prefix = self.prefix_entry.get()
             #prepare the caption
             caption = caption.replace(self.replace, self.replace_with)
+            if self.prefix != '':
+                if self.prefix.endswith(' '):
+                    self.prefix = self.prefix[:-1]
+                if not self.prefix.endswith(','):
+                    self.prefix = self.prefix+','
+                caption = self.prefix + ' ' + caption
             if caption.endswith(',') or caption.endswith('.'):
                 caption = caption[:-1]
                 caption = caption +', ' + self.suffix_var
@@ -338,6 +350,12 @@ class ImageBrowser(tk.Frame):
         #show message box when done
         pba.destroy()
         donemsg = tk.messagebox.showinfo("Batch Folder", "Batching complete!",parent=self.master)
+        #ask user if we should load the batch output folder
+        ask3 = tk.messagebox.askquestion("Batch Folder", "Load batch output folder?")
+        if ask3 == 'yes':
+            self.image_index = 0
+            self.open_folder(folder=batch_output_dir)
+
         #focus on donemsg
         #donemsg.focus_force()
     def generate_caption(self):
@@ -393,8 +411,11 @@ class ImageBrowser(tk.Frame):
         blip_decoder.eval()
         self.blip_decoder = blip_decoder.to(torch.device("cuda"))
         
-    def open_folder(self):
-        self.folder = fd.askdirectory()
+    def open_folder(self,folder=None):
+        if folder is None:
+            self.folder = fd.askdirectory()
+        else:
+            self.folder = folder
         if self.folder == '':
             return
         self.output_folder = self.folder
@@ -431,17 +452,17 @@ class ImageBrowser(tk.Frame):
         self.caption_file_ext = os.path.splitext(self.caption_file_name)[1]
         self.caption_file_name_no_ext = os.path.splitext(self.caption_file_name)[0]
         self.caption_file = os.path.join(self.folder, self.caption_file_name_no_ext + '.txt')
-        if os.path.isfile(self.caption_file) and self.auto_generate_caption.get() == False:
+        if os.path.isfile(self.caption_file) and self.auto_generate_caption.get() == False or os.path.isfile(self.caption_file) and self.auto_generate_caption.get() == True and self.auto_generate_caption_text_override.get() == True:
             with open(self.caption_file, 'r') as f:
                 self.caption = f.read()
                 self.caption_entry.delete(0, tk.END)
                 self.caption_entry.insert(0, self.caption)
                 self.caption_entry.configure(fg=self.dark_mode_text_var)
                 self.use_blip = False
-        elif os.path.isfile(self.caption_file) and self.auto_generate_caption.get() == True:
+        elif os.path.isfile(self.caption_file) and self.auto_generate_caption.get() == True and self.auto_generate_caption_text_override.get() == False or os.path.isfile(self.caption_file)==False and self.auto_generate_caption.get() == True and self.auto_generate_caption_text_override.get() == True:
             self.use_blip = True
             self.caption_entry.delete(0, tk.END)
-        elif self.auto_generate_caption.get() == False:
+        elif os.path.isfile(self.caption_file) == False and self.auto_generate_caption.get() == False:
             self.caption_entry.delete(0, tk.END)
             return
         if self.use_blip and self.debug==False:
@@ -606,12 +627,20 @@ class ImageBrowser(tk.Frame):
                 self.options = json.load(f)
                 #self.output_folder = self.folder
                 #self.output_folder = self.options['output_folder']
+                if 'folder' in self.__dict__:
+                    self.output_folder = self.folder
+                else:
+                    self.output_folder = ''
                 self.output_format = self.options['output_format']
                 self.nucleus_sampling = self.options['nucleus_sampling']
                 self.q_factor = self.options['q_factor']
                 self.min_length = self.options['min_length']
         else:
-            self.output_folder = self.folder
+            #if self has folder, use it, otherwise use the current folder
+            if 'folder' in self.__dict__ :
+                self.output_folder = self.folder
+            else:
+                self.output_folder = ''
             self.output_format = "text"
             self.nucleus_sampling = False
             self.q_factor = 0.9

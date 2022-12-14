@@ -1049,13 +1049,13 @@ class App(tk.Frame):
                     
     def caption_buddy(self):
         import captionBuddy
-        self.master.overrideredirect(False)
+        #self.master.overrideredirect(False)
         self.master.iconify()
         cb_root = tk.Tk()
         cb_icon =PhotoImage(master=cb_root,file = "resources/stableTuner_icon.png")
         cb_root.iconphoto(False, cb_icon)
         app2 = captionBuddy.ImageBrowser(cb_root,self.master)
-
+        dark_title_bar(cb_root)
         app = cb_root.mainloop()
         #check if app2 is running
         
