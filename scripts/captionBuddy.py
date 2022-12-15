@@ -19,7 +19,7 @@ import customtkinter as ctk
 #main class
 ctk.set_appearance_mode("System")
 ctk.set_default_color_theme("blue")
-class ImageBrowser(ctk.CTk):
+class ImageBrowser(ctk.CTkToplevel):
     def __init__(self,mainProcess=None):
         super().__init__()
         if not os.path.exists("scripts/BLIP"):
@@ -41,10 +41,14 @@ class ImageBrowser(ctk.CTk):
         #make not user resizable
         self.title("Caption Buddy")
         #self.resizable(False, False)
-        self.geometry("820x820")
-        self.top_frame = ctk.CTkFrame(self)
-        self.top_frame.pack(side="top")
-        self.tip_frame = ctk.CTkFrame(self)
+        self.geometry("720x820")
+        self.top_frame = ctk.CTkFrame(self,fg_color='transparent')
+        self.top_frame.pack(side="top", fill="x",expand=False)
+        self.top_subframe = ctk.CTkFrame(self.top_frame,fg_color='transparent')
+        self.top_subframe.pack(side="bottom", fill="x",pady=10)
+        self.top_subframe.grid_columnconfigure(0, weight=1)
+        self.top_subframe.grid_columnconfigure(1, weight=1)
+        self.tip_frame = ctk.CTkFrame(self,fg_color='transparent')
         self.tip_frame.pack(side="top")
         self.dark_mode_var = "#202020"
         #self.dark_purple_mode_var = "#1B0F1B"
@@ -53,7 +57,7 @@ class ImageBrowser(ctk.CTk):
         self.dark_mode_button_var = "#8ea0e1"
         self.dark_mode_text_var = "#c6c7c8"
         #self.configure(bg_color=self.dark_mode_var)
-        self.canvas = ctk.CTkLabel(self,text='', width=750, height=750)
+        self.canvas = ctk.CTkLabel(self,text='', width=600, height=600)
         #self.canvas.configure(bg_color=self.dark_mode_var)
         #create temporary image for canvas
         self.canvas.pack()
@@ -92,40 +96,48 @@ class ImageBrowser(ctk.CTk):
         self.caption_file_name_no_ext = ''
         self.output_format='text'
 
-        self.use_blip = False
-        self.debug = True
+        self.use_blip = True
+        self.debug = False
         self.create_widgets()
-        #self.load_blip_model()
-        #self.load_options()
+        self.load_blip_model()
+        self.load_options()
         #self.open_folder()
         
         self.canvas.focus_force()
         self.canvas.bind("<Right>", self.next_image)
         self.canvas.bind("<Left>", self.prev_image)
-        
+        #on close window
+        self.protocol("WM_DELETE_WINDOW", self.on_closing)
+    def on_closing(self):
+        #self.save_options()
+        self.mainProcess.deiconify()
+        self.destroy()
     def create_widgets(self):
-        self.auto_generate_caption_text_override = tk.BooleanVar(self.top_frame)
+        self.output_folder = ''
+        self.auto_generate_caption_text_override = tk.BooleanVar(self.top_subframe)
         self.auto_generate_caption_text_override.set(False)
-        self.auto_generate_caption_checkbox_text_override = tk.Checkbutton(self.top_frame, text="Skip Auto Generate If Text Caption Exists", variable=self.auto_generate_caption_text_override,fg=self.dark_mode_title_var, bg=self.dark_mode_var, activebackground=self.dark_mode_var, activeforeground=self.dark_mode_text_var, selectcolor=self.dark_mode_var)
-        self.auto_generate_caption_checkbox_text_override.pack(side="right")
+        self.auto_generate_caption_checkbox_text_override = ctk.CTkCheckBox(self.top_subframe, text="Skip Auto Generate If Text Caption Exists", variable=self.auto_generate_caption_text_override,width=50)
+        self.auto_generate_caption_checkbox_text_override.grid(row=0,column=1,sticky="w",padx=10)
+        #self.auto_generate_caption_checkbox_text_override.pack(side="left", fill="x",expand=True)
         #add a checkbox to toggle auto generate caption
-        self.auto_generate_caption = tk.BooleanVar(self.top_frame)
+        self.auto_generate_caption = tk.BooleanVar(self.top_subframe)
         self.auto_generate_caption.set(True)
-        self.auto_generate_caption_checkbox = ctk.CTkCheckBox(self.top_frame, text="Auto Generate Caption", variable=self.auto_generate_caption,)
-        self.auto_generate_caption_checkbox.pack(side="right")
-
-        #add a batch folder button
-        self.batch_folder_button = ctk.CTkButton(self.top_frame,text="Batch Folder", command=self.batch_folder)
-        self.batch_folder_button.pack(side="right")
-        self.open_button = ctk.CTkButton(self.top_frame,text="Open Folder", command=self.open_folder)
+        self.auto_generate_caption_checkbox = ctk.CTkCheckBox(self.top_subframe, text="Auto Generate Caption", variable=self.auto_generate_caption,width=50)
+        self.auto_generate_caption_checkbox.grid(row=0,column=0,sticky="e",padx=10)
+        #self.auto_generate_caption_checkbox.pack(side="left", fill="x",expand=True,anchor="w")
+        self.open_button = ctk.CTkButton(self.top_frame,text="Load Folder",fg_color=("gray75", "gray25"), command=self.open_folder,width=50)
         #self.open_button.grid(row=0, column=1)
-        self.open_button.pack(side="right")
+        self.open_button.pack(side="left", fill="x",expand=True,padx=10)
+        #add a batch folder button
+        self.batch_folder_button = ctk.CTkButton(self.top_frame,text="Batch Folder", fg_color=("gray75", "gray25"),command=self.batch_folder,width=50)
+        self.batch_folder_button.pack(side="left", fill="x",expand=True,padx=10)
+        
         #add an options button to the same row as the open button
-        self.options_button = ctk.CTkButton(self.top_frame, text="Options", command=self.open_options)
-        self.options_button.pack(side="right")
+        self.options_button = ctk.CTkButton(self.top_frame, text="Options",fg_color=("gray75", "gray25"), command=self.open_options,width=50)
+        self.options_button.pack(side="left", fill="x",expand=True,padx=10)
         #add generate caption button
-        self.generate_caption_button = ctk.CTkButton(self.top_frame, text="Generate Caption", command=self.generate_caption)
-        self.generate_caption_button.pack(side="right")
+        self.generate_caption_button = ctk.CTkButton(self.top_frame, text="Generate Caption",fg_color=("gray75", "gray25"), command=self.generate_caption,width=50)
+        self.generate_caption_button.pack(side="left", fill="x",expand=True,padx=10)
         
         #add a label for tips under the buttons
         self.tips_label = ctk.CTkLabel(self.tip_frame, text="Use the left and right arrow keys to navigate images, enter to save the caption.")
@@ -134,56 +146,56 @@ class ImageBrowser(ctk.CTk):
         self.image_count_label = ctk.CTkLabel(self.tip_frame, text=f"Image {self.cur_img_index} of {self.image_count}")
         self.image_count_label.pack(side="top")
 
-        self.image_label = ctk.CTkLabel(self.canvas)
+        self.image_label = ctk.CTkLabel(self.canvas,text='',width=100,height=100)
         self.image_label.grid(row=0, column=0, sticky="nsew")
         #self.image_label.pack(side="top")
         #previous button
-        self.prev_button = ctk.CTkButton(self.frame,text="Previous", command=self.prev_image )
+        self.prev_button = ctk.CTkButton(self.frame,text="Previous", command= lambda event=None: self.prev_image(event),width=50)
         #grid
-        self.prev_button.grid(row=1, column=0, sticky="w")
+        self.prev_button.grid(row=1, column=0, sticky="w",padx=5,pady=10)
         #self.prev_button.pack(side="left")
         #self.prev_button.bind("<Left>", self.prev_image)
-        self.caption_entry = tk.Entry(self.frame,  )
+        self.caption_entry = ctk.CTkEntry(self.frame)
         #grid
-        self.caption_entry.grid(row=1, column=1, rowspan=3, sticky="nsew")
+        self.caption_entry.grid(row=1, column=1, rowspan=3, sticky="nsew",pady=10)
         #bind to enter key
         self.caption_entry.bind("<Return>", self.save_caption)
         self.canvas.bind("<Return>", self.save_caption)
         #next button
 
-        self.next_button = ctk.CTkButton(self.frame, command= lambda event=None: self.next_image(event), )
-        self.next_button["text"] = "Next"
+        self.next_button = ctk.CTkButton(self.frame,text='Next', command= lambda event=None: self.next_image(event),width=50)
+        #self.next_button["text"] = "Next"
         #grid
-        self.next_button.grid(row=1, column=2, sticky="e")
+        self.next_button.grid(row=1, column=2, sticky="e",padx=5,pady=10)
         #add two entry boxes and labels in the style of :replace _ with _
         #create replace string variable
         self.replace_label = ctk.CTkLabel(self.bottom_frame, text="Replace:")
-        self.replace_label.grid(row=0, column=0, sticky="w")
-        self.replace_entry = tk.Entry(self.bottom_frame,   )
-        self.replace_entry.grid(row=0, column=1, sticky="nsew")
+        self.replace_label.grid(row=0, column=0, sticky="w",padx=5)
+        self.replace_entry = ctk.CTkEntry(self.bottom_frame,   )
+        self.replace_entry.grid(row=0, column=1, sticky="nsew",padx=5)
         self.replace_entry.bind("<Return>", self.save_caption)
         #self.replace_entry.bind("<Tab>", self.replace)
         #with label
         #create with string variable
         self.with_label = ctk.CTkLabel(self.bottom_frame, text="With:")
-        self.with_label.grid(row=0, column=2, sticky="w")
-        self.with_entry = tk.Entry(self.bottom_frame,   )
-        self.with_entry.grid(row=0, column=3,  sticky="nswe")
+        self.with_label.grid(row=0, column=2, sticky="w",padx=5)
+        self.with_entry = ctk.CTkEntry(self.bottom_frame,   )
+        self.with_entry.grid(row=0, column=3,  sticky="nswe",padx=5)
         self.with_entry.bind("<Return>", self.save_caption)
         #add another entry with label, add suffix
         
         #create prefix string var
         self.prefix_label = ctk.CTkLabel(self.bottom_frame, text="Add to start:")
-        self.prefix_label.grid(row=0, column=4, sticky="w")
-        self.prefix_entry = tk.Entry(self.bottom_frame,   )
-        self.prefix_entry.grid(row=0, column=5, sticky="nsew")
+        self.prefix_label.grid(row=0, column=4, sticky="w",padx=5)
+        self.prefix_entry = ctk.CTkEntry(self.bottom_frame,   )
+        self.prefix_entry.grid(row=0, column=5, sticky="nsew",padx=5)
         self.prefix_entry.bind("<Return>", self.save_caption)
 
         #create suffix string var
         self.suffix_label = ctk.CTkLabel(self.bottom_frame, text="Add to end:")
-        self.suffix_label.grid(row=0, column=6, sticky="w")
-        self.suffix_entry = tk.Entry(self.bottom_frame,   )
-        self.suffix_entry.grid(row=0, column=7, sticky="nsew")
+        self.suffix_label.grid(row=0, column=6, sticky="w",padx=5)
+        self.suffix_entry = ctk.CTkEntry(self.bottom_frame,   )
+        self.suffix_entry.grid(row=0, column=7, sticky="nsew",padx=5)
         self.suffix_entry.bind("<Return>", self.save_caption)
         self.all_entries = [self.replace_entry, self.with_entry, self.suffix_entry, self.caption_entry, self.prefix_entry]
         #bind right click menu to all entries
@@ -359,6 +371,7 @@ class ImageBrowser(ctk.CTk):
         self.image_count_label.configure(text=f'Image {self.image_index+1} of {self.image_count}')
         self.output_folder = self.folder
         self.load_image()
+        self.canvas.focus_set()
     def load_image(self):
         self.PILimage = Image.open(self.image_list[self.image_index]).convert('RGB')
         #print(self.image_list[self.image_index])
@@ -366,11 +379,11 @@ class ImageBrowser(ctk.CTk):
         #resize to fit 600x600 while maintaining aspect ratio
         width, height = self.PILimage.size
         if width > height:
-            new_width = 700
-            new_height = int(700 * height / width)
+            new_width = 600
+            new_height = int(600 * height / width)
         else:
-            new_height = 700
-            new_width = int(700 * width / height)
+            new_height = 600
+            new_width = int(600 * width / height)
         self.image = self.PILimage.resize((new_width, new_height), Image.Resampling.LANCZOS)
         self.image = ctk.CTkImage(self.image, size=(new_width, new_height))
         #print(self.image)
@@ -460,76 +473,84 @@ class ImageBrowser(ctk.CTk):
             self.image_index -= 1
             self.image_count_label.configure(text=f'Image {self.image_index+1} of {self.image_count}')
             self.load_image()
+            self.canvas.focus_set()
             self.canvas.focus_force()
     def next_image(self, event):
         if self.image_index < len(self.image_list) - 1:
             self.image_index += 1
             self.image_count_label.configure(text=f'Image {self.image_index+1} of {self.image_count}')
             self.load_image()
+            self.canvas.focus_set()
             self.canvas.focus_force()
     def open_options(self):
-        self.options_window = tk.Toplevel(self)
+        self.options_window = ctk.CTkToplevel(self)
         self.options_window.title("Options")
-        self.options_window.geometry("320x320")
+        self.options_window.geometry("320x550")
+        #disable reszie
+        self.options_window.resizable(False, False)
         self.options_window.focus_force()
         self.options_window.grab_set()
         self.options_window.transient(self)
         self.options_window.protocol("WM_DELETE_WINDOW", self.close_options)
         #add title label
-        self.options_title_label = ctk.CTkLabel(self.options_window, text="Options",font=("Helvetica", 12, "bold"),fg=self.dark_mode_title_var)
-        self.options_title_label.pack(side="top")
+        self.options_title_label = ctk.CTkLabel(self.options_window, text="Options",font=ctk.CTkFont(size=20, weight="bold"))
+        self.options_title_label.pack(side="top", pady=5)
         #add an entry with a button to select a folder as output folder
-        self.output_folder_label = ctk.CTkLabel(self.options_window, text="Output Folder",  fg=self.dark_mode_text_var)
-        self.output_folder_label.pack(side="top")
-        self.output_folder_entry = tk.Entry(self.options_window,   width=40)
-        self.output_folder_entry.pack(side="top")
+        self.output_folder_label = ctk.CTkLabel(self.options_window, text="Output Folder")
+        self.output_folder_label.pack(side="top", pady=5)
+        self.output_folder_entry = ctk.CTkEntry(self.options_window)
+        self.output_folder_entry.pack(side="top", fill="x", expand=False,padx=15, pady=5)
         self.output_folder_entry.insert(0, self.output_folder)
-        self.output_folder_button = ctk.CTkButton(self.options_window, text="Select Folder", command=self.select_output_folder,fg=self.dark_mode_title_var, activebackground=self.dark_mode_title_var,relief="flat")
-        self.output_folder_button.pack(side="top")
+        self.output_folder_button = ctk.CTkButton(self.options_window, text="Select Folder", command=self.select_output_folder,fg_color=("gray75", "gray25"))
+        self.output_folder_button.pack(side="top", pady=5)
         #add radio buttons to select the output format between text and filename
-        self.output_format_label = ctk.CTkLabel(self.options_window, text="Output Format",  fg=self.dark_mode_text_var)
-        self.output_format_label.pack(side="top")
+        self.output_format_label = ctk.CTkLabel(self.options_window, text="Output Format")
+        self.output_format_label.pack(side="top", pady=5)
         self.output_format_var = tk.StringVar(self.options_window)
         self.output_format_var.set(self.output_format)
-        self.output_format_text = tk.Radiobutton(self.options_window, text="Text File", variable=self.output_format_var, value="text",    selectcolor=self.dark_mode_var)
-        self.output_format_text.pack(side="top")
-        self.output_format_filename = tk.Radiobutton(self.options_window, text="File name", variable=self.output_format_var, value="filename",   selectcolor=self.dark_mode_var)
-        self.output_format_filename.pack(side="top")
+        self.output_format_text = ctk.CTkRadioButton(self.options_window, text="Text File", variable=self.output_format_var, value="text")
+        self.output_format_text.pack(side="top", pady=5)
+        self.output_format_filename = ctk.CTkRadioButton(self.options_window, text="File name", variable=self.output_format_var, value="filename")
+        self.output_format_filename.pack(side="top", pady=5)
         #add BLIP settings section
-        self.blip_settings_label = ctk.CTkLabel(self.options_window, text="BLIP Settings",font=("Helvetica", 12, "bold"),fg=self.dark_mode_title_var)
-        self.blip_settings_label.pack(side="top")
+        self.blip_settings_label = ctk.CTkLabel(self.options_window, text="BLIP Settings",font=ctk.CTkFont(size=20, weight="bold"))
+        self.blip_settings_label.pack(side="top", pady=10)
         #add a checkbox to use nucleas sampling or not
         self.nucleus_sampling_var = tk.IntVar(self.options_window)
-        self.nucleus_sampling_checkbox = ctk.CTkCheckBox(self.options_window, text="Use nucleus sampling", variable=self.nucleus_sampling_var,   selectcolor=self.dark_mode_var)
-        self.nucleus_sampling_checkbox.pack(side="top")
+        self.nucleus_sampling_checkbox = ctk.CTkCheckBox(self.options_window, text="Use nucleus sampling", variable=self.nucleus_sampling_var)
+        self.nucleus_sampling_checkbox.pack(side="top", pady=5)
+        if self.debug:
+            self.nucleus_sampling = 0
+            self.q_factor = 0.5
+            self.min_length = 10
         self.nucleus_sampling_var.set(self.nucleus_sampling)
         #add a float entry to set the q factor
-        self.q_factor_label = ctk.CTkLabel(self.options_window, text="Q Factor",  fg=self.dark_mode_text_var)
-        self.q_factor_label.pack(side="top")
-        self.q_factor_entry = tk.Entry(self.options_window,  fg=self.dark_mode_text_var)
+        self.q_factor_label = ctk.CTkLabel(self.options_window, text="Q Factor")
+        self.q_factor_label.pack(side="top", pady=5)
+        self.q_factor_entry = ctk.CTkEntry(self.options_window)
         self.q_factor_entry.insert(0, self.q_factor)
-        self.q_factor_entry.pack(side="top")
+        self.q_factor_entry.pack(side="top", pady=5)
         #add a int entry to set the number minimum length
-        self.min_length_label = ctk.CTkLabel(self.options_window, text="Minimum Length",  fg=self.dark_mode_text_var)
-        self.min_length_label.pack(side="top")
-        self.min_length_entry = tk.Entry(self.options_window,  fg=self.dark_mode_text_var)
+        self.min_length_label = ctk.CTkLabel(self.options_window, text="Minimum Length")
+        self.min_length_label.pack(side="top", pady=5)
+        self.min_length_entry = ctk.CTkEntry(self.options_window)
         self.min_length_entry.insert(0, self.min_length)
-        self.min_length_entry.pack(side="top")
+        self.min_length_entry.pack(side="top", pady=5)
         #add a horozontal radio button to select between None, ViT-L-14/openai, ViT-H-14/laion2b_s32b_b79k
-        #self.model_label = ctk.CTkLabel(self.options_window, text="CLIP Interrogation",  fg=self.dark_mode_text_var)
+        #self.model_label = ctk.CTkLabel(self.options_window, text="CLIP Interrogation")
         #self.model_label.pack(side="top")
         #self.model_var = tk.StringVar(self.options_window)
         #self.model_var.set(self.model)
-        #self.model_none = tk.Radiobutton(self.options_window, text="None", variable=self.model_var, value="None",    selectcolor=self.dark_mode_var)
+        #self.model_none = tk.Radiobutton(self.options_window, text="None", variable=self.model_var, value="None")
         #self.model_none.pack(side="top")
-        #self.model_vit_l_14 = tk.Radiobutton(self.options_window, text="ViT-L-14/openai", variable=self.model_var, value="ViT-L-14/openai",    selectcolor=self.dark_mode_var)
+        #self.model_vit_l_14 = tk.Radiobutton(self.options_window, text="ViT-L-14/openai", variable=self.model_var, value="ViT-L-14/openai")
         #self.model_vit_l_14.pack(side="top")
-        #self.model_vit_h_14 = tk.Radiobutton(self.options_window, text="ViT-H-14/laion2b_s32b_b79k", variable=self.model_var, value="ViT-H-14/laion2b_s32b_b79k",    selectcolor=self.dark_mode_var)
+        #self.model_vit_h_14 = tk.Radiobutton(self.options_window, text="ViT-H-14/laion2b_s32b_b79k", variable=self.model_var, value="ViT-H-14/laion2b_s32b_b79k")
         #self.model_vit_h_14.pack(side="top")
 
         #add a save button
-        self.save_button = ctk.CTkButton(self.options_window, text="Save", command=self.save_options, bg_color=self.dark_mode_title_var, activebackground=self.dark_mode_button_var, activeforeground="white", relief="flat")
-        self.save_button.pack(side="top")
+        self.save_button = ctk.CTkButton(self.options_window, text="Save", command=self.save_options, fg_color=("gray75", "gray25"))
+        self.save_button.pack(side="top",fill='x',pady=10,padx=10)
         #all entries list
         entries = [self.output_folder_entry, self.q_factor_entry, self.min_length_entry]
         #bind the right click to all entries

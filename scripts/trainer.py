@@ -697,7 +697,8 @@ class DataLoaderMultiAspect():
         
         self.aspects = get_aspect_buckets(resolution)
         print(f"* DLMA resolution {resolution}, buckets: {self.aspects}")
-
+        #process sub directories flag
+            
         print(" Preloading images...")
         if balance_datasets:
             print(" Balancing datasets...")
@@ -717,7 +718,15 @@ class DataLoaderMultiAspect():
                 else:
                         balance_cocnept_list.append(min_concept_num_images)
         for concept in concept_list:
+            if 'use_sub_dirs' in concept:
+                if concept['use_sub_dirs'] == True:
+                    use_sub_dirs = True
+                else:
+                    use_sub_dirs = False
+            else:
+                use_sub_dirs = False
             self.image_paths = []
+            #self.class_image_paths = []
             min_concept_num_images = -1
             if balance_datasets:
                 min_concept_num_images = balance_cocnept_list[concept_list.index(concept)]
@@ -725,12 +734,12 @@ class DataLoaderMultiAspect():
             data_root_class = concept['class_data_dir']
             concept_prompt = concept['instance_prompt']
             concept_class_prompt = concept['class_prompt']
-            self.__recurse_data_root(self=self, recurse_root=data_root)
+            self.__recurse_data_root(self=self, recurse_root=data_root,use_sub_dirs=use_sub_dirs)
             random.Random(seed).shuffle(self.image_paths)
             prepared_train_data.extend(self.__prescan_images(debug_level, self.image_paths, flip_p,use_image_names_as_captions,concept_prompt,use_text_files_as_captions=self.use_text_files_as_captions)[0:min_concept_num_images]) # ImageTrainItem[]
             if add_class_images_to_dataset:
                 self.image_paths = []
-                self.__recurse_data_root(self=self, recurse_root=data_root_class)
+                self.__recurse_data_root(self=self, recurse_root=data_root_class,use_sub_dirs=use_sub_dirs)
                 random.Random(seed).shuffle(self.image_paths)
                 use_image_names_as_captions = False
                 prepared_train_data.extend(self.__prescan_images(debug_level, self.image_paths, flip_p,use_image_names_as_captions,concept_class_prompt,use_text_files_as_captions=self.use_text_files_as_captions)) # ImageTrainItem[]
@@ -739,13 +748,13 @@ class DataLoaderMultiAspect():
         if self.with_prior_loss and add_class_images_to_dataset == False:
             self.class_image_caption_pairs = []
             for concept in concept_list:
-                self.image_paths = []
+                self.class_images_path = []
                 data_root_class = concept['class_data_dir']
                 concept_class_prompt = concept['class_prompt']
-                self.__recurse_data_root(self=self, recurse_root=data_root_class)
+                self.__recurse_data_root(self=self, recurse_root=data_root_class,use_sub_dirs=use_sub_dirs,class_images=True)
                 random.Random(seed).shuffle(self.image_paths)
                 use_image_names_as_captions = False
-                self.class_image_caption_pairs.extend(self.__prescan_images(debug_level, self.image_paths, flip_p,use_image_names_as_captions,concept_class_prompt,use_text_files_as_captions=self.use_text_files_as_captions))
+                self.class_image_caption_pairs.extend(self.__prescan_images(debug_level, self.class_images_path, flip_p,use_image_names_as_captions,concept_class_prompt,use_text_files_as_captions=self.use_text_files_as_captions))
             self.class_image_caption_pairs = self.__bucketize_images(self.class_image_caption_pairs, batch_size=batch_size, debug_level=debug_level)
         if debug_level > 0: print(f" * DLMA Example: {self.image_caption_pairs[0]} images")
         #print the length of image_caption_pairs
@@ -825,24 +834,27 @@ class DataLoaderMultiAspect():
         return image_caption_pairs
 
     @staticmethod
-    def __recurse_data_root(self, recurse_root):
+    def __recurse_data_root(self, recurse_root,use_sub_dirs=True,class_images=False):
         for f in os.listdir(recurse_root):
             current = os.path.join(recurse_root, f)
 
             if os.path.isfile(current):
                 ext = os.path.splitext(f)[1].lower()
                 if ext in ['.jpg', '.jpeg', '.png', '.bmp', '.webp']:
-                    self.image_paths.append(current)
+                    if class_images == False:
+                        self.image_paths.append(current)
+                    else:
+                        self.class_images_path.append(current)
+        if use_sub_dirs:
+            sub_dirs = []
 
-        sub_dirs = []
+            for d in os.listdir(recurse_root):
+                current = os.path.join(recurse_root, d)
+                if os.path.isdir(current):
+                    sub_dirs.append(current)
 
-        for d in os.listdir(recurse_root):
-            current = os.path.join(recurse_root, d)
-            if os.path.isdir(current):
-                sub_dirs.append(current)
-
-        for dir in sub_dirs:
-            self.__recurse_data_root(self=self, recurse_root=dir)
+            for dir in sub_dirs:
+                self.__recurse_data_root(self=self, recurse_root=dir)
 
 class DreamBoothDataset(Dataset):
     """
@@ -868,22 +880,27 @@ class DreamBoothDataset(Dataset):
         self.tokenizer = tokenizer
         self.with_prior_preservation = with_prior_preservation
         self.use_text_files_as_captions = use_text_files_as_captions
-
-        self.instance_images_path = []
+        self.image_paths = []
         self.class_images_path = []
 
         for concept in concepts_list:
+            if 'use_sub_dirs' in concept:
+                if concept['use_sub_dirs'] == True:
+                    use_sub_dirs = True
+                else:
+                    use_sub_dirs = False
+            else:
+                use_sub_dirs = False
+
             for i in range(repeats):
-                inst_img_path = [(x, concept["instance_prompt"]) for x in Path(concept["instance_data_dir"]).iterdir() if x.is_file() and x.suffix.lower() == ".jpg" or x.suffix.lower() == ".png" or x.suffix.lower() == ".jpeg"]
-                self.instance_images_path.extend(inst_img_path)
+                self.__recurse_data_root(self, concept,use_sub_dirs=use_sub_dirs)
 
             if with_prior_preservation:
                 for i in range(repeats):
-                    class_img_path = [(x, concept["class_prompt"]) for x in Path(concept["class_data_dir"]).iterdir() if x.is_file() and x.suffix.lower() == ".jpg" or x.suffix.lower() == ".png" or x.suffix.lower() == ".jpeg"]
-                    self.class_images_path.extend(class_img_path[:num_class_images])
-        random.shuffle(self.instance_images_path)
+                    self.__recurse_data_root(self, concept['class_data_dir'],use_sub_dirs=use_sub_dirs,class_images=True)
+        random.shuffle(self.image_paths)
 
-        self.num_instance_images = len(self.instance_images_path)
+        self.num_instance_images = len(self.image_paths)
         self._length = self.num_instance_images
         self.num_class_images = len(self.class_images_path)
         self._length = max(self.num_class_images, self.num_instance_images)
@@ -896,20 +913,51 @@ class DreamBoothDataset(Dataset):
                 transforms.Normalize([0.5], [0.5]),
             ]
         )
+    @staticmethod
+    def __recurse_data_root(self, recurse_root,use_sub_dirs=True,class_images=False):
+        #if recurse root is a dict
+        if isinstance(recurse_root, dict):
+            concept_token = recurse_root['instance_prompt']
+            recurse_root = recurse_root['instance_data_dir']
+            
+            if class_images:
+                concept_token = recurse_root['class_prompt']
+                recurse_root = recurse_root['class_data_dir']
+        else:
+            concept_token = None
+        for f in os.listdir(recurse_root):
+            current = os.path.join(recurse_root, f)
 
+            if os.path.isfile(current):
+                ext = os.path.splitext(f)[1].lower()
+                if ext in ['.jpg', '.jpeg', '.png', '.bmp', '.webp']:
+                    if class_images == False:
+                        self.image_paths.append((current,concept_token))
+                    else:
+                        self.class_images_path.append((current,concept_token))
+        if use_sub_dirs:
+            sub_dirs = []
+
+            for d in os.listdir(recurse_root):
+                current = os.path.join(recurse_root, d)
+                if os.path.isdir(current):
+                    sub_dirs.append(current)
+
+            for dir in sub_dirs:
+                self.__recurse_data_root(self=self, recurse_root={'instance_data_dir' : dir, 'instance_prompt' : concept_token})
     def __len__(self):
         return self._length
 
     def __getitem__(self, index):
         example = {}
-        instance_path, instance_prompt = self.instance_images_path[index % self.num_instance_images]
+        instance_path, instance_prompt = self.image_paths[index % self.num_instance_images]
         instance_image = Image.open(instance_path)
         if self.use_image_names_as_captions == True:
             instance_prompt = str(instance_path).split(os.sep)[-1].split('.')[0].split('_')[0]
         #else if there's a txt file with the same name as the image, read the caption from there
         if self.use_text_files_as_captions == True:
             #if there's a txt file with the same name as the image, read the caption from there
-            txt_path = instance_path.with_suffix('.txt')
+            txt_path = instance_path.endswith('.txt')
             #if txt_path exists, read the caption from there
             if os.path.exists(txt_path):
                 with open(txt_path, encoding='utf-8') as f:
