@@ -945,6 +945,7 @@ class DreamBoothDataset(Dataset):
 
             for dir in sub_dirs:
                 self.__recurse_data_root(self=self, recurse_root={'instance_data_dir' : dir, 'instance_prompt' : concept_token})
+        
     def __len__(self):
         return self._length
 
@@ -956,8 +957,12 @@ class DreamBoothDataset(Dataset):
             instance_prompt = str(instance_path).split(os.sep)[-1].split('.')[0].split('_')[0]
         #else if there's a txt file with the same name as the image, read the caption from there
         if self.use_text_files_as_captions == True:
-            #if there's a txt file with the same name as the image, read the caption from there
-            txt_path = instance_path.endswith('.txt')
+            #if there's a file with the same name as the image, but with a .txt extension, read the caption from there
+            #get the last . in the file name
+            last_dot = str(instance_path).rfind('.')
+            #get the path up to the last dot
+            txt_path = str(instance_path)[:last_dot] + '.txt'
+
             #if txt_path exists, read the caption from there
             if os.path.exists(txt_path):
                 with open(txt_path, encoding='utf-8') as f:
@@ -1304,8 +1309,10 @@ def main():
     )
     def collate_fn(examples):
         #print(examples)
+        #print('test')
         input_ids = [example["instance_prompt_ids"] for example in examples]
         pixel_values = [example["instance_images"] for example in examples]
+        #print('test')
         # Concat class and instance examples for prior preservation.
         # We do this to avoid doing two forward passes.
         if args.with_prior_preservation:
@@ -1396,6 +1403,7 @@ def main():
                 with torch.no_grad():
                     batch["pixel_values"] = batch["pixel_values"].to(accelerator.device, non_blocking=True, dtype=weight_dtype)
                     batch["input_ids"] = batch["input_ids"].to(accelerator.device, non_blocking=True)
+                    
                     latents_cache.append(vae.encode(batch["pixel_values"]).latent_dist)
                     if args.train_text_encoder:
                         text_encoder_cache.append(batch["input_ids"])
