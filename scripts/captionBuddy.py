@@ -105,8 +105,8 @@ class ImageBrowser(ctk.CTkToplevel):
         #self.open_folder()
         
         self.canvas.focus_force()
-        self.canvas.bind("<Right>", self.next_image)
-        self.canvas.bind("<Left>", self.prev_image)
+        self.canvas.bind("<Shift-Right>", self.next_image)
+        self.canvas.bind("<Shift-Left>", self.prev_image)
         #on close window
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
     def on_closing(self):
@@ -141,7 +141,7 @@ class ImageBrowser(ctk.CTkToplevel):
         self.generate_caption_button.pack(side="left", fill="x",expand=True,padx=10)
         
         #add a label for tips under the buttons
-        self.tips_label = ctk.CTkLabel(self.tip_frame, text="Use the left and right arrow keys to navigate images, enter to save the caption.")
+        self.tips_label = ctk.CTkLabel(self.tip_frame, text="Use shift with left and right arrow keys to navigate images, enter to save the caption.")
         self.tips_label.pack(side="top")
         #add image count label
         self.image_count_label = ctk.CTkLabel(self.tip_frame, text=f"Image {self.cur_img_index} of {self.image_count}")
@@ -162,6 +162,8 @@ class ImageBrowser(ctk.CTkToplevel):
         #bind to enter key
         self.caption_entry.bind("<Return>", self.save_caption)
         self.canvas.bind("<Return>", self.save_caption)
+        self.caption_entry.bind("<Shift-Right>", self.next_image)
+        self.caption_entry.bind("<Shift-Left>", self.prev_image)
         #next button
 
         self.next_button = ctk.CTkButton(self.frame,text='Next', command= lambda event=None: self.next_image(event),width=50)
@@ -389,7 +391,7 @@ class ImageBrowser(ctk.CTkToplevel):
         self.image_count_label.configure(text=f'Image {self.image_index+1} of {self.image_count}')
         self.output_folder = self.folder
         self.load_image()
-        self.canvas.focus_set()
+        self.caption_entry.focus_set()
     def load_image(self):
         self.PILimage = Image.open(self.image_list[self.image_index]).convert('RGB')
         #print(self.image_list[self.image_index])
@@ -489,21 +491,21 @@ class ImageBrowser(ctk.CTkToplevel):
         self.caption_entry.insert(0, self.caption)
         self.caption_entry.configure(fg_color='green')
 
-        self.canvas.focus_force()
+        self.caption_entry.focus_force()
     def prev_image(self, event):
         if self.image_index > 0:
             self.image_index -= 1
             self.image_count_label.configure(text=f'Image {self.image_index+1} of {self.image_count}')
             self.load_image()
-            self.canvas.focus_set()
-            self.canvas.focus_force()
+            self.caption_entry.focus_set()
+            self.caption_entry.focus_force()
     def next_image(self, event):
         if self.image_index < len(self.image_list) - 1:
             self.image_index += 1
             self.image_count_label.configure(text=f'Image {self.image_index+1} of {self.image_count}')
             self.load_image()
-            self.canvas.focus_set()
-            self.canvas.focus_force()
+            self.caption_entry.focus_set()
+            self.caption_entry.focus_force()
     def open_options(self):
         self.options_window = ctk.CTkToplevel(self)
         self.options_window.title("Options")
@@ -633,7 +635,7 @@ class ImageBrowser(ctk.CTkToplevel):
         self.output_folder_entry.insert(0, self.output_folder)
     def close_options(self):
         self.options_window.destroy()
-        self.canvas.focus_force()
+        self.caption_entry.focus_force()
     def create_right_click_menu(self, event):
         #create a menu
         self.menu = Menu(self, tearoff=0)
