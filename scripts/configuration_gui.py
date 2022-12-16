@@ -550,10 +550,10 @@ class CreateToolTip(object):
     def showtip(self, event=None):
         x = y = 0
         x, y, cx, cy = self.widget.bbox("insert")
-        x += self.widget.winfo_rootx() + 25
-        y += self.widget.winfo_rooty() + 20
+        x += self.widget.winfo_rootx() + 50
+        y += self.widget.winfo_rooty() + 50
         # creates a toplevel window
-        self.tw = tk.Toplevel(self.widget)
+        self.tw = ctk.CTkToplevel(self.widget)
         #self.tw.wm_attributes("-topmost", 1)
         #self.parent.wm_attributes("-topmost", 0)
         # Leaves only the label and removes the app window
@@ -563,7 +563,7 @@ class CreateToolTip(object):
         
         label = ctk.CTkLabel(self.tw, text=self.text, justify='left',
                        wraplength = self.wraplength)
-        label.pack(ipadx=1)
+        label.pack(padx=10, pady=10 )
 
     def hidetip(self):
         tw = self.tw
@@ -1389,14 +1389,14 @@ class App(ctk.CTk):
         self.training_frame_title.grid(row=0, column=0, padx=20, pady=20)   
         #add a seed entry
         self.seed_label = ctk.CTkLabel(self.training_frame_subframe, text="Seed")
-        #seed_label_ttp = CreateToolTip(self.seed_label, "The seed to use for training.")
+        seed_label_ttp = CreateToolTip(self.seed_label, "The seed to use for training.")
         #self.seed_label.grid(row=1, column=0, sticky="nsew")
         self.seed_entry = ctk.CTkEntry(self.training_frame_subframe)
         #self.seed_entry.grid(row=1, column=1, sticky="nsew")
         #self.seed_entry.insert(0, self.seed_number)
         #create resolution dark mode dropdown
         self.resolution_label = ctk.CTkLabel(self.training_frame_subframe, text="Resolution")
-        #resolution_label_ttp = CreateToolTip(self.resolution_label, "The resolution of the images to train on.")
+        resolution_label_ttp = CreateToolTip(self.resolution_label, "The resolution of the images to train on.")
         #self.resolution_label.grid(row=2, column=0, sticky="nsew")
         self.resolution_var = tk.StringVar()
         #self.resolution_var.set(self.resolution)
@@ -1405,7 +1405,7 @@ class App(ctk.CTk):
         
         #create train batch size dark mode dropdown with values from 1 to 60
         self.train_batch_size_label = ctk.CTkLabel(self.training_frame_subframe, text="Train Batch Size")
-        #train_batch_size_label_ttp = CreateToolTip(self.train_batch_size_label, "The batch size to use for training.")
+        train_batch_size_label_ttp = CreateToolTip(self.train_batch_size_label, "The batch size to use for training.")
         #self.train_batch_size_label.grid(row=3, column=0, sticky="nsew")
         self.train_batch_size_var = tk.StringVar()
         #self.train_batch_size_var.set(self.batch_size)
@@ -1416,7 +1416,7 @@ class App(ctk.CTk):
 
         #create train epochs dark mode 
         self.train_epochs_label = ctk.CTkLabel(self.training_frame_subframe, text="Train Epochs")
-        #train_epochs_label_ttp = CreateToolTip(self.train_epochs_label, "The number of epochs to train for. An epoch is one pass through the entire dataset.")
+        train_epochs_label_ttp = CreateToolTip(self.train_epochs_label, "The number of epochs to train for. An epoch is one pass through the entire dataset.")
         #self.train_epochs_label.grid(row=4, column=0, sticky="nsew")
         self.train_epochs_entry = ctk.CTkEntry(self.training_frame_subframe)
         #self.train_epochs_entry.grid(row=4, column=1, sticky="nsew")
@@ -1424,7 +1424,7 @@ class App(ctk.CTk):
         
         #create mixed precision dark mode dropdown
         self.mixed_precision_label = ctk.CTkLabel(self.training_frame_subframe, text="Mixed Precision")
-        #mixed_precision_label_ttp = CreateToolTip(self.mixed_precision_label, "Use mixed precision training to speed up training, FP16 is recommended but requires a GPU with Tensor Cores.")
+        mixed_precision_label_ttp = CreateToolTip(self.mixed_precision_label, "Use mixed precision training to speed up training, FP16 is recommended but requires a GPU with Tensor Cores.")
         #self.mixed_precision_label.grid(row=5, column=0, sticky="nsew")
         self.mixed_precision_var = tk.StringVar()
         #self.mixed_precision_var.set(self.mixed_precision)
@@ -1436,7 +1436,7 @@ class App(ctk.CTk):
         #self.use_8bit_adam_var.set(self.use_8bit_adam)
         #create label
         self.use_8bit_adam_label = ctk.CTkLabel(self.training_frame_subframe, text="Use 8bit Adam")
-        #use_8bit_adam_label_ttp = CreateToolTip(self.use_8bit_adam_label, "Use 8bit Adam to speed up training, requires bytsandbytes.")
+        use_8bit_adam_label_ttp = CreateToolTip(self.use_8bit_adam_label, "Use 8bit Adam to speed up training, requires bytsandbytes.")
         #self.use_8bit_adam_label.grid(row=6, column=0, sticky="nsew")
         #create checkbox
         self.use_8bit_adam_checkbox = ctk.CTkSwitch(self.training_frame_subframe, variable=self.use_8bit_adam_var,text='')
@@ -1446,14 +1446,14 @@ class App(ctk.CTk):
         #self.use_gradient_checkpointing_var.set(self.use_gradient_checkpointing)
         #create label
         self.use_gradient_checkpointing_label = ctk.CTkLabel(self.training_frame_subframe, text="Use Gradient Checkpointing")
-        #use_gradient_checkpointing_label_ttp = CreateToolTip(self.use_gradient_checkpointing_label, "Use gradient checkpointing to reduce RAM usage.")
+        use_gradient_checkpointing_label_ttp = CreateToolTip(self.use_gradient_checkpointing_label, "Use gradient checkpointing to reduce RAM usage.")
         #self.use_gradient_checkpointing_label.grid(row=7, column=0, sticky="nsew")
         #create checkbox
         self.use_gradient_checkpointing_checkbox = ctk.CTkSwitch(self.training_frame_subframe, variable=self.use_gradient_checkpointing_var)
         #self.use_gradient_checkpointing_checkbox.grid(row=7, column=1, sticky="nsew")
         #create gradient accumulation steps dark mode dropdown with values from 1 to 60
         self.gradient_accumulation_steps_label = ctk.CTkLabel(self.training_frame_subframe, text="Gradient Accumulation Steps")
-        #gradient_accumulation_steps_label_ttp = CreateToolTip(self.gradient_accumulation_steps_label, "The number of gradient accumulation steps to use, this is useful for training with limited GPU memory.")
+        gradient_accumulation_steps_label_ttp = CreateToolTip(self.gradient_accumulation_steps_label, "The number of gradient accumulation steps to use, this is useful for training with limited GPU memory.")
         #self.gradient_accumulation_steps_label.grid(row=8, column=0, sticky="nsew")
         self.gradient_accumulation_steps_var = tk.StringVar()
         #self.gradient_accumulation_steps_var.set(self.accumulation_steps)
@@ -1461,14 +1461,14 @@ class App(ctk.CTk):
         #self.gradient_accumulation_steps_dropdown.grid(row=8, column=1, sticky="nsew")
         #create learning rate dark mode entry
         self.learning_rate_label = ctk.CTkLabel(self.training_frame_subframe, text="Learning Rate")
-        #learning_rate_label_ttp = CreateToolTip(self.learning_rate_label, "The learning rate to use for training.")
+        learning_rate_label_ttp = CreateToolTip(self.learning_rate_label, "The learning rate to use for training.")
         #self.learning_rate_label.grid(row=9, column=0, sticky="nsew")
         self.learning_rate_entry = ctk.CTkEntry(self.training_frame_subframe)
         #self.learning_rate_entry.grid(row=9, column=1, sticky="nsew")
         #self.learning_rate_entry.insert(0, self.learning_rate)
         #create learning rate scheduler dropdown
         self.learning_rate_scheduler_label = ctk.CTkLabel(self.training_frame_subframe, text="Learning Rate Scheduler")
-        #learning_rate_scheduler_label_ttp = CreateToolTip(self.learning_rate_scheduler_label, "The learning rate scheduler to use for training.")
+        learning_rate_scheduler_label_ttp = CreateToolTip(self.learning_rate_scheduler_label, "The learning rate scheduler to use for training.")
         #self.learning_rate_scheduler_label.grid(row=10, column=0, sticky="nsew")
         self.learning_rate_scheduler_var = tk.StringVar()
         #self.learning_rate_scheduler_var.set(self.learning_rate_schedule)
@@ -1476,7 +1476,7 @@ class App(ctk.CTk):
         #self.learning_rate_scheduler_dropdown.grid(row=10, column=1, sticky="nsew")
         #create num warmup steps dark mode entry
         self.num_warmup_steps_label = ctk.CTkLabel(self.training_frame_subframe, text="LR Warmup Steps")
-        #num_warmup_steps_label_ttp = CreateToolTip(self.num_warmup_steps_label, "The number of warmup steps to use for the learning rate scheduler.")
+        num_warmup_steps_label_ttp = CreateToolTip(self.num_warmup_steps_label, "The number of warmup steps to use for the learning rate scheduler.")
         #self.num_warmup_steps_label.grid(row=11, column=0, sticky="nsew")
         self.num_warmup_steps_entry = ctk.CTkEntry(self.training_frame_subframe)
         #self.num_warmup_steps_entry.grid(row=11, column=1, sticky="nsew")
@@ -1486,7 +1486,7 @@ class App(ctk.CTk):
         #self.use_latent_cache_var.set(self.do_not_use_latents_cache)
         #create label
         self.use_latent_cache_label = ctk.CTkLabel(self.training_frame_subframe, text="Use Latent Cache")
-        #use_latent_cache_label_ttp = CreateToolTip(self.use_latent_cache_label, "Cache the latents to speed up training.")
+        use_latent_cache_label_ttp = CreateToolTip(self.use_latent_cache_label, "Cache the latents to speed up training.")
         #self.use_latent_cache_label.grid(row=12, column=0, sticky="nsew")
         #create checkbox
         self.use_latent_cache_checkbox = ctk.CTkSwitch(self.training_frame_subframe, variable=self.use_latent_cache_var)
@@ -1496,7 +1496,7 @@ class App(ctk.CTk):
         #self.save_latent_cache_var.set(self.save_latents_cache)
         #create label
         self.save_latent_cache_label = ctk.CTkLabel(self.training_frame_subframe, text="Save Latent Cache")
-        #save_latent_cache_label_ttp = CreateToolTip(self.save_latent_cache_label, "Save the latents cache to disk after generation, will be remade if batch size changes.")
+        save_latent_cache_label_ttp = CreateToolTip(self.save_latent_cache_label, "Save the latents cache to disk after generation, will be remade if batch size changes.")
         #self.save_latent_cache_label.grid(row=13, column=0, sticky="nsew")
         #create checkbox
         self.save_latent_cache_checkbox = ctk.CTkSwitch(self.training_frame_subframe, variable=self.save_latent_cache_var)
@@ -1506,7 +1506,7 @@ class App(ctk.CTk):
         #self.regenerate_latent_cache_var.set(self.regenerate_latents_cache)
         #create label
         self.regenerate_latent_cache_label = ctk.CTkLabel(self.training_frame_subframe, text="Regenerate Latent Cache")
-        #regenerate_latent_cache_label_ttp = CreateToolTip(self.regenerate_latent_cache_label, "Force the latents cache to be regenerated.")
+        regenerate_latent_cache_label_ttp = CreateToolTip(self.regenerate_latent_cache_label, "Force the latents cache to be regenerated.")
         #self.regenerate_latent_cache_label.grid(row=14, column=0, sticky="nsew")
         #create checkbox
         self.regenerate_latent_cache_checkbox = ctk.CTkSwitch(self.training_frame_subframe, variable=self.regenerate_latent_cache_var)
@@ -1516,7 +1516,7 @@ class App(ctk.CTk):
         #self.train_text_encoder_var.set(self.train_text_encoder)
         #create label
         self.train_text_encoder_label = ctk.CTkLabel(self.training_frame_subframe, text="Train Text Encoder")
-        #train_text_encoder_label_ttp = CreateToolTip(self.train_text_encoder_label, "Train the text encoder along with the UNET.")
+        train_text_encoder_label_ttp = CreateToolTip(self.train_text_encoder_label, "Train the text encoder along with the UNET.")
         #self.train_text_encoder_label.grid(row=15, column=0, sticky="nsew")
         #create checkbox
         self.train_text_encoder_checkbox = ctk.CTkSwitch(self.training_frame_subframe, variable=self.train_text_encoder_var)
@@ -1526,7 +1526,7 @@ class App(ctk.CTk):
         #self.limit_text_encoder_var.set(self.limit_text_encoder)
         #create label
         self.limit_text_encoder_label = ctk.CTkLabel(self.training_frame_subframe, text="Limit Text Encoder")
-        #limit_text_encoder_label_ttp = CreateToolTip(self.limit_text_encoder_label, "Stop training the text encoder after this many epochs, use % to train for a percentage of the total epochs.")
+        limit_text_encoder_label_ttp = CreateToolTip(self.limit_text_encoder_label, "Stop training the text encoder after this many epochs, use % to train for a percentage of the total epochs.")
         #self.limit_text_encoder_label.grid(row=16, column=0, sticky="nsew")
         #create entry
         self.limit_text_encoder_entry = ctk.CTkEntry(self.training_frame_subframe, textvariable=self.limit_text_encoder_var)
@@ -1537,7 +1537,7 @@ class App(ctk.CTk):
         #self.disable_cudnn_benchmark_var.set(self.disable_cudnn_benchmark)
         #create label for checkbox
         self.disable_cudnn_benchmark_label = ctk.CTkLabel(self.training_frame_subframe, text="EXPERIMENTAL: Disable cuDNN Benchmark")
-        #disable_cudnn_benchmark_label_ttp = CreateToolTip(self.disable_cudnn_benchmark_label, "Disable cuDNN benchmarking, may offer 2x performance on some systems and stop OOM errors.")
+        disable_cudnn_benchmark_label_ttp = CreateToolTip(self.disable_cudnn_benchmark_label, "Disable cuDNN benchmarking, may offer 2x performance on some systems and stop OOM errors.")
         #self.disable_cudnn_benchmark_label.grid(row=17, column=0, sticky="nsew")
         #create checkbox
         self.disable_cudnn_benchmark_checkbox = ctk.CTkSwitch(self.training_frame_subframe, variable=self.disable_cudnn_benchmark_var)
@@ -1752,12 +1752,12 @@ class App(ctk.CTk):
         empty.grid(row=1, column=0, sticky="nsew")
         self.load_concept_from_json_button = ctk.CTkButton(self.data_frame_subframe, text="Load Concepts From JSON",  command=self.load_concept_from_json)
         self.load_concept_from_json_button.grid(row=1, column=1, sticky="e")
-        #load_concept_from_json_button_ttp = CreateToolTip(self.load_concept_from_json_button, "Load concepts from a JSON file, compatible with Shivam's concept list.")
+        load_concept_from_json_button_ttp = CreateToolTip(self.load_concept_from_json_button, "Load concepts from a JSON file, compatible with Shivam's concept list.")
         #self.load_concept_from_json_button.grid(row=1, column=0, sticky="nsew")
         #add save concept to json button
         self.save_concept_to_json_button = ctk.CTkButton(self.data_frame_subframe, text="Save Concepts To JSON",  command=self.save_concept_to_json)
         self.save_concept_to_json_button.grid(row=1, column=2, sticky="e")
-        #save_concept_to_json_button_ttp = CreateToolTip(self.save_concept_to_json_button, "Save concepts to a JSON file, compatible with Shivam's concept list.")
+        save_concept_to_json_button_ttp = CreateToolTip(self.save_concept_to_json_button, "Save concepts to a JSON file, compatible with Shivam's concept list.")
         #self.save_concept_to_json_button.grid(row=1, column=1, sticky="nsew")
         #create a button to add concept
         self.add_concept_button = ctk.CTkButton(self.data_frame_subframe, text="Add Concept",  command=self.add_new_concept,width=50)
