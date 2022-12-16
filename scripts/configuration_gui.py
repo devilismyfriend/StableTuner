@@ -10,8 +10,9 @@ import json
 from tkinter import messagebox
 from PIL import Image, ImageTk,ImageOps,ImageDraw
 import glob
-#import converters
+import converters
 import shutil
+
 import customtkinter as ctk
 import random
 ctk.set_appearance_mode("System")
@@ -74,7 +75,7 @@ class ConceptWidget(ctk.CTkFrame):
             self.concept = Concept(self.concept_name, self.concept_data_path, self.concept_class_name, self.concept_class_path, self.concept_do_not_balance,self.process_sub_dirs, self.image_preview, None)
         else:
             self.concept = concept
-            self.make_image_preview()
+            self.concept.image_preview = self.make_image_preview()
         
         self.width = width
         self.height = height
@@ -84,10 +85,13 @@ class ConceptWidget(ctk.CTkFrame):
         self.concept_frame.grid_rowconfigure(0, weight=1)
         self.concept_frame.grid(row=0, column=0, sticky="nsew")
         #concept image
+        #if self.concept.image_preview is type(str):
+        #    self.concept.image_preview = Image.open(self.concept.image_preview)
         self.concept_image_label = ctk.CTkLabel(self.concept_frame,text='',width=width,height=height, image=ctk.CTkImage(self.concept.image_preview,size=(100,100)))
+        
         self.concept_image_label.grid(row=0, column=0, sticky="nsew")
         #ctk button with name as text and image as preview
-        self.concept_button = ctk.CTkLabel(self.concept_frame, text=self.concept_name,bg_color='transparent', compound="top")
+        self.concept_button = ctk.CTkLabel(self.concept_frame, text=self.concept.concept_name,bg_color='transparent', compound="top")
         self.concept_button.grid(row=1, column=0, sticky="nsew")
         #bind the button to open a concept window
         self.concept_button.bind("<Button-1>", lambda event: self.open_concept_window())
@@ -154,8 +158,9 @@ class ConceptWidget(ctk.CTkFrame):
                         #convert the image to a photoimage
                         #image.show()
         newImage=ctk.CTkImage(image,size=(100,100))
+        #print(image)
         self.image_preview = image
-    
+        return image
     def open_concept_window(self, event=None):
         #open a concept window
         self.concept_window = ConceptWindow(parent=self.parent, conceptWidget=self, concept=self.concept)
@@ -174,12 +179,13 @@ class ConceptWindow(ctk.CTkToplevel):
     #init function
     def __init__(self, parent,conceptWidget,concept,*args, **kwargs):
         ctk.CTkToplevel.__init__(self, parent, *args, **kwargs)
+        #set title
+        self.title("Concept Editor")
         self.parent = parent
         self.conceptWidget = conceptWidget
         self.concept = concept
-        self.geometry("583x288")
+        self.geometry("583x260")
         self.resizable(False, False)
-        self.title(self.concept.concept_name)
         #self.protocol("WM_DELETE_WINDOW", self.on_close)
         self.grab_set()
         self.focus_set()
@@ -230,7 +236,7 @@ class ConceptWindow(ctk.CTkToplevel):
         self.class_path_entry.grid(row=3, column=1, sticky="e",padx=5,pady=5)
         self.class_path_entry.insert(0, self.concept.concept_class_path)
         #make a button to browse for Class Path
-        self.class_path_button = ctk.CTkButton(self.concept_frame_subframe,width=30, text="...", command=lambda: self.browse_for_path(entry=self.class_path_entry,path=None))
+        self.class_path_button = ctk.CTkButton(self.concept_frame_subframe,width=30, text="...", command=lambda: self.browse_for_path(entry_box=self.class_path_entry))
         self.class_path_button.grid(row=3, column=2, sticky="w",padx=5,pady=5)
         
         #make a label for dataset balancingprocess_sub_dirs
@@ -242,7 +248,7 @@ class ConceptWindow(ctk.CTkToplevel):
         if self.concept.concept_do_not_balance == True:
             self.balance_dataset_switch.toggle()
 
-        self.process_sub_dirs = ctk.CTkLabel(self.concept_frame_subframe, text="Process Sub-Directories")
+        self.process_sub_dirs = ctk.CTkLabel(self.concept_frame_subframe, text="Search Sub-Directories")
         self.process_sub_dirs.grid(row=5, column=0, sticky="nsew",padx=5,pady=5)
         #make a switch to enable or disable dataset balancing
         self.process_sub_dirs_switch = ctk.CTkSwitch(self.concept_frame_subframe, text="", variable=tk.BooleanVar())
@@ -252,7 +258,7 @@ class ConceptWindow(ctk.CTkToplevel):
         #self.balance_dataset_switch.set(self.concept.concept_do_not_balance)
         #add image preview 
         self.image_preview_label = ctk.CTkLabel(self.concept_frame_subframe,text='', width=150, height=150,image=ctk.CTkImage(self.default_image_preview,size=(150,150)))
-        self.image_preview_label.grid(row=0, column=4,rowspan=4, sticky="nsew",padx=5,pady=5)
+        self.image_preview_label.grid(row=0, column=4,rowspan=5, sticky="nsew",padx=5,pady=5)
         if self.concept.image_preview != None or self.concept.image_preview != "":
             #print(self.concept.image_preview)
             self.update_preview_image(entry=None,path=None,pil_image=self.concept.image_preview)
@@ -262,7 +268,7 @@ class ConceptWindow(ctk.CTkToplevel):
 
         #make a save button
         self.save_button = ctk.CTkButton(self.concept_frame_subframe, text="Save", command=self.save)
-        self.save_button.grid(row=6, column=0,columnspan=3, sticky="nsew")
+        self.save_button.grid(row=5, column=3,columnspan=3,rowspan=1, sticky="nsew",padx=10,pady=10)
 
         #make a delete button
         #self.delete_button = ctk.CTkButton(self.concept_frame_subframe, text="Delete", command=self.delete)
@@ -382,10 +388,12 @@ class ConceptWindow(ctk.CTkToplevel):
         #update the concept
         self.concept.update(concept_name, concept_path, class_name, class_path,balance_dataset,process_sub_dirs,image_preview,image_preview_label)
         self.conceptWidget.update_button()
+        #close the window
+        self.destroy()
 
 #class of the concept
 class Concept:
-    def __init__(self, concept_name, concept_path, class_name, class_path, balance_dataset,process_sub_dirs,image_preview, image_container):
+    def __init__(self, concept_name, concept_path, class_name, class_path, balance_dataset=None,process_sub_dirs=None,image_preview=None, image_container=None):
         if concept_name == None:
             concept_name = ""
         if concept_path == None:
@@ -486,7 +494,6 @@ class ScrollableFrame(ttk.Frame):
                 scrollregion=self.canvas.bbox("all")))
         #resize the scrollable frame to the size of the window capped at 1000x1000
         self.scrollable_frame.bind("<Configure>", lambda e: self.canvas.configure(width=min(750, e.width), height=min(750, e.height)))
-
         self.bind_all("<MouseWheel>", self._on_mousewheel)
         self.bind("<Destroy>",
             lambda *args, **kwargs: self.unbind_all("<MouseWheel>"))
@@ -547,8 +554,8 @@ class CreateToolTip(object):
         y += self.widget.winfo_rooty() + 20
         # creates a toplevel window
         self.tw = tk.Toplevel(self.widget)
-        self.tw.wm_attributes("-topmost", 1)
-        self.parent.wm_attributes("-topmost", 0)
+        #self.tw.wm_attributes("-topmost", 1)
+        #self.parent.wm_attributes("-topmost", 0)
         # Leaves only the label and removes the app window
         self.tw.wm_overrideredirect(True)
         self.tw.wm_geometry("+%d+%d" % (x, y))
@@ -564,10 +571,10 @@ class CreateToolTip(object):
         if tw:
             tw.destroy()
 
-class App(ctk.CTk):
-    
+class App(ctk.CTk):    
     def __init__(self):
         super().__init__()
+        #self.master = self
         #deiconify event
         #self.master.bind("<Map>", self.on_resume)
         #remove the default title bar
@@ -585,15 +592,15 @@ class App(ctk.CTk):
         #self.title_bar.pack(side="top", fill="x",)
         #self.master.configure(bg="#1e2124")
         #define some colors
-        #self.stableTune_icon =PhotoImage(file = "resources/stableTuner_icon.png")
-        #self.master.iconphoto(False, self.stableTune_icon)
+        self.stableTune_icon =PhotoImage(master=self,file = "resources/stableTuner_icon.png")
+        self.iconphoto(False, self.stableTune_icon)
         self.dark_mode_var = "#1e2124"
         self.dark_purple_mode_var = "#1B0F1B"
         self.dark_mode_title_var = "#7289da"
         self.dark_mode_button_pressed_var = "#BB91B6"
         self.dark_mode_button_var = "#8ea0e1"
         self.dark_mode_text_var = "#c6c7c8"
-        self.title("StableTune")
+        self.title("StableTuner")
         self.configure(cursor="left_ptr")
         #resizable window
         self.resizable(True, True)
@@ -649,7 +656,7 @@ class App(ctk.CTk):
 
         self.sidebar_button_11 = ctk.CTkButton(self.sidebar_frame,text='Caption Buddy',command=self.caption_buddy)
         self.sidebar_button_11.grid(row=13, column=0, padx=20, pady=5)
-        self.sidebar_button_12 = ctk.CTkButton(self.sidebar_frame,text='Start Training!',command=self.toolbox_nav_button_event)
+        self.sidebar_button_12 = ctk.CTkButton(self.sidebar_frame,text='Start Training!',command=self.process_inputs)
         self.sidebar_button_12.grid(row=14, column=0, padx=20, pady=5)
         self.general_frame = ctk.CTkFrame(self, width=140, corner_radius=0,fg_color='transparent')
         self.general_frame.grid_columnconfigure(0, weight=5)
@@ -682,7 +689,7 @@ class App(ctk.CTk):
         #add_button.grid(row=2, column=0, padx=20, pady=20)
         self.dataset_frame = ctk.CTkFrame(self, width=140, corner_radius=0,fg_color='transparent')
         self.dataset_frame.grid_columnconfigure(0, weight=1)
-        self.dataset_frame.grid_columnconfigure(1, weight=10)
+        #self.dataset_frame.grid_columnconfigure(1, weight=10)
         
         #sub frame
         self.dataset_frame_subframe = ctk.CTkFrame(self.dataset_frame,width=400, corner_radius=20)
@@ -706,10 +713,10 @@ class App(ctk.CTk):
         self.data_frame.grid_columnconfigure(0, weight=1)
         
         #self.dataset_frame_subframe = ctk.CTkFrame(self.data_frame,width=400, corner_radius=20)
-        self.dataset_frame_subframe = ctk.CTkFrame(self.data_frame,width=400, corner_radius=20)
-        self.dataset_frame_subframe.grid(row=2, column=0,sticky="nsew", padx=20, pady=5) 
+        self.data_frame_subframe = ctk.CTkFrame(self.data_frame,width=400, corner_radius=20)
+        self.data_frame_subframe.grid(row=2, column=0,sticky="nsew", padx=20, pady=5) 
         self.create_data_settings_widgets()
-        self.apply_general_style_to_widgets(self.dataset_frame_subframe)
+        self.apply_general_style_to_widgets(self.data_frame_subframe)
         #self.data_frame_concepts_subframe_host = ScrollableFrame(self.data_frame, width=800, height=800)
         self.data_frame_concepts_subframe = ctk.CTkFrame(self.data_frame,width=400, corner_radius=20)
         self.data_frame_concepts_subframe.grid(row=3, column=0,sticky="nsew", padx=20, pady=5)
@@ -741,7 +748,6 @@ class App(ctk.CTk):
         
         self.playground_frame = ctk.CTkFrame(self, width=140, corner_radius=0,fg_color='transparent')
         self.playground_frame.grid_columnconfigure(0, weight=1)
-        self.playground_frame.grid_columnconfigure(1, weight=1)
         #sub frame
         self.playground_frame_subframe = ctk.CTkFrame(self.playground_frame,width=400, corner_radius=20)
         #self.playground_frame_subframe.grid_columnconfigure(0, weight=5)
@@ -772,8 +778,8 @@ class App(ctk.CTk):
 
         self.select_frame_by_name('general') 
         self.update()
-        return
-        print('test')
+        #return
+        #print('test')
         '''
         self.frame.pack(pady=20, padx=20, fill="both", expand=True)
         
@@ -846,75 +852,6 @@ class App(ctk.CTk):
         #self.notebook.bind("<<NotebookTabChanged>>", self.on_tab_changed)
         '''
         #variables
-        
-        self.sample_prompts = []
-        self.number_of_sample_prompts = len(self.sample_prompts)
-        self.sample_prompt_labels = []
-        self.input_model_path = ""
-        self.vae_model_path = ""
-        self.output_path = "models/model_name"
-        self.send_telegram_updates = False
-        self.telegram_token = "TOKEN"
-        self.telegram_chat_id = "ID"
-        self.seed_number = 3434554
-        self.resolution = 512
-        self.batch_size = 1
-        self.num_train_epochs = 5
-        self.accumulation_steps = 1
-        self.mixed_precision = "fp16"
-        self.learning_rate = "5e-6"
-        self.learning_rate_schedule = "constant"
-        self.learning_rate_warmup_steps = 0
-        self.concept_list_json_path = "concept_list.json"
-        self.save_and_sample_every_x_epochs = 5
-        self.train_text_encoder = True
-        self.use_8bit_adam = True
-        self.use_gradient_checkpointing = True
-        self.num_class_images = 200
-        self.add_class_images_to_training = False
-        self.sample_batch_size = 1
-        self.save_sample_controlled_seed = []
-        self.delete_checkpoints_when_full_drive = True
-        self.use_image_names_as_captions = True
-        self.num_samples_to_generate = 1
-        self.auto_balance_concept_datasets = True
-        self.sample_width = 512
-        self.sample_height = 512
-        self.save_latents_cache = True
-        self.regenerate_latents_cache = False
-        self.use_aspect_ratio_bucketing = True
-        self.do_not_use_latents_cache = True
-        self.with_prior_reservation = False
-        self.prior_loss_weight = 1.0
-        self.sample_random_aspect_ratio = False
-        self.add_controlled_seed_to_sample = []
-        self.sample_on_training_start = False
-        self.concept_template = {'instance_prompt': 'subject', 'class_prompt': 'a photo of class', 'instance_data_dir':'./data/subject','class_data_dir':'./data/subject_class'}
-        self.concepts = []
-        self.play_input_model_path = ""
-        self.play_postive_prompt = ""
-        self.play_negative_prompt = ""
-        self.play_seed = -1
-        self.play_num_samples = 1
-        self.play_sample_width = 512
-        self.play_sample_height = 512
-        self.play_cfg = 7.5
-        self.play_steps = 25
-        self.schedulers = ["DPMSolverMultistepScheduler", "PNDMScheduler", 'DDIMScheduler','EulerAncestralDiscreteScheduler','EulerDiscreteScheduler']
-        self.quick_select_models = ["Stable Diffusion 1.4", "Stable Diffusion 1.5", "Stable Diffusion 2 Base (512)", "Stable Diffusion 2 (768)", 'Stable Diffusion 2.1 Base (512)', "Stable Diffusion 2.1 (768)"]
-        self.play_scheduler = 'DPMSolverMultistepScheduler'
-        self.pipe = None
-        self.current_model = None
-        self.play_save_image_button = None
-        self.dataset_repeats = 1
-        self.limit_text_encoder = 0
-        self.use_text_files_as_captions = False
-        self.ckpt_sd_version = None
-        self.convert_to_ckpt_after_training = False
-        self.execute_post_conversion = False
-        self.preview_images = []
-        self.disable_cudnn_benchmark = True
-        self.sample_step_interval = 500
         #self.create_widgets()
         '''
         for child in self.training_tab.children.values():
@@ -989,6 +926,7 @@ class App(ctk.CTk):
         #self.master.update()
         #check if there is a stabletune_last_run.json file
         #if there is, load the settings from it
+        '''
         if os.path.exists("stabletune_last_run.json"):
             try:
                 self.load_config(file_name="stabletune_last_run.json")
@@ -1023,7 +961,7 @@ class App(ctk.CTk):
             #self.load_config()
             pass
         #self.canvas.configure(scrollregion=self.canvas.bbox("all"))
-        '''
+        #print(self.concept_widgets[0].concept.concept_path)
     def create_default_variables(self):
         self.generation_window = None
         self.concept_widgets = []
@@ -1171,6 +1109,8 @@ class App(ctk.CTk):
     def on_tab_changed(self, event):
         #get the current selected notebook tab id
         tab_id = self.notebook.select()
+        #get the tab object
+        tab = self.notebook.nametowidget(tab_id)
         #get the tab index
         tab_index = self.notebook.index(tab_id)
         
@@ -1184,7 +1124,7 @@ class App(ctk.CTk):
         else:
             self.start_training_btn.grid()
         #self.canvas.bind('<Configure>', lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
-        self.master.update()
+        self.update()
         
     def open_file(self):
         print("open file")
@@ -1432,57 +1372,17 @@ class App(ctk.CTk):
         telegram_token_label_ttp = CreateToolTip(self.telegram_token_label, "The Telegram token for your bot.")
         self.telegram_token_label.grid(row=7, column=0, sticky="nsew")
         self.telegram_token_entry = ctk.CTkEntry(self.general_frame_subframe,  state="disabled")
-        self.telegram_token_entry.grid(row=7, column=1, sticky="nsew")
+        self.telegram_token_entry.grid(row=7, column=1,columnspan=3, sticky="nsew")
         self.telegram_token_entry.insert(0, self.telegram_token)
         #create telegram chat id dark mode
         self.telegram_chat_id_label = ctk.CTkLabel(self.general_frame_subframe, text="Telegram Chat ID",  state="disabled")
         telegram_chat_id_label_ttp = CreateToolTip(self.telegram_chat_id_label, "The Telegram chat ID to send updates to.")
         self.telegram_chat_id_label.grid(row=8, column=0, sticky="nsew")
         self.telegram_chat_id_entry = ctk.CTkEntry(self.general_frame_subframe,  state="disabled")
-        self.telegram_chat_id_entry.grid(row=8, column=1, sticky="nsew")
+        self.telegram_chat_id_entry.grid(row=8, column=1,columnspan=3, sticky="nsew")
         self.telegram_chat_id_entry.insert(0, self.telegram_chat_id)
         
-        #create a label for the subframe guide
-        #self.general_frame_subframe_guide_label = ctk.CTkLabel(self.general_frame_subframe_side_guide, text="Welcome!", font=ctk.CTkFont(family="Arial", size=20, weight="bold"))
-        #self.general_frame.pack(side="top", fill="both", expand=True)
-        #self.general_frame_subframe_guide_label.grid(row=0, column=0, sticky="nsew")
-        #self.general_frame_subframe_guide_label = ctk.CTkLabel(self.general_frame_subframe_side_guide, text="This is the general settings page, here you can set the general settings for the training.")
-        #self.general_frame_subframe_guide_label.grid(row=1, column=0, sticky="nsew")
-        return
-        #add tip label
-        #create vae model path dark mode
-        
-        #create output path dark mode
-        
-        #create a checkbox wether to convert to ckpt after training
-        self.convert_to_ckpt_after_training_label = ctk.CTkLabel(self.general_frame_subframe, text="Convert to CKPT after training?")
-        convert_to_ckpt_label_ttp = CreateToolTip(self.convert_to_ckpt_after_training_label, "Convert the model to a tensorflow checkpoint after training.")
-        self.convert_to_ckpt_after_training_label.grid(row=6, column=0, sticky="nsew")
-        self.convert_to_ckpt_after_training_var = tk.IntVar()
-        self.convert_to_ckpt_after_training_checkbox = ctk.CTkSwitch(self.general_frame_subframe,variable=self.convert_to_ckpt_after_training_var)
-        self.convert_to_ckpt_after_training_checkbox.grid(row=6, column=1, sticky="nsew")
-        #use telegram updates dark mode
-        self.send_telegram_updates_label = ctk.CTkLabel(self.general_frame_subframe, text="Send Telegram Updates")
-        send_telegram_updates_label_ttp = CreateToolTip(self.send_telegram_updates_label, "Use Telegram updates to monitor training progress, must have a Telegram bot set up.")
-        self.send_telegram_updates_label.grid(row=7, column=0, sticky="nsew")
-        #create checkbox to toggle telegram updates and show telegram token and chat id
-        self.send_telegram_updates_var = tk.IntVar()
-        self.send_telegram_updates_checkbox = ctk.CTkSwitch(self.general_frame_subframe,variable=self.send_telegram_updates_var, command=self.toggle_telegram_settings)
-        self.send_telegram_updates_checkbox.grid(row=7, column=1, sticky="nsew")
-        #create telegram token dark mode
-        self.telegram_token_label = ctk.CTkLabel(self.general_frame_subframe, text="Telegram Token",  state="disabled")
-        telegram_token_label_ttp = CreateToolTip(self.telegram_token_label, "The Telegram token for your bot.")
-        self.telegram_token_label.grid(row=8, column=0, sticky="nsew")
-        self.telegram_token_entry = ctk.CTkEntry(self.general_frame_subframe,  state="disabled")
-        self.telegram_token_entry.grid(row=8, column=1, sticky="nsew")
-        self.telegram_token_entry.insert(0, self.telegram_token)
-        #create telegram chat id dark mode
-        self.telegram_chat_id_label = ctk.CTkLabel(self.general_frame_subframe, text="Telegram Chat ID",  state="disabled")
-        telegram_chat_id_label_ttp = CreateToolTip(self.telegram_chat_id_label, "The Telegram chat ID to send updates to.")
-        self.telegram_chat_id_label.grid(row=9, column=0, sticky="nsew")
-        self.telegram_chat_id_entry = ctk.CTkEntry(self.general_frame_subframe,  state="disabled")
-        self.telegram_chat_id_entry.grid(row=9, column=1, sticky="nsew")
-        self.telegram_chat_id_entry.insert(0, self.telegram_chat_id)
+
     
     def create_trainer_settings_widgets(self):
         self.training_frame_title = ctk.CTkLabel(self.training_frame, text="Training Settings", font=ctk.CTkFont(size=20, weight="bold"))
@@ -1667,7 +1567,7 @@ class App(ctk.CTk):
         #self.dataset_settings_label = ctk.CTkLabel(self.dataset_tab, text="Dataset Settings", font=("Arial", 12, "bold"))
         #self.dataset_settings_label.grid(row=0, column=0, sticky="nsew")
         self.dataset_frame_title = ctk.CTkLabel(self.dataset_frame, text="Dataset Settings", font=ctk.CTkFont(size=20, weight="bold"))
-        self.dataset_frame_title.grid(row=0, column=0, padx=20, pady=20)  
+        self.dataset_frame_title.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")  
         #create use text files as captions checkbox
         self.use_text_files_as_captions_var = tk.IntVar()
         self.use_text_files_as_captions_var.set(self.use_text_files_as_captions)
@@ -1847,27 +1747,38 @@ class App(ctk.CTk):
         self.data_frame_title = ctk.CTkLabel(self.data_frame, text='Data Settings', font=ctk.CTkFont(size=20, weight="bold"))
         self.data_frame_title.grid(row=0, column=0,columnspan=2, padx=20, pady=20)    
         #add load concept from json button
-        self.load_concept_from_json_button = ctk.CTkButton(self.dataset_frame_subframe, text="Load Concepts From JSON",  command=self.load_concept_from_json)
-        self.load_concept_from_json_button.grid(row=1, column=0, sticky="nsew")
+        #add empty label
+        empty = ctk.CTkLabel(self.data_frame_subframe, text="",width=40)
+        empty.grid(row=1, column=0, sticky="nsew")
+        self.load_concept_from_json_button = ctk.CTkButton(self.data_frame_subframe, text="Load Concepts From JSON",  command=self.load_concept_from_json)
+        self.load_concept_from_json_button.grid(row=1, column=1, sticky="e")
         #load_concept_from_json_button_ttp = CreateToolTip(self.load_concept_from_json_button, "Load concepts from a JSON file, compatible with Shivam's concept list.")
         #self.load_concept_from_json_button.grid(row=1, column=0, sticky="nsew")
         #add save concept to json button
-        self.save_concept_to_json_button = ctk.CTkButton(self.dataset_frame_subframe, text="Save Concepts To JSON",  command=self.save_concept_to_json)
-        self.save_concept_to_json_button.grid(row=1, column=1, sticky="nsew")
+        self.save_concept_to_json_button = ctk.CTkButton(self.data_frame_subframe, text="Save Concepts To JSON",  command=self.save_concept_to_json)
+        self.save_concept_to_json_button.grid(row=1, column=2, sticky="e")
         #save_concept_to_json_button_ttp = CreateToolTip(self.save_concept_to_json_button, "Save concepts to a JSON file, compatible with Shivam's concept list.")
         #self.save_concept_to_json_button.grid(row=1, column=1, sticky="nsew")
         #create a button to add concept
-        self.add_concept_button = ctk.CTkButton(self.dataset_frame_subframe, text="Add Concept",  command=self.add_new_concept)
-        self.add_concept_button.grid(row=1, column=2, sticky="nsew")
+        self.add_concept_button = ctk.CTkButton(self.data_frame_subframe, text="Add Concept",  command=self.add_new_concept,width=50)
+        self.add_concept_button.grid(row=1, column=3, sticky="e")
         #self.add_concept_button.grid(row=2, column=0, sticky="nsew")
         #create a button to remove concept
-        self.remove_concept_button = ctk.CTkButton(self.dataset_frame_subframe, text="Remove Concept",  command=self.remove_new_concept)
-        self.remove_concept_button.grid(row=1, column=3, sticky="nsew")
+        self.remove_concept_button = ctk.CTkButton(self.data_frame_subframe, text="Remove Concept",  command=self.remove_new_concept,width=50)
+        self.remove_concept_button.grid(row=1, column=4, sticky="e")
         #self.remove_concept_button.grid(row=2, column=1, sticky="nsew")
-        self.concept_entries = []
-        self.concept_labels = []
-        self.concept_file_dialog_buttons = []
-    
+        self.previous_page_button = ctk.CTkButton(self.data_frame_subframe, text="Previous Page",  command=self.next_concept_page,width=50, state="disabled")
+        self.previous_page_button.grid(row=1, column=5, sticky="e")
+        #self.remove_concept_button.grid(row=2, column=1, sticky="nsew")
+        self.next_page_button = ctk.CTkButton(self.data_frame_subframe, text="Next Page",  command=self.next_concept_page,width=50, state="disabled")
+        self.next_page_button.grid(row=1, column=6, sticky="e")
+        #self.remove_concept_button.grid(row=2, column=1, sticky="nsew")
+        #self.concept_entries = []
+        #self.concept_labels = []
+        #self.concept_file_dialog_buttons = []
+    def next_concept_page(self):
+        self.concept_page += 1
+        self.update_concept_page()
     def create_plyaground_widgets(self):
         self.playground_title = ctk.CTkLabel(self.playground_frame, text="Model Playground", font=ctk.CTkFont(size=20, weight="bold"))
         #add play model entry with button to open file dialog
@@ -1941,14 +1852,14 @@ class App(ctk.CTk):
         self.toolbox_title = ctk.CTkLabel(self.toolbox_frame, text="Toolbox", font=ctk.CTkFont(size=20, weight="bold"))
         self.toolbox_title.grid(row=0, column=0, padx=20, pady=20)  
         #empty row
-        self.empty_row = ctk.CTkLabel(self.toolbox_frame_subframe, text="")
-        self.empty_row.grid(row=1, column=0, sticky="nsew")
+        #self.empty_row = ctk.CTkLabel(self.toolbox_frame_subframe, text="")
+        #self.empty_row.grid(row=1, column=0, sticky="nsew")
         #add a label model tools title
         self.model_tools_label = ctk.CTkLabel(self.toolbox_frame_subframe, text="Model Tools",  font=ctk.CTkFont(size=20, weight="bold"))
-        self.model_tools_label.grid(row=2, column=0,columnspan=3, sticky="nsew")
+        self.model_tools_label.grid(row=2, column=0,columnspan=3, sticky="nsew",pady=10)
         #empty row
-        self.empty_row = ctk.CTkLabel(self.toolbox_frame_subframe, text="")
-        self.empty_row.grid(row=3, column=0, sticky="nsew")
+        #self.empty_row = ctk.CTkLabel(self.toolbox_frame_subframe, text="")
+        #self.empty_row.grid(row=3, column=0, sticky="nsew")
         #add a button to convert to ckpt
         self.convert_to_ckpt_button = ctk.CTkButton(self.toolbox_frame_subframe, text="Convert Diffusers To CKPT", command=lambda:self.convert_to_ckpt())
         self.convert_to_ckpt_button.grid(row=4, column=0, columnspan=1, sticky="nsew")
@@ -1975,20 +1886,6 @@ class App(ctk.CTk):
         #add download dataset button
         self.download_dataset_button = ctk.CTkButton(self.toolbox_frame_subframe, text="Download Dataset", command=self.download_dataset)
         self.download_dataset_button.grid(row=9, column=2, sticky="nsew")
-    def create_widgets(self):
-        
-        
-        
-
-        
-        
-        self.all_entries_list = [self.input_model_path_entry, self.seed_entry,self.play_seed_entry,self.play_model_entry,self.output_path_entry,self.play_prompt_entry,self.sample_width_entry,self.train_epochs_entry,self.learning_rate_entry,self.sample_height_entry,self.telegram_token_entry,self.vae_model_path_entry,self.dataset_repeats_entry,self.download_dataset_entry,self.num_warmup_steps_entry,self.download_dataset_entry,self.telegram_chat_id_entry,self.save_every_n_epochs_entry,self.play_negative_prompt_entry,self.number_of_class_images_entry,self.number_of_samples_to_generate_entry,self.prior_loss_preservation_weight_entry]
-        for entry in self.all_entries_list:
-            entry.bind("<Button-3>", self.create_right_click_menu)
-        self.start_training_btn = ctk.CTkButton(self.frame, text="Start Training!", command=self.process_inputs,font=("Helvetica", 12, "bold"))
-        self.start_training_btn.pack(side="bottom", fill="both")
-        #make a list of all the checkboxes
-        #self.start_training_btn.grid(row=0, column=1,columnspan=1, sticky="nsew")
     def playground_find_latest_generated_model(self):
         last_output_path = self.output_path_entry.get()
         last_num_epochs = self.train_epochs_entry.get()
@@ -2024,17 +1921,17 @@ class App(ctk.CTk):
         import captionBuddy
         #self.master.overrideredirect(False)
         self.iconify()
-        cb_root = tk.Tk()
-        cb_icon =PhotoImage(master=cb_root,file = "resources/stableTuner_icon.png")
-        cb_root.iconphoto(False, cb_icon)
+        #cb_root = tk.Tk()
+        cb_icon =PhotoImage(master=self,file = "resources/stableTuner_icon.png")
+        #cb_root.iconphoto(False, cb_icon)
         app2 = captionBuddy.ImageBrowser(self)
-
-        app = cb_root.mainloop()
+        app2.iconphoto(False, cb_icon)
+        #app = app2.mainloop()
         #check if app2 is running
         
         
-        self.master.overrideredirect(True)
-        self.master.deiconify()
+        #self.master.overrideredirect(True)
+        #self.master.deiconify()
     def disable_with_prior_loss(self, *args):
         if self.use_aspect_ratio_bucketing_var.get() == 1:
             self.with_prior_loss_preservation_var.set(0)
@@ -2137,10 +2034,10 @@ class App(ctk.CTk):
                 import random
                 seed = random.randint(0, 1000000)
             generator = torch.Generator("cuda").manual_seed(seed)
-            self.play_generate_image_button["text"] = "Generating, Please stand by..."
+            #self.play_generate_image_button["text"] = "Generating, Please stand by..."
             #self.play_generate_image_button.configure(fg=self.dark_mode_title_var)
-            self.play_generate_image_button.update()
-            image = self.pipe(prompt=prompt,negative_prompt=negative_prompt,height=sample_height,width=sample_width, guidance_scale=cfg, num_inference_steps=steps,generator=generator).images[0]
+            #self.play_generate_image_button.update()
+            image = self.pipe(prompt=prompt,negative_prompt=negative_prompt,height=int(sample_height),width=int(sample_width), guidance_scale=cfg, num_inference_steps=int(steps),generator=generator).images[0]
             self.play_current_image = image
             #image is PIL image
             if self.generation_window is None:
@@ -2161,9 +2058,9 @@ class App(ctk.CTk):
             #refresh the window
             if self.play_save_image_button == None:
                 self.play_save_image_button = ctk.CTkButton(self.playground_frame_subframe, text="Save Image", command=self.play_save_image)
-                self.play_save_image_button.grid(row=10, column=2, columnspan=1, sticky="nsew")
+                self.play_save_image_button.grid(row=10, column=2, columnspan=1, sticky="ew", padx=5, pady=5)
             #self.master.update()
-            self.play_generate_image_button["text"] = "Generate Image"
+            #self.play_generate_image_button["text"] = "Generate Image"
             #normal text
             #self.play_generate_image_button.configure(fg=self.dark_mode_text_var)
     def convert_ckpt_to_diffusers(self,ckpt_path=None, output_path=None):
@@ -2217,7 +2114,7 @@ class App(ctk.CTk):
         self.convert_model_dialog.resizable(False, False)
         self.convert_model_dialog.grab_set()
         self.convert_model_dialog.focus_set()
-        self.master.update()
+        self.update()
         converters.Convert_Diffusers_to_SD(model_path, output_path)
         self.convert_model_dialog.destroy()
         #messagebox.showinfo("Conversion Complete", "Conversion Complete")
@@ -2317,6 +2214,7 @@ class App(ctk.CTk):
         #print(row)
         concept_widget.grid(row=row, column=column, sticky="e",padx=13, pady=10)
         self.concept_widgets.append(concept_widget)
+        self.update()
         #print(len(self.concept_widgets))
         #if row == 2:
         #    for concept in self.concept_widgets:
@@ -2361,7 +2259,7 @@ class App(ctk.CTk):
             ins_data_path_entry.insert(0, inst_data_path_val)
             ins_data_path_entry.focus_set()
             #focus on main window
-            self.master.focus_set()
+            self.focus_set()
         #add a button to open a file dialog to select the instance data path
         ins_data_path_file_dialog_button = ctk.CTkButton(self.data_frame_concepts_subframe, text="...", command=lambda: self.open_file_dialog(ins_data_path_entry), bg_color='#333333')
         ins_data_path_file_dialog_button.grid(row=6 + (len(self.concept_labels)*6), column=2, sticky="nsew")
@@ -2548,7 +2446,7 @@ class App(ctk.CTk):
                 self.convert_model_dialog.resizable(False, False)
                 self.convert_model_dialog.grab_set()
                 self.convert_model_dialog.focus_set()
-                self.master.update()
+                self.update()
                 convert = converters.Convert_SD_to_Diffusers(sd_file,model_path,prediction_type=prediction,version=version)
                 self.convert_model_dialog.destroy()
 
@@ -2583,41 +2481,32 @@ class App(ctk.CTk):
         else:
             file = open(filename, 'w')
         if file != None:
-            self.formatted_concepts = []
-            concepts = self.concepts.copy()
-            for i in range(len(concepts)):
-                newDict = {}
-                conceptDict = concepts[i]
-                for key in conceptDict:
-                    if isinstance(conceptDict[key], str) or isinstance(conceptDict[key], int) or isinstance(conceptDict[key], float) or isinstance(conceptDict[key], bool):
-                        val = conceptDict[key]
-                    else:
-                        val = conceptDict[key].get()
-                    newDict[key] = val
-                self.formatted_concepts.append(newDict)
-            concepts = None
-            #write the json to the file
-            #if the file is not none
+            concepts = []
+            for widget in self.concept_widgets:
+                concept = widget.concept
+                concept_dict = {'instance_prompt' : concept.concept_name, 'class_prompt' : concept.concept_class_name, 'instance_data_dir' : concept.concept_path, 'class_data_dir' : concept.concept_class_path, 'do_not_balance' : concept.concept_do_not_balance, 'use_sub_dirs' : concept.process_sub_dirs}
+                concepts.append(concept_dict)
             if file != None:
                 #write the json to the file
-                json.dump(self.formatted_concepts, file, indent=4)
+                json.dump(concepts, file, indent=4)
                 #close the file
                 file.close()
     def load_concept_from_json(self):
         #
         #dialog
         concept_json = fd.askopenfilename(title = "Select file",filetypes = (("json files","*.json"),("all files","*.*")))
-        for i in range(len(self.concept_entries)):
-                self.remove_concept()
+        for i in range(len(self.concept_widgets)):
+                self.remove_new_concept()
         self.concept_entries = []
         self.concept_labels = []
         self.concepts = []
         with open(concept_json, "r") as f:
             concept_json = json.load(f)
         for concept in concept_json:
-            self.add_concept(inst_prompt_val=concept["instance_prompt"], class_prompt_val=concept["class_prompt"], inst_data_path_val=concept["instance_data_dir"], class_data_path_val=concept["class_data_dir"], do_not_balance_val=concept["do_not_balance"])
-        #self.canvas.configure(scrollregion=self.canvas.bbox("all"))
-        self.master.update()
+            #print(concept)
+            concept = Concept(concept_name=concept["instance_prompt"], class_name=concept["class_prompt"], concept_path=concept["instance_data_dir"], class_path=concept["class_data_dir"],balance_dataset=concept["do_not_balance"], process_sub_dirs=concept["use_sub_dirs"])
+            self.add_new_concept(concept)        #self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        self.update()
         return concept_json
     def remove_concept(self):
         #remove the last concept
@@ -2639,6 +2528,16 @@ class App(ctk.CTk):
             self.concept_file_dialog_buttons.pop()
             self.preview_images.pop()
             #self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+    def remove_new_concept(self):
+        #remove the last concept
+        #print(self.concept_widgets)
+        if len(self.concept_widgets) > 0:
+            
+            self.concept_widgets[-1].destroy()
+            self.concept_widgets.pop()
+            #self.preview_images.pop()
+            #self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+            
     def toggle_telegram_settings(self):
         #print(self.send_telegram_updates_var.get())
         if self.send_telegram_updates_var.get() == 1:
@@ -2653,10 +2552,10 @@ class App(ctk.CTk):
             self.telegram_chat_id_entry.configure(state="disabled")
     def add_controlled_seed_sample(self,value=""):
         if len(self.controlled_seed_sample_labels) <= 4:
-            self.controlled_seed_sample_labels.append(ctk.CTkLabel(self.sampling_frame_subframe,bg_color='#333333' ,text="Controlled Seed Sample " + str(len(self.controlled_seed_sample_labels)+1)))
-            self.controlled_seed_sample_labels[-1].grid(row=self.controlled_sample_row + len(self.sample_prompts) + len(self.controlled_seed_sample_labels), column=2, padx=10, pady=5,sticky="w")
+            self.controlled_seed_sample_labels.append(ctk.CTkLabel(self.sampling_frame_subframe,bg_color='transparent' ,text="Controlled Seed Sample " + str(len(self.controlled_seed_sample_labels)+1)))
+            self.controlled_seed_sample_labels[-1].grid(row=self.controlled_sample_row + len(self.sample_prompts) + len(self.controlled_seed_sample_labels), column=2, padx=10, pady=5,sticky="nwes")
             #create entry
-            entry = ctk.CTkEntry(self.sampling_frame_subframe,bg_color='#333333')
+            entry = ctk.CTkEntry(self.sampling_frame_subframe,width=250)
             entry.bind("<Button-3>",self.create_right_click_menu)
             self.controlled_seed_sample_entries.append(entry)
             self.controlled_seed_sample_entries[-1].grid(row=self.controlled_sample_row + len(self.sample_prompts) + len(self.controlled_seed_sample_entries), column=3, padx=10, pady=5,sticky="w")
@@ -2702,12 +2601,12 @@ class App(ctk.CTk):
     def add_sample_prompt(self,value=""):
         #add a new label and entry
         if len(self.sample_prompt_entries) <= 4:
-            self.sample_prompt_labels.append(ctk.CTkLabel(self.sampling_frame_subframe, text="Sample Prompt " + str(len(self.sample_prompt_labels)+1),bg_color='#333333'))
-            self.sample_prompt_labels[-1].grid(row=self.sample_prompt_row + len(self.sample_prompt_labels) - 1, column=2, padx=10, pady=5,sticky="w")
-            entry = ctk.CTkEntry(self.sampling_frame_subframe,bg_color='#333333')
+            self.sample_prompt_labels.append(ctk.CTkLabel(self.sampling_frame_subframe, text="Sample Prompt " + str(len(self.sample_prompt_labels)+1),bg_color='transparent'))
+            self.sample_prompt_labels[-1].grid(row=self.sample_prompt_row + len(self.sample_prompt_labels) - 1, column=2, padx=10, pady=5,sticky="nsew")
+            entry = ctk.CTkEntry(self.sampling_frame_subframe,width=250)
             entry.bind("<Button-3>", self.create_right_click_menu)
             self.sample_prompt_entries.append(entry)
-            self.sample_prompt_entries[-1].grid(row=self.sample_prompt_row + len(self.sample_prompt_labels) - 1, column=3, padx=10, pady=5,sticky="w")
+            self.sample_prompt_entries[-1].grid(row=self.sample_prompt_row + len(self.sample_prompt_labels) - 1, column=3, padx=10, pady=5,sticky="nsew")
             
             if value != "":
                 self.sample_prompt_entries[-1].insert(0, value)
@@ -2739,15 +2638,16 @@ class App(ctk.CTk):
         for i in range(len(self.controlled_seed_sample_entries)):
             self.add_controlled_seed_to_sample.append(self.controlled_seed_sample_entries[i].get())
         
-        self.master.update()
+        self.update()
     def update_concepts(self):
         #update the concepts list
         #if the first index is a dict
         if isinstance(self.concepts, dict):
             return
         self.concepts = []
-        for i in range(len(self.concept_entries)):
-            self.concepts.append({"instance_prompt": self.concept_entries[i][0].get(), "class_prompt": self.concept_entries[i][1].get(), "instance_data_dir": self.concept_entries[i][2].get(), "class_data_dir": self.concept_entries[i][3].get(), "do_not_balance": self.concept_entries[i][4].get()})
+        for i in range(len(self.concept_widgets)):
+            concept = self.concept_widgets[i].concept
+            self.concepts.append({'instance_prompt' : concept.concept_name, 'class_prompt' : concept.concept_class_name, 'instance_data_dir' : concept.concept_path, 'class_data_dir' : concept.concept_class_path, 'do_not_balance' : concept.concept_do_not_balance, 'use_sub_dirs' : concept.process_sub_dirs})
     def save_config(self, config_file=None):
         #save the configure file
         import json
@@ -2811,6 +2711,7 @@ class App(ctk.CTk):
         configure['execute_post_conversion'] = self.convert_to_ckpt_after_training_var.get()
         configure['disable_cudnn_benchmark'] = self.disable_cudnn_benchmark_var.get()
         configure['sample_step_interval'] = self.sample_step_interval_entry.get()
+
         #save the configure file
         #if the file exists, delete it
         if os.path.exists(file_name):
@@ -2830,13 +2731,14 @@ class App(ctk.CTk):
 
         #load concepts
         try:
-            for i in range(len(self.concept_entries)):
-                self.remove_concept()
+            for i in range(len(self.concept_widgets)):
+                self.remove_new_concept()
             self.concept_entries = []
             self.concept_labels = []
             self.concepts = []
             for i in range(len(configure["concepts"])):
-                self.add_concept(inst_prompt_val=configure["concepts"][i]["instance_prompt"], class_prompt_val=configure["concepts"][i]["class_prompt"], inst_data_path_val=configure["concepts"][i]["instance_data_dir"], class_data_path_val=configure["concepts"][i]["class_data_dir"],do_not_balance_val=configure["concepts"][i]["do_not_balance"])
+                concept = Concept(concept_name=configure["concepts"][i]["instance_prompt"], class_name=configure["concepts"][i]["class_prompt"], concept_path=configure["concepts"][i]["instance_data_dir"], class_path=configure["concepts"][i]["class_data_dir"],balance_dataset=configure["concepts"][i]["do_not_balance"],process_sub_dirs=configure["concepts"][i]["use_sub_dirs"])
+                self.add_new_concept(concept)
         except Exception as e:
             print(e)
             pass
@@ -2931,7 +2833,7 @@ class App(ctk.CTk):
 
         #self.update_controlled_seed_sample()
         #self.update_sample_prompts()
-        self.master.update()
+        self.update()
         #self.canvas.configure(scrollregion=self.canvas.bbox("all"))
     
     def process_inputs(self):
@@ -3002,7 +2904,7 @@ class App(ctk.CTk):
                             self.regenerate_latent_cache = True
                             #show message
                             
-                            messagebox.showinfo("StableTune", "Configuration changed, regenerating latent cache")
+                            messagebox.showinfo("StableTuner", "Configuration changed, regenerating latent cache")
                     except:
                         print("Error trying to see if regenerating latent cache is needed, this means it probably needs to be regenerated and ST was updated recently.")
                         pass
@@ -3095,19 +2997,14 @@ class App(ctk.CTk):
             f.write(batBase)
         #close the window
         self.destroy()
-        self.master.destroy()
+        #self.master.destroy()
         #run the bat file
-        self.master.quit()
+        self.quit()
         train = os.system(r".\scripts\train.bat")
         #if exit code is 0, then the training was successful
         if train == 0:
-            root = tk.Tk()
-            app = App(master=root)
-            #self.play_model_entry.insert(0, self.output_path_entry.get()+os.sep+self.train_epochs_entry.get())
-            #switch to the play tab
-            #self.notebook.select(5)
-            #self.master.update()
-            app.mainloop() 
+            app = App()
+            app.mainloop()
         else:
             #cancel conversion on restart
             with open('stabletune_last_run.json', 'r') as f:
