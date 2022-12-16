@@ -73,14 +73,14 @@ class Convert_SD_to_Diffusers():
         if self.version == 'v1':
             is_v1 = True
             is_v2 = False
-        elif self.version == 'v2':
+        if self.version == 'v2':
             is_v1 = False
             is_v2 = True
         if is_v2 == True and prediction_type == 'vprediction':
             reference_diffusers_model = 'stabilityai/stable-diffusion-2'
-        elif is_v2 == True and prediction_type == 'epsilon':
+        if is_v2 == True and prediction_type == 'epsilon':
             reference_diffusers_model = 'stabilityai/stable-diffusion-2-base'
-        elif is_v1 == True and prediction_type == 'epsilon':
+        if is_v1 == True and prediction_type == 'epsilon':
             reference_diffusers_model = 'runwayml/stable-diffusion-v1-5'
         dtype = 'fp16' if self.half else None
         v2_model = True if is_v2 else False
