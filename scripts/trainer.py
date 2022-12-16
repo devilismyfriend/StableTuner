@@ -897,7 +897,7 @@ class DreamBoothDataset(Dataset):
 
             if with_prior_preservation:
                 for i in range(repeats):
-                    self.__recurse_data_root(self, concept['class_data_dir'],use_sub_dirs=use_sub_dirs,class_images=True)
+                    self.__recurse_data_root(self, concept,use_sub_dirs=False,class_images=True)
         random.shuffle(self.image_paths)
 
         self.num_instance_images = len(self.image_paths)
@@ -918,15 +918,15 @@ class DreamBoothDataset(Dataset):
         #if recurse root is a dict
         if isinstance(recurse_root, dict):
             concept_token = recurse_root['instance_prompt']
-            recurse_root = recurse_root['instance_data_dir']
+            data = recurse_root['instance_data_dir']
             
             if class_images:
                 concept_token = recurse_root['class_prompt']
-                recurse_root = recurse_root['class_data_dir']
+                data = recurse_root['class_data_dir']
         else:
             concept_token = None
-        for f in os.listdir(recurse_root):
-            current = os.path.join(recurse_root, f)
+        for f in os.listdir(data):
+            current = os.path.join(data, f)
 
             if os.path.isfile(current):
                 ext = os.path.splitext(f)[1].lower()
@@ -938,13 +938,16 @@ class DreamBoothDataset(Dataset):
         if use_sub_dirs:
             sub_dirs = []
 
-            for d in os.listdir(recurse_root):
-                current = os.path.join(recurse_root, d)
+            for d in os.listdir(data):
+                current = os.path.join(data, d)
                 if os.path.isdir(current):
                     sub_dirs.append(current)
 
             for dir in sub_dirs:
-                self.__recurse_data_root(self=self, recurse_root={'instance_data_dir' : dir, 'instance_prompt' : concept_token})
+                if class_images != False:
+                    self.__recurse_data_root(self=self, recurse_root={'instance_data_dir' : dir, 'instance_prompt' : concept_token})
+                else:
+                    self.__recurse_data_root(self=self, recurse_root={'class_data_dir' : dir, 'class_prompt' : concept_token})
         
     def __len__(self):
         return self._length
