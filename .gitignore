@@ -2382,3 +2382,10 @@ src/theme/dark.tcl
 src/theme/light.tcl
 resources/DeepSpeed/
 image_gui_exmaple.py
+resources/cudnn_windows/cudnn_windows/cudnn64_8.dll
+resources/cudnn_windows/cudnn_windows/cudnn_adv_infer64_8.dll
+resources/cudnn_windows/cudnn_windows/cudnn_adv_train64_8.dll
+resources/cudnn_windows/cudnn_windows/cudnn_cnn_infer64_8.dll
+resources/cudnn_windows/cudnn_windows/cudnn_cnn_train64_8.dll
+resources/cudnn_windows/cudnn_windows/cudnn_ops_infer64_8.dll
+resources/cudnn_windows/cudnn_windows/cudnn_ops_train64_8.dll

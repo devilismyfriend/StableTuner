@@ -18,7 +18,7 @@ import random
 import customtkinter as ctk
 from customtkinter import ThemeManager
 #main class
-ctk.set_appearance_mode("System")
+ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 class ImageBrowser(ctk.CTkToplevel):
     def __init__(self,mainProcess=None):

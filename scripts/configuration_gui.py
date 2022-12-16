@@ -15,7 +15,7 @@ import shutil
 
 import customtkinter as ctk
 import random
-ctk.set_appearance_mode("System")
+ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 #from scripts import converters
 #work in progress code, not finished, credits will be added at a later date.
