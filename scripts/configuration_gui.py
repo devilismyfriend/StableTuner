@@ -1242,18 +1242,22 @@ class App(ctk.CTk):
                 self.with_prior_loss_preservation_label.configure(state='normal')
                 self.prior_loss_preservation_weight_entry.configure(state='normal')
                 self.prior_loss_preservation_weight_label.configure(state='normal')
+                self.with_prior_loss_preservation_var.set(1)
         except:
             pass
         self.dreambooth_mode_selected = ctk.CTkLabel(self.general_frame_subframe_side_guide,fg_color='transparent', text="Dreambooth it is!\n I disabled irrelevant features for you.", font=ctk.CTkFont(size=14))
         self.dreambooth_mode_selected.pack(side="top", fill="x", expand=False, padx=10, pady=10)
         self.use_text_files_as_captions_checkbox.configure(state='disabled')
         self.use_text_files_as_captions_label.configure(state='disabled')
+        self.use_text_files_as_captions_var.set(0)
         #self.use_text_files_as_captions_checkbox.set(0)
         self.use_image_names_as_captions_label.configure(state='disabled')
         self.use_image_names_as_captions_checkbox.configure(state='disabled')
+        self.use_image_names_as_captions_var.set(0)
         #self.use_image_names_as_captions_checkbox.set(0)
         self.add_class_images_to_dataset_checkbox.configure(state='disabled')
         self.add_class_images_to_dataset_label.configure(state='disabled')
+        self.add_class_images_to_dataset_var.set(0)
         #self.add_class_images_to_dataset_checkbox.set(0)
         pass
     def fine_tune_mode(self):
@@ -1267,6 +1271,9 @@ class App(ctk.CTk):
                 self.use_image_names_as_captions_checkbox.configure(state='normal')
                 self.add_class_images_to_dataset_checkbox.configure(state='normal')
                 self.add_class_images_to_dataset_label.configure(state='normal')
+                self.use_text_files_as_captions_var.set(1)
+                self.use_image_names_as_captions_var.set(1)
+                self.add_class_images_to_dataset_var.set(0)
         except:
             pass
         try:
@@ -1281,6 +1288,8 @@ class App(ctk.CTk):
         #self.with_prior_loss_preservation_checkbox.set(0)
         self.prior_loss_preservation_weight_label.configure(state='disabled')
         self.prior_loss_preservation_weight_entry.configure(state='disabled')
+        self.with_prior_loss_preservation_var.set(0)
+
         #self.prior_loss_preservation_weight_entry.set(1.0)
         pass
     def lora_mode(self):
