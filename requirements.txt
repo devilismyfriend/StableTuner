@@ -12,3 +12,4 @@ fairscale
 timm
 OmegaConf
 safetensors
+customtkinter==5.0.3
