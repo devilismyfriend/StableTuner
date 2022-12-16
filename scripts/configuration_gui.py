@@ -600,7 +600,7 @@ class App(ctk.CTk):
         self.dark_mode_button_pressed_var = "#BB91B6"
         self.dark_mode_button_var = "#8ea0e1"
         self.dark_mode_text_var = "#c6c7c8"
-        self.title("StableTune")
+        self.title("StableTuner")
         self.configure(cursor="left_ptr")
         #resizable window
         self.resizable(True, True)
@@ -2034,10 +2034,10 @@ class App(ctk.CTk):
                 import random
                 seed = random.randint(0, 1000000)
             generator = torch.Generator("cuda").manual_seed(seed)
-            self.play_generate_image_button["text"] = "Generating, Please stand by..."
+            #self.play_generate_image_button["text"] = "Generating, Please stand by..."
             #self.play_generate_image_button.configure(fg=self.dark_mode_title_var)
-            self.play_generate_image_button.update()
-            image = self.pipe(prompt=prompt,negative_prompt=negative_prompt,height=sample_height,width=sample_width, guidance_scale=cfg, num_inference_steps=steps,generator=generator).images[0]
+            #self.play_generate_image_button.update()
+            image = self.pipe(prompt=prompt,negative_prompt=negative_prompt,height=int(sample_height),width=int(sample_width), guidance_scale=cfg, num_inference_steps=int(steps),generator=generator).images[0]
             self.play_current_image = image
             #image is PIL image
             if self.generation_window is None:
@@ -2058,9 +2058,9 @@ class App(ctk.CTk):
             #refresh the window
             if self.play_save_image_button == None:
                 self.play_save_image_button = ctk.CTkButton(self.playground_frame_subframe, text="Save Image", command=self.play_save_image)
-                self.play_save_image_button.grid(row=10, column=2, columnspan=1, sticky="nsew")
+                self.play_save_image_button.grid(row=10, column=2, columnspan=1, sticky="ew", padx=5, pady=5)
             #self.master.update()
-            self.play_generate_image_button["text"] = "Generate Image"
+            #self.play_generate_image_button["text"] = "Generate Image"
             #normal text
             #self.play_generate_image_button.configure(fg=self.dark_mode_text_var)
     def convert_ckpt_to_diffusers(self,ckpt_path=None, output_path=None):
@@ -2904,7 +2904,7 @@ class App(ctk.CTk):
                             self.regenerate_latent_cache = True
                             #show message
                             
-                            messagebox.showinfo("StableTune", "Configuration changed, regenerating latent cache")
+                            messagebox.showinfo("StableTuner", "Configuration changed, regenerating latent cache")
                     except:
                         print("Error trying to see if regenerating latent cache is needed, this means it probably needs to be regenerated and ST was updated recently.")
                         pass

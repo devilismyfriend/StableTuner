@@ -16,6 +16,7 @@ import numpy as np
 import requests
 import random
 import customtkinter as ctk
+from customtkinter import ThemeManager
 #main class
 ctk.set_appearance_mode("System")
 ctk.set_default_color_theme("blue")
@@ -204,11 +205,20 @@ class ImageBrowser(ctk.CTkToplevel):
     def batch_folder(self):
         #show imgs in folder askdirectory
         #ask user if to batch current folder or select folder
-        ask = tk.messagebox.askquestion("Batch Folder", "Batch current folder?")
-        if ask == 'yes':
+        try:
+            #check if self.folder is set
+            self.folder
+        except AttributeError:
+            self.folder = ''
+        if self.folder == '':
+            self.folder = fd.askdirectory(title="Select Folder to Batch Process", initialdir=os.getcwd())
             batch_input_dir = self.folder
         else:
-            batch_input_dir = fd.askdirectory(title="Select Folder to Batch Process", initialdir=os.getcwd())
+            ask = tk.messagebox.askquestion("Batch Folder", "Batch current folder?")
+            if ask == 'yes':
+                batch_input_dir = self.folder
+            else:
+                batch_input_dir = fd.askdirectory(title="Select Folder to Batch Process", initialdir=os.getcwd())
         ask2 = tk.messagebox.askquestion("Batch Folder", "Save output to same directory?")
         if ask2 == 'yes':
             batch_output_dir = batch_input_dir
@@ -226,12 +236,12 @@ class ImageBrowser(ctk.CTkToplevel):
                 self.image_list.append(os.path.join(batch_input_dir, file))
         self.image_index = 0
         #use progress bar class
-        pba = tk.Tk()
-        pba.title("Batch Processing")
+        #pba = tk.Tk()
+        #pba.title("Batch Processing")
         #remove icon
-        pba.wm_attributes('-toolwindow','True')
-        pb = ProgressbarWithCancel(pba)
-        pb.set_max(len(self.image_list))
+        #pba.wm_attributes('-toolwindow','True')
+        pb = ProgressbarWithCancel(max=len(self.image_list))
+        #pb.set_max(len(self.image_list))
         pb.set_progress(0)
         
         #if batch_output_dir doesn't exist, create it
@@ -242,10 +252,12 @@ class ImageBrowser(ctk.CTkToplevel):
             if radnom_chance == 0:
                 pb.set_random_label()
             if pb.is_cancelled():
-                pba.destroy()
+                pb.destroy()
                 return
             self.image_index = i
-            pb.set_progress(i)
+            #get float value of progress between 0 and 1 according to the image index and the total number of images
+            progress = i / len(self.image_list)
+            pb.set_progress(progress)
             self.update()
             img = Image.open(self.image_list[i]).convert("RGB")
             tensor = transforms.Compose([
@@ -265,6 +277,10 @@ class ImageBrowser(ctk.CTkToplevel):
             self.suffix_var = self.suffix_entry.get()
             self.prefix = self.prefix_entry.get()
             #prepare the caption
+            if self.suffix_var.startswith(',') or self.suffix_var.startswith(' '):
+                self.suffix_var = self.suffix_var
+            else:
+                self.suffix_var = ' ' + self.suffix_var
             caption = caption.replace(self.replace, self.replace_with)
             if self.prefix != '':
                 if self.prefix.endswith(' '):
@@ -288,8 +304,10 @@ class ImageBrowser(ctk.CTkToplevel):
             elif self.output_format == 'filename':
                 #duplicate image with caption as file name
                 img.save(os.path.join(batch_output_dir, caption+'.png'))
+            progress = i + 1 / len(self.image_list)
+            pb.set_progress(progress)
         #show message box when done
-        pba.destroy()
+        pb.destroy()
         donemsg = tk.messagebox.showinfo("Batch Folder", "Batching complete!",parent=self.master)
         #ask user if we should load the batch output folder
         ask3 = tk.messagebox.askquestion("Batch Folder", "Load batch output folder?")
@@ -316,7 +334,7 @@ class ImageBrowser(ctk.CTkToplevel):
         self.caption_entry.delete(0, tk.END)
         self.caption_entry.insert(0, self.caption)
         #change the caption entry color to red
-        self.caption_entry.configure(fg='red')
+        self.caption_entry.configure(fg_color='red')
     def load_blip_model(self):
         self.blipSize = 384
         blip_model_url = 'https://storage.googleapis.com/sfr-vision-language-research/BLIP/models/model_base_caption_capfilt_large.pth'
@@ -398,7 +416,7 @@ class ImageBrowser(ctk.CTkToplevel):
                 self.caption = f.read()
                 self.caption_entry.delete(0, tk.END)
                 self.caption_entry.insert(0, self.caption)
-                self.caption_entry.configure(fg=self.dark_mode_text_var)
+                self.caption_entry.configure(fg_color=ThemeManager.theme["CTkEntry"]["fg_color"])
                 self.use_blip = False
         elif os.path.isfile(self.caption_file) and self.auto_generate_caption.get() == True and self.auto_generate_caption_text_override.get() == False or os.path.isfile(self.caption_file)==False and self.auto_generate_caption.get() == True and self.auto_generate_caption_text_override.get() == True:
             self.use_blip = True
@@ -422,7 +440,7 @@ class ImageBrowser(ctk.CTkToplevel):
             self.caption_entry.delete(0, tk.END)
             self.caption_entry.insert(0, self.caption)
             #change the caption entry color to red
-            self.caption_entry.configure(fg='red')
+            self.caption_entry.configure(fg_color='red')
 
             
     def save_caption(self, event):
@@ -436,6 +454,10 @@ class ImageBrowser(ctk.CTkToplevel):
         self.prefix = self.prefix_entry.get()
         #prepare the caption
         self.caption = self.caption.replace(self.replace, self.replace_with)
+        if self.suffix_var.startswith(',') or self.suffix_var.startswith(' '):
+            self.suffix_var = self.suffix_var
+        else:
+            self.suffix_var = ' ' + self.suffix_var
         if self.prefix != '':
             if self.prefix.endswith(' '):
                 self.prefix = self.prefix[:-1]
@@ -465,7 +487,7 @@ class ImageBrowser(ctk.CTkToplevel):
             self.PILimage.save(os.path.join(outputFolder, self.caption+'.png'))
         self.caption_entry.delete(0, tk.END)
         self.caption_entry.insert(0, self.caption)
-        self.caption_entry.configure(fg='green')
+        self.caption_entry.configure(fg_color='green')
 
         self.canvas.focus_force()
     def prev_image(self, event):
@@ -629,21 +651,22 @@ class ImageBrowser(ctk.CTkToplevel):
 
 
 #progress bar class with cancel button
-class ProgressbarWithCancel(ctk.CTkFrame):
-    def __init__(self, master=None, **kw):
-        super().__init__(master, **kw)
-        
+class ProgressbarWithCancel(ctk.CTkToplevel):
+    def __init__(self,max=None, **kw):
+        super().__init__(**kw)
+        self.title("Batching...")
+        self.max = max
         self.possibleLabels = ['Searching for answers...',"I'm working, I promise.",'ARE THOSE TENTACLES?!','Weird data man...','Another one bites the dust' ,"I think it's a cat?" ,'Looking for the meaning of life', 'Dreaming of captions']
         
-        self.label = tctk.CTkLabel(self, text="Searching for answers...")
-        self.label.pack(side="top", fill="x", expand=True)
-        self.progress = ttk.Progressbar(self, orient="horizontal", length=200, mode="determinate")
-        self.progress.pack(side="left", fill="x", expand=True)
-        self.cancel_button = tctk.CTkButton(self, text="Cancel", command=self.cancel)
-        self.cancel_button.pack(side="right")
+        self.label = ctk.CTkLabel(self, text="Searching for answers...")
+        self.label.pack(side="top", fill="x", expand=True,padx=10,pady=10)
+        self.progress = ctk.CTkProgressBar(self, orientation="horizontal", mode="determinate")
+        self.progress.pack(side="left", fill="x", expand=True,padx=10,pady=10)
+        self.cancel_button = ctk.CTkButton(self, text="Cancel", command=self.cancel)
+        self.cancel_button.pack(side="right",padx=10,pady=10)
         self.cancelled = False
-        self.count_label = tctk.CTkLabel(self, text="0/{0}".format(self.get_max()))
-        self.count_label.pack(side="right")
+        self.count_label = ctk.CTkLabel(self, text="0/{0}".format(self.max))
+        self.count_label.pack(side="right",padx=10,pady=10)
     def set_random_label(self):
         import random
         self.label["text"] = random.choice(self.possibleLabels)
@@ -652,12 +675,12 @@ class ProgressbarWithCancel(ctk.CTkFrame):
     def cancel(self):
         self.cancelled = True
     def set_progress(self, value):
-        self.progress["value"] = value
-        self.count_label["text"] = "{0}/{1}".format(value, self.get_max())
+        self.progress.set(value)
+        self.count_label.configure(text="{0}/{1}".format(int(value * self.max), self.max))
     def get_progress(self):
-        return self.progress["value"]
+        return self.progress.get
     def set_max(self, value):
-        self.progress["maximum"] = value
+        return value
     def get_max(self):
         return self.progress["maximum"]
     def is_cancelled(self):
