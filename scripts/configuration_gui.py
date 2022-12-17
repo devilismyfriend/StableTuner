@@ -2893,7 +2893,8 @@ class App(ctk.CTk):
         self.dataset_repeats_entry.delete(0, tk.END)
         self.dataset_repeats_entry.insert(0, configure["dataset_repeats"])
         self.limit_text_encoder_entry.delete(0, tk.END)
-        self.limit_text_encoder_entry.insert(0, configure["limit_text_encoder_training"])
+        if configure["limit_text_encoder_training"] != '0':
+            self.limit_text_encoder_entry.insert(0, configure["limit_text_encoder_training"])
         self.use_text_files_as_captions_var.set(configure["use_text_files_as_captions"])
         self.convert_to_ckpt_after_training_var.set(configure["convert_to_ckpt_after_training"])
         if configure["execute_post_conversion"]:
