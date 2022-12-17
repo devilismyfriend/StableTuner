@@ -3013,15 +3013,22 @@ class App(ctk.CTk):
                 batBase += f' --sample_step_interval={self.sample_step_interval}'
             else:
                 batBase += f' "--sample_step_interval={self.sample_step_interval}" '
-        if '%' in self.limit_text_encoder or self.limit_text_encoder != '0' or self.limit_text_encoder != '100%' and len(self.limit_text_encoder) > 0:
-            #calculate the epoch number from the percentage and set the limit_text_encoder to the epoch number
-            self.limit_text_encoder = int(self.limit_text_encoder.replace('%','')) * int(self.train_epocs) / 100
-            #round the number to the nearest whole number
-            self.limit_text_encoder = round(self.limit_text_encoder)
-            if export == 'Linux':
-                batBase += f' --limit_text_encoder={self.limit_text_encoder}'
-            else:
-                batBase += f' "--stop_text_encoder_training={self.limit_text_encoder}" '
+            try:
+                #if limit_text_encoder is a percentage calculate what epoch to stop at
+                if '%' in self.limit_text_encoder:
+                    percent = float(self.limit_text_encoder.replace('%',''))
+                    stop_epoch = int((int(self.train_epocs) * percent) / 100)
+                    if export == 'Linux':
+                        batBase += f' --stop_text_encoder_training={stop_epoch}'
+                    else:
+                        batBase += f' "--stop_text_encoder_training={stop_epoch}" '
+                elif '%' not in self.limit_text_encoder and self.limit_text_encoder != '' and self.limit_text_encoder != ' ' and self.limit_text_encoder != '0':
+                    if export == 'Linux':
+                        batBase += f' --stop_text_encoder_training={self.limit_text_encoder}'
+                    else:
+                        batBase += f' "--stop_text_encoder_training={self.limit_text_encoder}" '
+            except:
+                pass
         if export=='Linux':
             batBase += f' --pretrained_model_name_or_path="{self.model_path}" '
             batBase += f' --pretrained_vae_name_or_path="{self.vae_path}" '
