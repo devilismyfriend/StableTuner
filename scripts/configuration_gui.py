@@ -2938,7 +2938,7 @@ class App(ctk.CTk):
             batBase += ' "--use_text_files_as_captions" '
         if self.sample_step_interval != '0' or self.sample_step_interval != '' or self.sample_step_interval != ' ':
             batBase += f' "--sample_step_interval={self.sample_step_interval}" '
-        if '%' in self.limit_text_encoder or self.limit_text_encoder != '0' and len(self.limit_text_encoder) > 0:
+        if '%' in self.limit_text_encoder or self.limit_text_encoder != '0' or self.limit_text_encoder != '100%' and len(self.limit_text_encoder) > 0:
             #calculate the epoch number from the percentage and set the limit_text_encoder to the epoch number
             self.limit_text_encoder = int(self.limit_text_encoder.replace('%','')) * int(self.train_epocs) / 100
             #round the number to the nearest whole number

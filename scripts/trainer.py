@@ -1542,6 +1542,9 @@ def main():
                         f" correctly and a GPU is available: {e}"
                     )
             save_dir = os.path.join(args.output_dir, f"{step}")
+            sample_dir = os.path.join(args.output_dir, f"samples/{step}")
+            #if sample dir path does not exist, create it
+            
             if args.stop_text_encoder_training == True:
                 save_dir = frozen_directory
             if step != 0:
@@ -1561,7 +1564,7 @@ def main():
             if args.add_sample_prompt is not None and args.stop_text_encoder_training != True:
                 pipeline = pipeline.to(accelerator.device)
                 pipeline.set_progress_bar_config(disable=True)
-                sample_dir = os.path.join(save_dir, "samples")
+                #sample_dir = os.path.join(save_dir, "samples")
                 #if sample_dir exists, delete it
                 if os.path.exists(sample_dir):
                     shutil.rmtree(sample_dir)
