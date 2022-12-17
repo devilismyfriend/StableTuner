@@ -2910,22 +2910,26 @@ class App(ctk.CTk):
             return
         #open stabletune_concept_list.json
         if os.path.exists('stabletune_last_run.json'):
-            with open('stabletune_last_run.json') as f:
-                self.last_run = json.load(f)
-            if self.regenerate_latent_cache == False:
-                if self.last_run["concepts"] == self.concepts:
-                    #check if resolution is the same
-                    try:
-                        #try because I keep adding stuff to the json file and it may error out for peeps
-                        if self.last_run["resolution"] != self.resolution or self.use_text_files_as_captions != self.last_run['use_text_files_as_captions'] or self.last_run['dataset_repeats'] != self.dataset_repeats or self.last_run["batch_size"] != self.batch_size or self.last_run["train_text_encoder"] != self.train_text_encoder or self.last_run["use_image_names_as_captions"] != self.use_image_names_as_captions or self.last_run["auto_balance_concept_datasets"] != self.auto_balance_concept_datasets or self.last_run["add_class_images_to_dataset"] != self.add_class_images_to_dataset or self.last_run["number_of_class_images"] != self.number_of_class_images or self.last_run["aspect_ratio_bucketing"] != self.use_aspect_ratio_bucketing:
-                            self.regenerate_latent_cache = True
-                            #show message
-                            
-                            messagebox.showinfo("StableTuner", "Configuration changed, regenerating latent cache")
-                    except:
-                        print("Error trying to see if regenerating latent cache is needed, this means it probably needs to be regenerated and ST was updated recently.")
-                        pass
-                
+            try:
+                with open('stabletune_last_run.json') as f:
+                    self.last_run = json.load(f)
+                if self.regenerate_latent_cache == False:
+                    if self.last_run["concepts"] == self.concepts:
+                        #check if resolution is the same
+                        try:
+                            #try because I keep adding stuff to the json file and it may error out for peeps
+                            if self.last_run["resolution"] != self.resolution or self.use_text_files_as_captions != self.last_run['use_text_files_as_captions'] or self.last_run['dataset_repeats'] != self.dataset_repeats or self.last_run["batch_size"] != self.batch_size or self.last_run["train_text_encoder"] != self.train_text_encoder or self.last_run["use_image_names_as_captions"] != self.use_image_names_as_captions or self.last_run["auto_balance_concept_datasets"] != self.auto_balance_concept_datasets or self.last_run["add_class_images_to_dataset"] != self.add_class_images_to_dataset or self.last_run["number_of_class_images"] != self.number_of_class_images or self.last_run["aspect_ratio_bucketing"] != self.use_aspect_ratio_bucketing:
+                                self.regenerate_latent_cache = True
+                                #show message
+                                
+                                messagebox.showinfo("StableTuner", "Configuration changed, regenerating latent cache")
+                        except:
+                            print("Error trying to see if regenerating latent cache is needed, this means it probably needs to be regenerated and ST was updated recently.")
+                            pass
+            except Exception as e:
+                print(e)
+                print("Error checking last run, regenerating latent cache")
+                self.regenerate_latent_cache = True
 
         #create a bat file to run the training
         if self.mixed_precision == 'fp16' or self.mixed_precision == 'bf16':
