@@ -1993,6 +1993,7 @@ class App(ctk.CTk):
         
         import diffusers
         import torch
+        from diffusers.utils.import_utils import is_xformers_available
         self.play_height = sample_height
         self.play_width = sample_width
         #interactive = self.play_interactive_generation_button_bool.get()
@@ -2005,7 +2006,7 @@ class App(ctk.CTk):
             self.play_generate_image_button["text"] = "Loading Model, Please stand by..."
             #self.play_generate_image_button.configure(fg="red")
             self.play_generate_image_button.update()
-            self.pipe = diffusers.DiffusionPipeline.from_pretrained(model,torch_dtype=torch.float16)
+            self.pipe = diffusers.DiffusionPipeline.from_pretrained(model,torch_dtype=torch.float16,safety_checker=None)
             self.pipe.to('cuda')
             self.current_model = model
             if scheduler == 'DPMSolverMultistepScheduler':
@@ -2019,7 +2020,14 @@ class App(ctk.CTk):
             if scheduler == 'EulerDiscreteScheduler':
                 scheduler = diffusers.EulerDiscreteScheduler.from_config(self.pipe.scheduler.config)
             self.pipe.scheduler = scheduler
-        
+            if is_xformers_available():
+                    try:
+                        self.pipe.enable_xformers_memory_efficient_attention()
+                    except Exception as e:
+                        print(
+                            "Could not enable memory efficient attention. Make sure xformers is installed"
+                            f" correctly and a GPU is available: {e}"
+                        )
         def displayInterImg(step: int, timestep: int, latents: torch.FloatTensor):
             #tensor to image
             img = self.pipe.decode_latents(latents)
