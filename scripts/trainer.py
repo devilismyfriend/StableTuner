@@ -41,8 +41,8 @@ from tqdm.auto import tqdm
 from transformers import CLIPTextModel, CLIPTokenizer
 from typing import Dict, List, Generator, Tuple
 from PIL import Image
-
 from diffusers.utils.import_utils import is_xformers_available
+
 logger = get_logger(__name__)
 def parse_args():
     parser = argparse.ArgumentParser(description="Simple example of a training script.")
@@ -335,7 +335,7 @@ def parse_args():
     return args
 
 
-ASPECTS6 = [[832, 832], 
+ASPECT_832 = [[832, 832], 
 [896, 768], [768, 896], 
 [960, 704], [704, 960], 
 [1024, 640], [640, 1024], 
@@ -347,7 +347,7 @@ ASPECTS6 = [[832, 832],
 [1536, 384], [384, 1536], 
 [1600, 384], [384, 1600]]
 
-ASPECTS7 = [[896, 896],
+ASPECT_896 = [[896, 896],
 [960, 832], [832, 960],
 [1024, 768], [768, 1024],
 [1088, 704], [704, 1088],
@@ -360,7 +360,7 @@ ASPECTS7 = [[896, 896],
 [1536, 512], [512, 1536], 
 [1600, 448], [448, 1600], 
 [1664, 448], [448, 1664]]
-ASPECTS8 = [[896, 896], 
+ASPECT_960 = [[896, 896], 
 [960, 832], [832, 960], 
 [1024, 768], [768, 1024], 
 [1088, 704], [704, 1088], 
@@ -370,7 +370,7 @@ ASPECTS8 = [[896, 896],
 [1536, 512], [512, 1536], 
 [1600, 448], [448, 1600], 
 [1664, 448], [448, 1664]]     
-ASPECTS9 = [[1024, 1024], 
+ASPECT_1024 = [[1024, 1024], 
 [1088, 960], [960, 1088], 
 [1152, 896], [896, 1152], 
 [1216, 832], [832, 1216], 
@@ -379,7 +379,7 @@ ASPECTS9 = [[1024, 1024],
 [1600, 640], [640, 1600], 
 [1728, 576], [576, 1728], 
 [1792, 576], [576, 1792]]
-ASPECTS5 = [[768,768],     # 589824 1:1
+ASPECT_768 = [[768,768],     # 589824 1:1
     [832,704],[704,832],   # 585728 1.181:1
     [896,640],[640,896],   # 573440 1.4:1
     [960,576],[576,960],   # 552960 1.6:1
@@ -394,7 +394,7 @@ ASPECTS5 = [[768,768],     # 589824 1:1
     [1536,320],[320,1536], # 491520 4.8:1
 ]
 
-ASPECTS4 = [[704,704],     # 501,376 1:1
+ASPECT_704 = [[704,704],     # 501,376 1:1
     [768,640],[640,768],   # 491,520 1.2:1
     [832,576],[576,832],   # 458,752 1.444:1
     [896,512],[512,896],   # 458,752 1.75:1
@@ -409,7 +409,7 @@ ASPECTS4 = [[704,704],     # 501,376 1:1
     [1536,320],[320,1536], # 491,520 4.8:1
 ]
 
-ASPECTS3 = [[640,640],     # 409600 1:1 
+ASPECT_640 = [[640,640],     # 409600 1:1 
     [704,576],[576,704],   # 405504 1.25:1
     [768,512],[512,768],   # 393216 1.5:1
     [896,448],[448,896],   # 401408 2:1
@@ -421,7 +421,7 @@ ASPECTS3 = [[640,640],     # 409600 1:1
     [1600,256],[256,1600], # 409600 6.25:1
 ]
 
-ASPECTS2 = [[576,576],     # 331776 1:1
+ASPECT_576 = [[576,576],     # 331776 1:1
     [640,512],[512,640],   # 327680 1.25:1
     [640,448],[448,640],   # 286720 1.4286:1
     [704,448],[448,704],   # 314928 1.5625:1
@@ -430,7 +430,7 @@ ASPECTS2 = [[576,576],     # 331776 1:1
     [1280,256],[256,1280], # 327680 5:1
 ]
 
-ASPECTS = [[512,512],      # 262144 1:1
+ASPECTS_512 = [[512,512],      # 262144 1:1
     [576,448],[448,576],   # 258048 1.29:1
     [640,384],[384,640],   # 245760 1.667:1
     [768,320],[320,768],   # 245760 2.4:1
@@ -439,7 +439,9 @@ ASPECTS = [[512,512],      # 262144 1:1
     [960,256],[256,960],   # 245760 3.75:1
     [1024,256],[256,1024], # 245760 4:1
     ]
-
+    
+#failsafe aspects
+ASPECTS = ASPECTS_512
 def get_aspect_buckets(resolution):
     if resolution < 512:
         raise ValueError("Resolution must be at least 512")
@@ -448,14 +450,15 @@ def get_aspect_buckets(resolution):
         print("Rounded resolution to", rounded_resolution)
         all_image_sizes = __get_all_aspects()
         aspects = next(filter(lambda sizes: sizes[0][0]==rounded_resolution, all_image_sizes), None)
+        ASPECTS = aspects
         #print(aspects)
         return aspects
     except Exception as e:
-        print(f" *** Could not find selected resolution: {rounded_resolution}, check your resolution in config YAML")
+        print(f" *** Could not find selected resolution: {rounded_resolution}")
         raise e
 
 def __get_all_aspects():
-    return [ASPECTS, ASPECTS2, ASPECTS3, ASPECTS4, ASPECTS5,ASPECTS6,ASPECTS7,ASPECTS8,ASPECTS9]
+    return [ASPECTS_512, ASPECT_576, ASPECT_640, ASPECT_704, ASPECT_768,ASPECT_832,ASPECT_896,ASPECT_960,ASPECT_1024]
 
 class AutoBucketing(Dataset):
     def __init__(self,

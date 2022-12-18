@@ -1393,8 +1393,8 @@ class App(ctk.CTk):
         self.input_model_path_button = ctk.CTkButton(self.general_frame_subframe,width=30, text="...", command=self.choose_model)
         self.input_model_path_button.grid(row=1, column=2, sticky="w")
         #create another button to resume from latest checkpoint
-        self.input_model_path_resume_button = ctk.CTkButton(self.general_frame_subframe, text="Resume", command=lambda : self.find_latest_generated_model(self.input_model_path_entry.get()))
-        self.input_model_path_resume_button.place(relx=0.5, rely=0.5, anchor="center")
+        #self.input_model_path_resume_button = ctk.CTkButton(self.general_frame_subframe, text="Resume", command=lambda : self.find_latest_generated_model(self.input_model_path_entry.get()))
+        #self.input_model_path_resume_button.place(relx=0.5, rely=0.5, anchor="center")
         self.vae_model_path_label = ctk.CTkLabel(self.general_frame_subframe, text="VAE model path / HuggingFace Repo")
         vae_model_path_label_ttp = CreateToolTip(self.vae_model_path_label, "OPTINAL The path to the VAE model to use. Can be a local path or a HuggingFace repo path.")
         self.vae_model_path_label.grid(row=2, column=0, sticky="nsew")
