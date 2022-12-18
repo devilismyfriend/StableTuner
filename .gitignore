@@ -2390,3 +2390,5 @@ resources/cudnn_windows/cudnn_windows/cudnn_cnn_train64_8.dll
 resources/cudnn_windows/cudnn_windows/cudnn_ops_infer64_8.dll
 resources/cudnn_windows/cudnn_windows/cudnn_ops_train64_8.dll
 train.sh
+scripts/style.css
+scripts/streamlit_configurator.py

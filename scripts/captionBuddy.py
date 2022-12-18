@@ -380,7 +380,10 @@ class ImageBrowser(ctk.CTkToplevel):
             return
         self.output_folder = self.folder
         self.image_list = [os.path.join(self.folder, f) for f in os.listdir(self.folder) if f.endswith('.jpg') or f.endswith('.png') or f.endswith('.jpeg')]
-        self.image_list.sort()
+        #self.image_list.sort()
+        #sort the image list alphabetically so that the images are in the same order every time
+        self.image_list.sort(key=lambda x: x.lower())
+        
         self.image_count = len(self.image_list)
         if self.image_count == 0:
             tk.messagebox.showinfo("No Images", "No images found in the selected folder")
