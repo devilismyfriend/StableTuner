@@ -16,45 +16,34 @@ limitations under the License.
 
 import argparse
 import random
-from faulthandler import disable
 import hashlib
 import itertools
 import json
 import math
-from operator import index
 import os
 from contextlib import nullcontext
 from pathlib import Path
-from tkinter import W
 from typing import Optional
 import shutil
 import torch
 import torch.nn.functional as F
 import torch.utils.checkpoint
 from torch.utils.data import Dataset
-import PIL
 import numpy as np
 from accelerate import Accelerator
 from accelerate.logging import get_logger
 from accelerate.utils import set_seed
-from transformers import CLIPFeatureExtractor, CLIPModel
 from diffusers import AutoencoderKL, DDIMScheduler, DDPMScheduler, DiffusionPipeline, UNet2DConditionModel,DiffusionPipeline, DPMSolverMultistepScheduler,EulerDiscreteScheduler
 from diffusers.optimization import get_scheduler
 from huggingface_hub import HfFolder, Repository, whoami
-from PIL import Image
 from torchvision import transforms
 from tqdm.auto import tqdm
 from transformers import CLIPTextModel, CLIPTokenizer
-from scipy.interpolate import interp1d
 from typing import Dict, List, Generator, Tuple
-import glob
-from PIL import Image, ImageOps
-import re
-import torchvision
-from PIL.Image import Image as Img
-logger = get_logger(__name__)
-from PIL.Image import Resampling
+from PIL import Image
+
 from diffusers.utils.import_utils import is_xformers_available
+logger = get_logger(__name__)
 def parse_args():
     parser = argparse.ArgumentParser(description="Simple example of a training script.")
     parser.add_argument('--disable_cudnn_benchmark', default=False, action="store_true")
@@ -588,13 +577,13 @@ class AutoBucketing(Dataset):
 _RANDOM_TRIM = 0.04
 class ImageTrainItem(): 
     """
-    image: PIL.Image
+    image: Image
     identifier: caption,
     target_aspect: (width, height), 
     pathname: path to image file
     flip_p: probability of flipping image (0.0 to 1.0)
     """    
-    def __init__(self, image: PIL.Image, caption: str, target_wh: list, pathname: str, flip_p=0.0):
+    def __init__(self, image: Image, caption: str, target_wh: list, pathname: str, flip_p=0.0):
         self.caption = caption
         self.target_wh = target_wh
         self.pathname = pathname
@@ -613,7 +602,7 @@ class ImageTrainItem():
         crop_jitter: randomly shift cropp by N pixels when using multiple aspect ratios to improve training quality
         """
         if not hasattr(self, 'image') or len(self.image) == 0:
-            self.image = PIL.Image.open(self.pathname).convert('RGB')
+            self.image = Image.open(self.pathname).convert('RGB')
 
             width, height = self.image.size
             if crop: 
