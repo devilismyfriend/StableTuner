@@ -3340,18 +3340,21 @@ class App(ctk.CTk):
                 batBase += ' --sample_on_training_start'
             else:
                 batBase += f' "--sample_on_training_start" '
-        if self.conditional_dropout != '' or self.conditional_dropout != ' ' or self.conditional_dropout != '0':
-            #if % is in the string, remove it
-            if '%' in self.conditional_dropout:
-                self.conditional_dropout = self.conditional_dropout.replace('%', '')
-            #convert to float from percentage string
-            self.conditional_dropout = float(self.conditional_dropout) / 100
-            #print(self.conditional_dropout)
-            if export == 'Linux':
-                batBase += f' --conditional_dropout={self.conditional_dropout}'
-            else:
-                batBase += f' "--conditional_dropout={self.conditional_dropout}" '
-        #save configure
+        try:
+            if self.conditional_dropout != '' or self.conditional_dropout != ' ' or self.conditional_dropout != '0':
+                #if % is in the string, remove it
+                if '%' in self.conditional_dropout:
+                    self.conditional_dropout = self.conditional_dropout.replace('%', '')
+                #convert to float from percentage string
+                self.conditional_dropout = float(self.conditional_dropout) / 100
+                #print(self.conditional_dropout)
+                if export == 'Linux':
+                    batBase += f' --conditional_dropout={self.conditional_dropout}'
+                else:
+                    batBase += f' "--conditional_dropout={self.conditional_dropout}" '
+            #save configure
+        except:
+            pass
         self.save_config('stabletune_last_run.json')
         
         if export == False:
