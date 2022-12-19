@@ -699,7 +699,7 @@ class App(ctk.CTk):
         #self.general_frame_subframe_side_guide.grid_columnconfigure(0, weight=1)
         self.create_general_settings_widgets()   
         self.apply_general_style_to_widgets(self.general_frame_subframe)
-
+        self.override_general_style_widgets()
         self.training_frame = ctk.CTkFrame(self, width=400, corner_radius=0,fg_color='transparent')
         self.training_frame.grid_columnconfigure(0, weight=1)
         #self.training_frame.grid_columnconfigure(0, weight=1)
@@ -1157,7 +1157,23 @@ class App(ctk.CTk):
         finally:
             #make sure to release the grab (Tk 8.0a1 only)
             self.menu.grab_release()
+    def create_left_click_menu_config(self, event):
+        #create a menu
+        self.menu = Menu(self.master, tearoff=0)
+        #set menu size and font size
+        self.menu.config(font=("Segoe UI", 15))
 
+        #set dark colors for the menu
+        self.menu.configure(bg="#2d2d2d", fg="#ffffff", activebackground="#2d2d2d", activeforeground="#ffffff")
+        #add commands to the menu
+        self.menu.add_command(label="Load Config", command=self.load_config)
+        self.menu.add_command(label="Save Config", command=self.save_config)
+        #display the menu
+        try:
+            self.menu.tk_popup(event.x_root, event.y_root)
+        finally:
+            #make sure to release the grab (Tk 8.0a1 only)
+            self.menu.grab_release()
     def on_tab_changed(self, event):
         #get the current selected notebook tab id
         tab_id = self.notebook.select()
@@ -1228,7 +1244,10 @@ class App(ctk.CTk):
         self.play_generate_image_button.grid(row=10, column=0, columnspan=2, sticky="nsew")
         self.play_convert_to_ckpt_button.grid(row=9, column=1, columnspan=1, sticky="w")
         #self.play_interactive_generation_button.grid(row=9, column=1, columnspan=1, sticky="w")
-
+    def override_general_style_widgets(self):
+        #self.input_model_path_button.grid(row=1, column=2, sticky="w")
+        #self.input_model_path_resume_button.grid(row=1, column=2, sticky="e")
+        pass
     def apply_general_style_to_widgets(self,frame):
         for i in frame.children.values():
             #print(i)
@@ -1376,14 +1395,18 @@ class App(ctk.CTk):
         self.quick_select_var.set('Quick Select Base Model')
         self.quick_select_dropdown = ctk.CTkOptionMenu(self.general_frame_subframe, variable=self.quick_select_var, values=self.quick_select_models, command=self.quick_select_model,dynamic_resizing=False, width=200)
         self.quick_select_dropdown.grid(row=0, column=0, sticky="nsew")
-        self.load_config_button = ctk.CTkButton(self.general_frame_subframe, text="Load Config", command=self.load_config)
+        self.load_config_button = ctk.CTkButton(self.general_frame_subframe, text="Load/Save Config")
+        #bind the load config button to a function
+        self.load_config_button.bind("<Button-1>", lambda event: self.create_left_click_menu_config(event))
         self.load_config_button.grid(row=0, column=1, sticky="nsew")
         #self.load_config_button.grid(row=2, column=1, sticky="nsew")
         #get the location of load config button in the frame
-        self.save_config_button = ctk.CTkButton(self.general_frame_subframe, text="Save Config", command=self.save_config)
-        self.save_config_button.grid(row=0, column=2, sticky="nsew")
+        #self.save_config_button = ctk.CTkButton(self.general_frame_subframe, text="Save Config", command=self.save_config)
+        #self.save_config_button.grid(row=0, column=2, sticky="nsew")
         #self.save_config_button.grid(row=2, column=2, sticky="nsew")
-
+        #create another button to resume from latest checkpoint
+        self.input_model_path_resume_button = ctk.CTkButton(self.general_frame_subframe, text="Resume From Last Session",width=50, command=lambda : self.find_latest_generated_model(self.input_model_path_entry))
+        self.input_model_path_resume_button.grid(row=0, column=2, sticky="nsew")
         self.input_model_path_label = ctk.CTkLabel(self.general_frame_subframe, text="Input Model / HuggingFace Repo")
         input_model_path_label_ttp = CreateToolTip(self.input_model_path_label, "The path to the diffusers model to use. Can be a local path or a HuggingFace repo path.")
         self.input_model_path_label.grid(row=1, column=0, sticky="nsew")
@@ -1394,9 +1417,7 @@ class App(ctk.CTk):
         #make a button to open a file dialog
         self.input_model_path_button = ctk.CTkButton(self.general_frame_subframe,width=30, text="...", command=self.choose_model)
         self.input_model_path_button.grid(row=1, column=2, sticky="w")
-        #create another button to resume from latest checkpoint
-        #self.input_model_path_resume_button = ctk.CTkButton(self.general_frame_subframe, text="Resume", command=lambda : self.find_latest_generated_model(self.input_model_path_entry.get()))
-        #self.input_model_path_resume_button.place(relx=0.5, rely=0.5, anchor="center")
+        
         self.vae_model_path_label = ctk.CTkLabel(self.general_frame_subframe, text="VAE model path / HuggingFace Repo")
         vae_model_path_label_ttp = CreateToolTip(self.vae_model_path_label, "OPTINAL The path to the VAE model to use. Can be a local path or a HuggingFace repo path.")
         self.vae_model_path_label.grid(row=2, column=0, sticky="nsew")
@@ -1987,20 +2008,38 @@ class App(ctk.CTk):
                 #check if the output path has a model in it
                 if os.path.exists(last_model_path):
                     #check if the model is a ckpt
-                    if entry:
-                        entry.delete(0, tk.END)
-                        entry.insert(0, last_model_path)
+                    required_folders = ["vae", "unet", "tokenizer", "text_encoder"]
+                    if all(x in os.listdir(last_model_path) for x in required_folders):
+                       # print(newest_dir)
+                        last_model_path = newest_dir.replace("/", os.sep).replace("\\", os.sep)
+                        if entry:
+                            entry.delete(0, tk.END)
+                            entry.insert(0, last_model_path)
+                            return
+                    else:
+                        required_folders = ["vae", "unet", "tokenizer", "text_encoder"]
+                        newest_dirs = sorted(glob.iglob(last_output_path + os.sep + '*'), key=os.path.getctime, reverse=True)
+                        #sort newest_dirs by date
+                        for newest_dir in newest_dirs:
+                            #check if the newest dir has all the required folders
+                            if all(x in os.listdir(newest_dir) for x in required_folders):
+                                last_model_path = newest_dir.replace("/", os.sep).replace("\\", os.sep)
+                                if entry:
+                                    entry.delete(0, tk.END)
+                                    entry.insert(0, last_model_path)
+                                    return
                 else:
-                    #find the newest directory in the output path
-                    
-                    newest_dir = max(glob.iglob(last_output_path + os.sep + '*'), key=os.path.getctime)
-                    #convert newest_dir seperators to the correct ones for the os
-                    newest_dir = newest_dir.replace("/", os.sep)
-                    newest_dir = newest_dir.replace("\\", os.sep)
-                    self.last_model_path = newest_dir
-                    if entry:
-                        entry.delete(0, tk.END)
-                        entry.insert(0, last_model_path)
+                        required_folders = ["vae", "unet", "tokenizer", "text_encoder"]
+                        newest_dirs = sorted(glob.iglob(last_output_path + os.sep + '*'), key=os.path.getctime, reverse=True)
+                        #sort newest_dirs by date
+                        for newest_dir in newest_dirs:
+                            #check if the newest dir has all the required folders
+                            if all(x in os.listdir(newest_dir) for x in required_folders):
+                                last_model_path = newest_dir.replace("/", os.sep).replace("\\", os.sep)
+                                if entry:
+                                    entry.delete(0, tk.END)
+                                    entry.insert(0, last_model_path)
+                                    return
             else:
                 return
         else:
