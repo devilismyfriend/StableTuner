@@ -478,7 +478,7 @@ class AutoBucketing(Dataset):
                  crop_jitter=20,
                  with_prior_loss=False,
                  use_text_files_as_captions=False,
-                 conditional_dropout=False,
+                 conditional_dropout=None,
                  ):
 
         self.debug_level = debug_level
@@ -521,7 +521,7 @@ class AutoBucketing(Dataset):
             self.num_train_images = self.num_train_images + len(self.image_train_items)
             self._length = max(math.trunc(self.num_train_images * repeats), batch_size) - self.num_train_images % self.batch_size
         #amoutn of images to drop due to conditional dropout
-        if self.conditional_dropout != False:
+        if self.conditional_dropout != None:
             #print('conditional dropout: ' + str(self.conditional_dropout))
             #it's a float, convert to percentage
             if self.conditional_dropout < 1:
@@ -895,7 +895,7 @@ class DreamBoothDataset(Dataset):
         use_image_names_as_captions=False,
         repeats=1,
         use_text_files_as_captions=False,
-        conditional_dropout=False,
+        conditional_dropout=None,
     ):
         self.use_image_names_as_captions = use_image_names_as_captions
         self.size = size
@@ -923,7 +923,7 @@ class DreamBoothDataset(Dataset):
                 for i in range(repeats):
                     self.__recurse_data_root(self, concept,use_sub_dirs=False,class_images=True)
         random.shuffle(self.image_paths)
-        if self.conditional_dropout != False:
+        if self.conditional_dropout != None:
             #print('conditional dropout: ' + str(self.conditional_dropout))
             #it's a float, convert to percentage
             if self.conditional_dropout < 1:
@@ -1002,23 +1002,27 @@ class DreamBoothDataset(Dataset):
     def __getitem__(self, index):
         example = {}
         instance_path, instance_prompt = self.image_paths[index % self.num_instance_images]
+        og_prompt = instance_prompt
         instance_image = Image.open(instance_path)
-        if instance_prompt != '':
-            if self.use_image_names_as_captions == True:
-                instance_prompt = str(instance_path).split(os.sep)[-1].split('.')[0].split('_')[0]
-            #else if there's a txt file with the same name as the image, read the caption from there
-            if self.use_text_files_as_captions == True:
-                #if there's a file with the same name as the image, but with a .txt extension, read the caption from there
-                #get the last . in the file name
-                last_dot = str(instance_path).rfind('.')
-                #get the path up to the last dot
-                txt_path = str(instance_path)[:last_dot] + '.txt'
+        if self.use_image_names_as_captions == True:
+            instance_prompt = str(instance_path).split(os.sep)[-1].split('.')[0].split('_')[0]
+        #else if there's a txt file with the same name as the image, read the caption from there
+        if self.use_text_files_as_captions == True:
+            #if there's a file with the same name as the image, but with a .txt extension, read the caption from there
+            #get the last . in the file name
+            last_dot = str(instance_path).rfind('.')
+            #get the path up to the last dot
+            txt_path = str(instance_path)[:last_dot] + '.txt'
 
-                #if txt_path exists, read the caption from there
-                if os.path.exists(txt_path):
-                    with open(txt_path, encoding='utf-8') as f:
-                        instance_prompt = f.readline().rstrip()
-        
+            #if txt_path exists, read the caption from there
+            if os.path.exists(txt_path):
+                with open(txt_path, encoding='utf-8') as f:
+                    instance_prompt = f.readline().rstrip()
+        if self.conditional_dropout != None:
+            if og_prompt == '' and instance_prompt != '':
+                instance_prompt = ''
+                
+            
         #print('identifier: ' + instance_prompt)
         instance_image = instance_image.convert("RGB")
         example["instance_images"] = self.image_transforms(instance_image)
