@@ -439,7 +439,7 @@ ASPECTS_512 = [[512,512],      # 262144 1:1
     [960,256],[256,960],   # 245760 3.75:1
     [1024,256],[256,1024], # 245760 4:1
     ]
-    
+
 #failsafe aspects
 ASPECTS = ASPECTS_512
 def get_aspect_buckets(resolution):
@@ -610,7 +610,7 @@ class ImageTrainItem():
             width, height = self.image.size
             if crop: 
                 cropped_img = self.__autocrop(self.image)
-                self.image = cropped_img.resize((512,512), resample=Resampling.LANCZOS)
+                self.image = cropped_img.resize((512,512), resample=Image.Resampling.LANCZOS)
             else:
                 width, height = self.image.size
                 jitter_amount = random.randint(0,crop_jitter)
@@ -650,7 +650,7 @@ class ImageTrainItem():
                         bottom = top + new_height
                         self.image = self.image.crop((0, top, width, bottom))
                         #LAZCOS resample
-                self.image = self.image.resize(self.target_wh, resample=Resampling.LANCZOS)
+                self.image = self.image.resize(self.target_wh, resample=Image.Resampling.LANCZOS)
 
             self.image = self.flip(self.image)
 

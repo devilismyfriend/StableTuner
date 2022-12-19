@@ -991,6 +991,7 @@ class App(ctk.CTk):
         #self.canvas.configure(scrollregion=self.canvas.bbox("all"))
         #print(self.concept_widgets[0].concept.concept_path)
     def create_default_variables(self):
+        self.cloud_toggle = True
         self.generation_window = None
         self.concept_widgets = []
         self.sample_prompts = []
@@ -1445,7 +1446,24 @@ class App(ctk.CTk):
         self.telegram_chat_id_entry.grid(row=8, column=1,columnspan=3, sticky="nsew")
         self.telegram_chat_id_entry.insert(0, self.telegram_chat_id)
         
-
+        #add a switch to toggle runpod mode
+        #self.runpod_mode_label = ctk.CTkLabel(self.general_frame_subframe, text="Package for cloud training")
+        #runpod_mode_label_ttp = CreateToolTip(self.runpod_mode_label, "cloud mode will package up a quick trainer session for RunPod.")
+        #self.runpod_mode_label.grid(row=9, column=0, sticky="nsew")
+        #self.runpod_mode_var = tk.IntVar()
+        #self.runpod_mode_checkbox = ctk.CTkSwitch(self.general_frame_subframe,variable=self.runpod_mode_var, command=self.toggle_runpod_mode)
+        #self.runpod_mode_checkbox.grid(row=9, column=1, sticky="nsew")
+    
+    def toggle_runpod_mode(self):
+        toggle = self.runpod_mode_var.get()
+        #flip self.toggle
+        if toggle == True:
+            toggle = False
+            self.sidebar_button_12.configure(text='Export for Cloud!')
+        else:
+            toggle = True
+            self.sidebar_button_12.configure(text='Start Training!')
+        
     
     def create_trainer_settings_widgets(self):
         self.training_frame_title = ctk.CTkLabel(self.training_frame, text="Training Settings", font=ctk.CTkFont(size=20, weight="bold"))
@@ -1981,7 +1999,100 @@ class App(ctk.CTk):
                 return
         else:
             return
-                    
+
+    def packageForCloud(self):
+        #check if there's an export folder in the cwd and if not create one
+        if not os.path.exists("export"):
+            os.mkdir("export")
+            os.mkdir("export" + os.sep + 'models')
+            os.mkdir("export" + os.sep + 'output')
+            os.mkdir("export" + os.sep + 'datasets')
+
+        #check if self.model_path is a directory
+        if os.path.isdir(self.model_path):
+            #get the directory name
+            model_name = os.path.basename(self.model_path)
+            #check if model_name can be an int
+            try:
+                model_name = int(model_name)
+                #get the parent directory name
+                model_name = os.path.basename(os.path.dirname(self.model_path))
+            except:
+                pass
+            #create a folder in the export folder with the model name
+            if not os.path.exists("export" + os.sep + 'models'+ os.sep + model_name):
+                os.mkdir("export" + os.sep + 'models'+ os.sep + model_name)
+            #copy the model to the export folder
+            shutil.copytree(self.model_path, "export" + os.sep +'models'+ os.sep+ model_name + os.sep,dirs_exist_ok=True)
+            self.model_path= 'models' + '/' + model_name
+        if os.path.isdir(self.vae_path):
+            #get the directory name
+            vae_name = os.path.basename(self.vae_path)
+            #create a folder in the export folder with the model name
+            if not os.path.exists("export" + os.sep + 'models'+ os.sep + vae_name):
+                os.mkdir("export" + os.sep + 'models'+ os.sep + vae_name)
+            #copy the model to the export folder
+            shutil.copytree(self.vae_path, "export" + os.sep +'models'+ os.sep+ vae_name + os.sep + vae_name,dirs_exist_ok=True)
+            self.vae_path= 'models' + '/' + vae_name
+        if self.output_path == '':
+            self.output_path = 'output'
+        else:
+            #get the dirname
+            output_name = os.path.basename(self.output_path)
+            #create a folder in the export folder with the model name
+            if not os.path.exists("export" + os.sep + 'output'+ os.sep + output_name):
+                os.mkdir("export" + os.sep + 'output'+ os.sep + output_name)
+            self.output_path = 'output' + '/' + output_name
+        #loop through the concepts and add them to the export folder
+        concept_counter = 0
+        new_concepts = []
+        for concept in self.concepts:
+            concept_counter += 1
+            concept_data_dir = os.path.basename(concept['instance_data_dir'])
+            #concept is a dict
+            #get the concept name
+            concept_name = concept['instance_prompt']
+            #if concept_name is ''
+            if concept_name == '':
+                concept_name = 'concept_' + str(concept_counter)
+                
+            #create a folder in the export/datasets folder with the concept name
+            #if not os.path.exists("export" + os.sep + 'datasets'+ os.sep + concept_name):
+            #    os.mkdir("export" + os.sep + 'datasets'+ os.sep + concept_name)
+            #copy the concept to the export folder
+            shutil.copytree(concept['instance_data_dir'], "export" + os.sep + 'datasets'+ os.sep + concept_data_dir ,dirs_exist_ok=True)
+            concept_class_name = concept['class_prompt']
+            if concept_class_name == '':
+                #if class_data_dir is ''
+                if concept['class_data_dir'] != '':
+                    concept_class_name = 'class_' + str(concept_counter)
+                    #create a folder in the export/datasets folder with the concept name
+                    if not os.path.exists("export" + os.sep + 'datasets'+ os.sep + concept_class_name):
+                        os.mkdir("export" + os.sep + 'datasets'+ os.sep + concept_class_name)
+                    #copy the concept to the export folder
+                    shutil.copytree(concept['class_data_dir'], "export" + os.sep + 'datasets'+ os.sep + concept_class_name+ os.sep,dirs_exist_ok=True)
+            else:
+                if concept['class_data_dir'] != '':
+                    #create a folder in the export/datasets folder with the concept name
+                    if not os.path.exists("export" + os.sep + 'datasets'+ os.sep + concept_class_name):
+                        os.mkdir("export" + os.sep + 'datasets'+ os.sep + concept_class_name)
+                    #copy the concept to the export folder
+                    shutil.copytree(concept['class_data_dir'], "export" + os.sep + 'datasets'+ os.sep + concept_class_name+ os.sep,dirs_exist_ok=True)
+            #create a new concept dict
+            new_concept = {}
+            new_concept['instance_prompt'] = concept_name
+            new_concept['instance_data_dir'] = 'datasets' + '/' + concept_data_dir 
+            new_concept['class_prompt'] = concept_class_name
+            new_concept['class_data_dir'] = 'datasets' + '/' + concept_class_name if concept_class_name != '' else ''
+            new_concept['do_not_balance'] = concept['do_not_balance']
+            new_concept['use_sub_dirs'] = concept['use_sub_dirs']
+            new_concepts.append(new_concept)
+        #make scripts folder
+        self.save_concept_to_json(filename='export' + os.sep + 'stabletune_concept_list.json', preMadeConcepts=new_concepts)
+        if not os.path.exists("export" + os.sep + 'scripts'):
+            os.mkdir("export" + os.sep + 'scripts')
+        #copy the scripts/trainer.py the scripts folder
+        shutil.copy('scripts' + os.sep + 'trainer.py', "export" + os.sep + 'scripts' + os.sep + 'trainer.py')
     def caption_buddy(self):
         import captionBuddy
         #self.master.overrideredirect(False)
@@ -2544,7 +2655,7 @@ class App(ctk.CTk):
         #unset the focus on the button
         #self.master.focus_set()
 
-    def save_concept_to_json(self,filename=None):
+    def save_concept_to_json(self,filename=None,preMadeConcepts=None):
         #dialog box to select the file to save to
         if filename == None:
             file = fd.asksaveasfile(mode='w', defaultextension=".json", filetypes=[("JSON", "*.json")])
@@ -2554,14 +2665,19 @@ class App(ctk.CTk):
         else:
             file = open(filename, 'w')
         if file != None:
-            concepts = []
-            for widget in self.concept_widgets:
-                concept = widget.concept
-                concept_dict = {'instance_prompt' : concept.concept_name, 'class_prompt' : concept.concept_class_name, 'instance_data_dir' : concept.concept_path, 'class_data_dir' : concept.concept_class_path, 'do_not_balance' : concept.concept_do_not_balance, 'use_sub_dirs' : concept.process_sub_dirs}
-                concepts.append(concept_dict)
-            if file != None:
-                #write the json to the file
-                json.dump(concepts, file, indent=4)
+            if preMadeConcepts == None:
+                concepts = []
+                for widget in self.concept_widgets:
+                    concept = widget.concept
+                    concept_dict = {'instance_prompt' : concept.concept_name, 'class_prompt' : concept.concept_class_name, 'instance_data_dir' : concept.concept_path, 'class_data_dir' : concept.concept_class_path, 'do_not_balance' : concept.concept_do_not_balance, 'use_sub_dirs' : concept.process_sub_dirs}
+                    concepts.append(concept_dict)
+                if file != None:
+                    #write the json to the file
+                    json.dump(concepts, file, indent=4)
+                    #close the file
+                    file.close()
+            else:
+                json.dump(preMadeConcepts, file, indent=4)
                 #close the file
                 file.close()
     def load_concept_from_json(self):
@@ -2962,6 +3078,10 @@ class App(ctk.CTk):
         self.convert_to_ckpt_after_training = self.convert_to_ckpt_after_training_var.get()
         self.disable_cudnn_benchmark = self.disable_cudnn_benchmark_var.get()
         self.sample_step_interval = self.sample_step_interval_entry.get()
+        self.cloud_mode = self.runpod_mode_var.get()
+        if self.cloud_mode == True:
+            export='Linux'
+            self.packageForCloud()
         if int(self.train_epocs) == 0 or self.train_epocs == '':
             messagebox.showerror("Error", "Number of training epochs must be greater than 0")
             return
@@ -3202,14 +3322,25 @@ class App(ctk.CTk):
                 f.write(batBase)
             #show message
             messagebox.showinfo("Export", "Exported to train.bat")
-        elif export == 'Linux':
+        elif export == 'Linux' and self.cloud_mode == False:
             #write batBase to a shell script
             with open("train.sh", "w", encoding="utf-8") as f:
                 f.write(batBase)
             #show message
             messagebox.showinfo("Export", "Exported to train.sh.\nDon't forget to take stabletune_concept_list.json with you!")
             #close the window
-
+        elif export == 'Linux' and self.cloud_mode == True:
+            with open("export"+os.sep+"train.sh", "w", encoding="utf-8") as f:
+                f.write(batBase)
+            
+            #zip up everything in export without the folder itself
+            shutil.make_archive('export', 'zip', 'export')
+            #delete the export folder
+            shutil.rmtree('export')
+            #show message
+            messagebox.showinfo("Export", "Exported to train.sh.\nDon't forget to take stabletune_concept_list.json with you!")
+            #close the window
+            
         
 
 

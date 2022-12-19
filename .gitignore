@@ -2392,3 +2392,5 @@ resources/cudnn_windows/cudnn_windows/cudnn_ops_train64_8.dll
 train.sh
 scripts/style.css
 scripts/streamlit_configurator.py
+data.zip
+export.zip
