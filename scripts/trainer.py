@@ -16,47 +16,37 @@ limitations under the License.
 
 import argparse
 import random
-from faulthandler import disable
 import hashlib
 import itertools
 import json
 import math
-from operator import index
 import os
 from contextlib import nullcontext
 from pathlib import Path
-from tkinter import W
 from typing import Optional
 import shutil
 import torch
 import torch.nn.functional as F
 import torch.utils.checkpoint
 from torch.utils.data import Dataset
-import PIL
 import numpy as np
 from accelerate import Accelerator
 from accelerate.logging import get_logger
 from accelerate.utils import set_seed
-from transformers import CLIPFeatureExtractor, CLIPModel
 from diffusers import AutoencoderKL, DDIMScheduler, DDPMScheduler, DiffusionPipeline, UNet2DConditionModel,DiffusionPipeline, DPMSolverMultistepScheduler,EulerDiscreteScheduler
 from diffusers.optimization import get_scheduler
 from huggingface_hub import HfFolder, Repository, whoami
-from PIL import Image
 from torchvision import transforms
 from tqdm.auto import tqdm
 from transformers import CLIPTextModel, CLIPTokenizer
-from scipy.interpolate import interp1d
 from typing import Dict, List, Generator, Tuple
-import glob
-from PIL import Image, ImageOps
-import re
-import torchvision
-from PIL.Image import Image as Img
-logger = get_logger(__name__)
-from PIL.Image import Resampling
+from PIL import Image
 from diffusers.utils.import_utils import is_xformers_available
+
+logger = get_logger(__name__)
 def parse_args():
     parser = argparse.ArgumentParser(description="Simple example of a training script.")
+    parser.add_argument("--conditional_dropout", type=float, default=None,required=False, help="Conditional dropout probability")
     parser.add_argument('--disable_cudnn_benchmark', default=False, action="store_true")
     parser.add_argument('--use_text_files_as_captions', default=False, action="store_true")
     parser.add_argument(
@@ -346,7 +336,7 @@ def parse_args():
     return args
 
 
-ASPECTS6 = [[832, 832], 
+ASPECT_832 = [[832, 832], 
 [896, 768], [768, 896], 
 [960, 704], [704, 960], 
 [1024, 640], [640, 1024], 
@@ -358,7 +348,7 @@ ASPECTS6 = [[832, 832],
 [1536, 384], [384, 1536], 
 [1600, 384], [384, 1600]]
 
-ASPECTS7 = [[896, 896],
+ASPECT_896 = [[896, 896],
 [960, 832], [832, 960],
 [1024, 768], [768, 1024],
 [1088, 704], [704, 1088],
@@ -371,7 +361,7 @@ ASPECTS7 = [[896, 896],
 [1536, 512], [512, 1536], 
 [1600, 448], [448, 1600], 
 [1664, 448], [448, 1664]]
-ASPECTS8 = [[896, 896], 
+ASPECT_960 = [[896, 896], 
 [960, 832], [832, 960], 
 [1024, 768], [768, 1024], 
 [1088, 704], [704, 1088], 
@@ -381,7 +371,7 @@ ASPECTS8 = [[896, 896],
 [1536, 512], [512, 1536], 
 [1600, 448], [448, 1600], 
 [1664, 448], [448, 1664]]     
-ASPECTS9 = [[1024, 1024], 
+ASPECT_1024 = [[1024, 1024], 
 [1088, 960], [960, 1088], 
 [1152, 896], [896, 1152], 
 [1216, 832], [832, 1216], 
@@ -390,7 +380,7 @@ ASPECTS9 = [[1024, 1024],
 [1600, 640], [640, 1600], 
 [1728, 576], [576, 1728], 
 [1792, 576], [576, 1792]]
-ASPECTS5 = [[768,768],     # 589824 1:1
+ASPECT_768 = [[768,768],     # 589824 1:1
     [832,704],[704,832],   # 585728 1.181:1
     [896,640],[640,896],   # 573440 1.4:1
     [960,576],[576,960],   # 552960 1.6:1
@@ -405,7 +395,7 @@ ASPECTS5 = [[768,768],     # 589824 1:1
     [1536,320],[320,1536], # 491520 4.8:1
 ]
 
-ASPECTS4 = [[704,704],     # 501,376 1:1
+ASPECT_704 = [[704,704],     # 501,376 1:1
     [768,640],[640,768],   # 491,520 1.2:1
     [832,576],[576,832],   # 458,752 1.444:1
     [896,512],[512,896],   # 458,752 1.75:1
@@ -420,7 +410,7 @@ ASPECTS4 = [[704,704],     # 501,376 1:1
     [1536,320],[320,1536], # 491,520 4.8:1
 ]
 
-ASPECTS3 = [[640,640],     # 409600 1:1 
+ASPECT_640 = [[640,640],     # 409600 1:1 
     [704,576],[576,704],   # 405504 1.25:1
     [768,512],[512,768],   # 393216 1.5:1
     [896,448],[448,896],   # 401408 2:1
@@ -432,7 +422,7 @@ ASPECTS3 = [[640,640],     # 409600 1:1
     [1600,256],[256,1600], # 409600 6.25:1
 ]
 
-ASPECTS2 = [[576,576],     # 331776 1:1
+ASPECT_576 = [[576,576],     # 331776 1:1
     [640,512],[512,640],   # 327680 1.25:1
     [640,448],[448,640],   # 286720 1.4286:1
     [704,448],[448,704],   # 314928 1.5625:1
@@ -441,7 +431,7 @@ ASPECTS2 = [[576,576],     # 331776 1:1
     [1280,256],[256,1280], # 327680 5:1
 ]
 
-ASPECTS = [[512,512],      # 262144 1:1
+ASPECTS_512 = [[512,512],      # 262144 1:1
     [576,448],[448,576],   # 258048 1.29:1
     [640,384],[384,640],   # 245760 1.667:1
     [768,320],[320,768],   # 245760 2.4:1
@@ -451,6 +441,8 @@ ASPECTS = [[512,512],      # 262144 1:1
     [1024,256],[256,1024], # 245760 4:1
     ]
 
+#failsafe aspects
+ASPECTS = ASPECTS_512
 def get_aspect_buckets(resolution):
     if resolution < 512:
         raise ValueError("Resolution must be at least 512")
@@ -459,14 +451,15 @@ def get_aspect_buckets(resolution):
         print("Rounded resolution to", rounded_resolution)
         all_image_sizes = __get_all_aspects()
         aspects = next(filter(lambda sizes: sizes[0][0]==rounded_resolution, all_image_sizes), None)
+        ASPECTS = aspects
         #print(aspects)
         return aspects
     except Exception as e:
-        print(f" *** Could not find selected resolution: {rounded_resolution}, check your resolution in config YAML")
+        print(f" *** Could not find selected resolution: {rounded_resolution}")
         raise e
 
 def __get_all_aspects():
-    return [ASPECTS, ASPECTS2, ASPECTS3, ASPECTS4, ASPECTS5,ASPECTS6,ASPECTS7,ASPECTS8,ASPECTS9]
+    return [ASPECTS_512, ASPECT_576, ASPECT_640, ASPECT_704, ASPECT_768,ASPECT_832,ASPECT_896,ASPECT_960,ASPECT_1024]
 
 class AutoBucketing(Dataset):
     def __init__(self,
@@ -484,8 +477,10 @@ class AutoBucketing(Dataset):
                  balance_datasets=False,
                  crop_jitter=20,
                  with_prior_loss=False,
-                 use_text_files_as_captions=False
+                 use_text_files_as_captions=False,
+                 conditional_dropout=None,
                  ):
+
         self.debug_level = debug_level
         self.resolution = resolution
         self.center_crop = center_crop
@@ -502,6 +497,7 @@ class AutoBucketing(Dataset):
         self.crop_jitter = crop_jitter
         self.with_prior_loss = with_prior_loss
         self.use_text_files_as_captions = use_text_files_as_captions
+        self.conditional_dropout = conditional_dropout
         self.image_transforms = transforms.Compose(
             [
                 transforms.ToTensor(),
@@ -524,6 +520,31 @@ class AutoBucketing(Dataset):
             self.image_train_items = shared_dataloader.get_all_images()
             self.num_train_images = self.num_train_images + len(self.image_train_items)
             self._length = max(math.trunc(self.num_train_images * repeats), batch_size) - self.num_train_images % self.batch_size
+        #amoutn of images to drop due to conditional dropout
+        if self.conditional_dropout != None:
+            #print('conditional dropout: ' + str(self.conditional_dropout))
+            #it's a float, convert to percentage
+            if self.conditional_dropout < 1:
+                self.conditional_dropout = self.conditional_dropout * 100
+            #calculate how many images to drop
+            self.num_images_to_drop = math.trunc(self.num_train_images * (self.conditional_dropout / 100))
+            print()
+            print(f" ** Conditional Dropout will drop: {self.num_images_to_drop} captions")
+            print()
+            selectedRandoms = []
+            for i in range(self.num_images_to_drop):
+                #pick a random image to drop
+                random_image = random.randint(0, self.image_paths - 1)
+                while random_image in selectedRandoms:
+                    random_image = random.randint(0, self.image_paths - 1)
+                selectedRandoms.append(random_image)
+                #remove it from the list
+                train_item = self.image_train_items[random_image]
+                #edit the train_item caption to be the word 'drop'
+                train_item.caption = ''
+                #replace the image in the list with the edited train_item
+                self.image_train_items[random_image] = train_item
+                #print('   ' +str(i))
 
         
         #print(self.image_train_items)
@@ -550,11 +571,7 @@ class AutoBucketing(Dataset):
         #print(example['instance_images'].shape)
         #print(example.keys())
         return example
-
-    def __get_image_for_trainer(self,image_train_item,debug_level=0,class_img=False):
-        example = {}
-        save = debug_level > 2
-        def normalize8(I):
+    def normalize8(self,I):
             mn = I.min()
             mx = I.max()
 
@@ -562,10 +579,15 @@ class AutoBucketing(Dataset):
 
             I = ((I - mn)/mx) * 255
             return I.astype(np.uint8)
+    def __get_image_for_trainer(self,image_train_item,debug_level=0,class_img=False):
+        example = {}
+        save = debug_level > 2
+        
         if class_img==False:
             image_train_tmp = image_train_item.hydrate(crop=False, save=0, crop_jitter=self.crop_jitter)
-            image_train_tmp_image = Image.fromarray(normalize8(image_train_tmp.image)).convert("RGB")
-            example["instance_images"] = self.image_transforms(image_train_tmp_image)
+            image_train_tmp_image = Image.fromarray(self.normalize8(image_train_tmp.image)).convert("RGB")
+            example["instance_images"] = self.image_transforms(image_train_tmp_image)       
+            #print(image_train_tmp.caption)     
             example["instance_prompt_ids"] = self.tokenizer(
                 image_train_tmp.caption,
                 padding="do_not_pad",
@@ -575,7 +597,7 @@ class AutoBucketing(Dataset):
             return example
         if class_img==True:
             image_train_tmp = image_train_item.hydrate(crop=False, save=4, crop_jitter=self.crop_jitter)
-            image_train_tmp_image = Image.fromarray(normalize8(image_train_tmp.image)).convert("RGB")
+            image_train_tmp_image = Image.fromarray(self.normalize8(image_train_tmp.image)).convert("RGB")
             example["class_images"] = self.image_transforms(image_train_tmp_image)
             example["class_prompt_ids"] = self.tokenizer(
                 image_train_tmp.caption,
@@ -588,13 +610,13 @@ class AutoBucketing(Dataset):
 _RANDOM_TRIM = 0.04
 class ImageTrainItem(): 
     """
-    image: PIL.Image
+    image: Image
     identifier: caption,
     target_aspect: (width, height), 
     pathname: path to image file
     flip_p: probability of flipping image (0.0 to 1.0)
     """    
-    def __init__(self, image: PIL.Image, caption: str, target_wh: list, pathname: str, flip_p=0.0):
+    def __init__(self, image: Image, caption: str, target_wh: list, pathname: str, flip_p=0.0):
         self.caption = caption
         self.target_wh = target_wh
         self.pathname = pathname
@@ -613,12 +635,12 @@ class ImageTrainItem():
         crop_jitter: randomly shift cropp by N pixels when using multiple aspect ratios to improve training quality
         """
         if not hasattr(self, 'image') or len(self.image) == 0:
-            self.image = PIL.Image.open(self.pathname).convert('RGB')
+            self.image = Image.open(self.pathname).convert('RGB')
 
             width, height = self.image.size
             if crop: 
                 cropped_img = self.__autocrop(self.image)
-                self.image = cropped_img.resize((512,512), resample=Resampling.LANCZOS)
+                self.image = cropped_img.resize((512,512), resample=Image.Resampling.LANCZOS)
             else:
                 width, height = self.image.size
                 jitter_amount = random.randint(0,crop_jitter)
@@ -658,7 +680,7 @@ class ImageTrainItem():
                         bottom = top + new_height
                         self.image = self.image.crop((0, top, width, bottom))
                         #LAZCOS resample
-                self.image = self.image.resize(self.target_wh, resample=Resampling.LANCZOS)
+                self.image = self.image.resize(self.target_wh, resample=Image.Resampling.LANCZOS)
 
             self.image = self.flip(self.image)
 
@@ -872,7 +894,8 @@ class DreamBoothDataset(Dataset):
         num_class_images=None,
         use_image_names_as_captions=False,
         repeats=1,
-        use_text_files_as_captions=False
+        use_text_files_as_captions=False,
+        conditional_dropout=None,
     ):
         self.use_image_names_as_captions = use_image_names_as_captions
         self.size = size
@@ -882,6 +905,7 @@ class DreamBoothDataset(Dataset):
         self.use_text_files_as_captions = use_text_files_as_captions
         self.image_paths = []
         self.class_images_path = []
+        self.conditional_dropout = conditional_dropout
 
         for concept in concepts_list:
             if 'use_sub_dirs' in concept:
@@ -899,7 +923,30 @@ class DreamBoothDataset(Dataset):
                 for i in range(repeats):
                     self.__recurse_data_root(self, concept,use_sub_dirs=False,class_images=True)
         random.shuffle(self.image_paths)
-
+        if self.conditional_dropout != None:
+            #print('conditional dropout: ' + str(self.conditional_dropout))
+            #it's a float, convert to percentage
+            if self.conditional_dropout < 1:
+                self.conditional_dropout = self.conditional_dropout * 100
+            #calculate how many images to drop
+            self.num_images_to_drop = math.trunc(len(self.image_paths) * (self.conditional_dropout / 100))
+            print()
+            print(f" ** Conditional Dropout will drop: {self.num_images_to_drop} captions")
+            print()
+            selectedRandoms = []
+            for i in range(self.num_images_to_drop):
+                #pick a random image to drop
+                random_image = random.randint(0, len(self.image_paths) - 1)
+                while random_image in selectedRandoms:
+                    random_image = random.randint(0, len(self.image_paths) - 1)
+                selectedRandoms.append(random_image)
+                #remove it from the list
+                train_item = self.image_paths[random_image]
+                #edit the train_item caption to be the word 'drop'
+                train_item[1] = ''
+                #replace the image in the list with the edited train_item
+                self.image_paths[random_image] = train_item
+                #print('   ' +str(i))
         self.num_instance_images = len(self.image_paths)
         self._length = self.num_instance_images
         self.num_class_images = len(self.class_images_path)
@@ -932,9 +979,9 @@ class DreamBoothDataset(Dataset):
                 ext = os.path.splitext(f)[1].lower()
                 if ext in ['.jpg', '.jpeg', '.png', '.bmp', '.webp']:
                     if class_images == False:
-                        self.image_paths.append((current,concept_token))
+                        self.image_paths.append([current,concept_token])
                     else:
-                        self.class_images_path.append((current,concept_token))
+                        self.class_images_path.append([current,concept_token])
         if use_sub_dirs:
             sub_dirs = []
 
@@ -955,6 +1002,7 @@ class DreamBoothDataset(Dataset):
     def __getitem__(self, index):
         example = {}
         instance_path, instance_prompt = self.image_paths[index % self.num_instance_images]
+        og_prompt = instance_prompt
         instance_image = Image.open(instance_path)
         if self.use_image_names_as_captions == True:
             instance_prompt = str(instance_path).split(os.sep)[-1].split('.')[0].split('_')[0]
@@ -970,7 +1018,11 @@ class DreamBoothDataset(Dataset):
             if os.path.exists(txt_path):
                 with open(txt_path, encoding='utf-8') as f:
                     instance_prompt = f.readline().rstrip()
-        
+        if self.conditional_dropout != None:
+            if og_prompt == '' and instance_prompt != '':
+                instance_prompt = ''
+                
+            
         #print('identifier: ' + instance_prompt)
         instance_image = instance_image.convert("RGB")
         example["instance_images"] = self.image_transforms(instance_image)
@@ -1297,6 +1349,7 @@ def main():
             with_prior_loss=False,#args.with_prior_preservation,
             repeats=args.dataset_repeats,
             use_text_files_as_captions=args.use_text_files_as_captions,
+            conditional_dropout=args.conditional_dropout
         )
     else:
         train_dataset = DreamBoothDataset(
@@ -1309,6 +1362,7 @@ def main():
         use_image_names_as_captions=args.use_image_names_as_captions,
         repeats=args.dataset_repeats,
         use_text_files_as_captions=args.use_text_files_as_captions,
+        conditional_dropout=args.conditional_dropout
     )
     def collate_fn(examples):
         #print(examples)
