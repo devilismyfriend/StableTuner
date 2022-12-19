@@ -991,6 +991,7 @@ class App(ctk.CTk):
         #self.canvas.configure(scrollregion=self.canvas.bbox("all"))
         #print(self.concept_widgets[0].concept.concept_path)
     def create_default_variables(self):
+        self.conditional_dropout = ''
         self.cloud_toggle = True
         self.generation_window = None
         self.concept_widgets = []
@@ -1623,26 +1624,31 @@ class App(ctk.CTk):
         #create checkbox
         self.disable_cudnn_benchmark_checkbox = ctk.CTkSwitch(self.training_frame_subframe, variable=self.disable_cudnn_benchmark_var)
         #self.disable_cudnn_benchmark_checkbox.grid(row=17, column=1, sticky="nsew")
-        #list of label and entries that attach to the training tab
-  
-        #create label
+        #add conditional dropout entry
+        self.conditional_dropout_label = ctk.CTkLabel(self.training_frame_subframe, text="Conditional Dropout")
+        conditional_dropout_label_ttp = CreateToolTip(self.conditional_dropout_label, "Precentage of probability to drop out a caption token to train the model to be more robust to missing words.")
+        self.conditional_dropout_label.grid(row=18, column=0, sticky="nsew")
+        self.conditional_dropout_entry = ctk.CTkEntry(self.training_frame_subframe)
+        self.conditional_dropout_entry.grid(row=18, column=1, sticky="nsew")
+        self.conditional_dropout_entry.insert(0, self.conditional_dropout)
         #create with prior loss preservation checkbox
         self.with_prior_loss_preservation_var = tk.IntVar()
         self.with_prior_loss_preservation_var.set(self.with_prior_reservation)
         #create label
         self.with_prior_loss_preservation_label = ctk.CTkLabel(self.training_frame_subframe, text="With Prior Loss Preservation")
         with_prior_loss_preservation_label_ttp = CreateToolTip(self.with_prior_loss_preservation_label, "Use the prior loss preservation method. part of Dreambooth.")
-        self.with_prior_loss_preservation_label.grid(row=18, column=0, sticky="nsew")
+        self.with_prior_loss_preservation_label.grid(row=19, column=0, sticky="nsew")
         #create checkbox
         self.with_prior_loss_preservation_checkbox = ctk.CTkSwitch(self.training_frame_subframe, variable=self.with_prior_loss_preservation_var)
-        self.with_prior_loss_preservation_checkbox.grid(row=18, column=1, sticky="nsew")
+        self.with_prior_loss_preservation_checkbox.grid(row=19, column=1, sticky="nsew")
         #create prior loss preservation weight entry
         self.prior_loss_preservation_weight_label = ctk.CTkLabel(self.training_frame_subframe, text="Weight")
         prior_loss_preservation_weight_label_ttp = CreateToolTip(self.prior_loss_preservation_weight_label, "The weight of the prior loss preservation loss.")
-        self.prior_loss_preservation_weight_label.grid(row=18, column=1, sticky="e")
+        self.prior_loss_preservation_weight_label.grid(row=19, column=1, sticky="e")
         self.prior_loss_preservation_weight_entry = ctk.CTkEntry(self.training_frame_subframe)
-        self.prior_loss_preservation_weight_entry.grid(row=18, column=3, sticky="w")
+        self.prior_loss_preservation_weight_entry.grid(row=19, column=3, sticky="w")
         self.prior_loss_preservation_weight_entry.insert(0, self.prior_loss_weight)
+        
 
     def create_dataset_settings_widgets(self):
         #self.dataset_settings_label = ctk.CTkLabel(self.dataset_tab, text="Dataset Settings", font=("Arial", 12, "bold"))
@@ -2900,6 +2906,7 @@ class App(ctk.CTk):
         configure['execute_post_conversion'] = self.convert_to_ckpt_after_training_var.get()
         configure['disable_cudnn_benchmark'] = self.disable_cudnn_benchmark_var.get()
         configure['sample_step_interval'] = self.sample_step_interval_entry.get()
+        configure['conditional_dropout'] = self.conditional_dropout_entry.get()
 
         #save the configure file
         #if the file exists, delete it
@@ -3018,6 +3025,8 @@ class App(ctk.CTk):
         self.disable_cudnn_benchmark_var.set(configure["disable_cudnn_benchmark"])
         self.sample_step_interval_entry.delete(0, tk.END)
         self.sample_step_interval_entry.insert(0, configure["sample_step_interval"])
+        self.conditional_dropout_entry.delete(0, tk.END)
+        self.conditional_dropout_entry.insert(0, configure["conditional_dropout"])
 
             
 
@@ -3078,10 +3087,11 @@ class App(ctk.CTk):
         self.convert_to_ckpt_after_training = self.convert_to_ckpt_after_training_var.get()
         self.disable_cudnn_benchmark = self.disable_cudnn_benchmark_var.get()
         self.sample_step_interval = self.sample_step_interval_entry.get()
-        self.cloud_mode = self.runpod_mode_var.get()
-        if self.cloud_mode == True:
-            export='Linux'
-            self.packageForCloud()
+        #self.cloud_mode = self.runpod_mode_var.get()
+        self.conditional_dropout = self.conditional_dropout_entry.get()
+        #if self.cloud_mode == True:
+        #    export='Linux'
+        #    self.packageForCloud()
         if int(self.train_epocs) == 0 or self.train_epocs == '':
             messagebox.showerror("Error", "Number of training epochs must be greater than 0")
             return
@@ -3291,6 +3301,17 @@ class App(ctk.CTk):
                 batBase += ' --sample_on_training_start'
             else:
                 batBase += f' "--sample_on_training_start" '
+        if self.conditional_dropout != '' or self.conditional_dropout != ' ' or self.conditional_dropout != '0':
+            #if % is in the string, remove it
+            if '%' in self.conditional_dropout:
+                self.conditional_dropout = self.conditional_dropout.replace('%', '')
+            #convert to float from percentage string
+            self.conditional_dropout = float(self.conditional_dropout) / 100
+            #print(self.conditional_dropout)
+            if export == 'Linux':
+                batBase += f' --conditional_dropout={self.conditional_dropout}'
+            else:
+                batBase += f' "--conditional_dropout={self.conditional_dropout}" '
         #save configure
         self.save_config('stabletune_last_run.json')
         
@@ -3329,6 +3350,7 @@ class App(ctk.CTk):
             #show message
             messagebox.showinfo("Export", "Exported to train.sh.\nDon't forget to take stabletune_concept_list.json with you!")
             #close the window
+        '''
         elif export == 'Linux' and self.cloud_mode == True:
             with open("export"+os.sep+"train.sh", "w", encoding="utf-8") as f:
                 f.write(batBase)
@@ -3340,7 +3362,7 @@ class App(ctk.CTk):
             #show message
             messagebox.showinfo("Export", "Exported to train.sh.\nDon't forget to take stabletune_concept_list.json with you!")
             #close the window
-            
+        '''
         
 
 

@@ -46,6 +46,7 @@ from diffusers.utils.import_utils import is_xformers_available
 logger = get_logger(__name__)
 def parse_args():
     parser = argparse.ArgumentParser(description="Simple example of a training script.")
+    parser.add_argument("--conditional_dropout", type=float, default=None,required=False, help="Conditional dropout probability")
     parser.add_argument('--disable_cudnn_benchmark', default=False, action="store_true")
     parser.add_argument('--use_text_files_as_captions', default=False, action="store_true")
     parser.add_argument(
@@ -476,8 +477,10 @@ class AutoBucketing(Dataset):
                  balance_datasets=False,
                  crop_jitter=20,
                  with_prior_loss=False,
-                 use_text_files_as_captions=False
+                 use_text_files_as_captions=False,
+                 conditional_dropout=False,
                  ):
+
         self.debug_level = debug_level
         self.resolution = resolution
         self.center_crop = center_crop
@@ -494,6 +497,7 @@ class AutoBucketing(Dataset):
         self.crop_jitter = crop_jitter
         self.with_prior_loss = with_prior_loss
         self.use_text_files_as_captions = use_text_files_as_captions
+        self.conditional_dropout = conditional_dropout
         self.image_transforms = transforms.Compose(
             [
                 transforms.ToTensor(),
@@ -516,6 +520,31 @@ class AutoBucketing(Dataset):
             self.image_train_items = shared_dataloader.get_all_images()
             self.num_train_images = self.num_train_images + len(self.image_train_items)
             self._length = max(math.trunc(self.num_train_images * repeats), batch_size) - self.num_train_images % self.batch_size
+        #amoutn of images to drop due to conditional dropout
+        if self.conditional_dropout != False:
+            #print('conditional dropout: ' + str(self.conditional_dropout))
+            #it's a float, convert to percentage
+            if self.conditional_dropout < 1:
+                self.conditional_dropout = self.conditional_dropout * 100
+            #calculate how many images to drop
+            self.num_images_to_drop = math.trunc(self.num_train_images * (self.conditional_dropout / 100))
+            print()
+            print(f" ** Conditional Dropout will drop: {self.num_images_to_drop} captions")
+            print()
+            selectedRandoms = []
+            for i in range(self.num_images_to_drop):
+                #pick a random image to drop
+                random_image = random.randint(0, self.image_paths - 1)
+                while random_image in selectedRandoms:
+                    random_image = random.randint(0, self.image_paths - 1)
+                selectedRandoms.append(random_image)
+                #remove it from the list
+                train_item = self.image_train_items[random_image]
+                #edit the train_item caption to be the word 'drop'
+                train_item.caption = ''
+                #replace the image in the list with the edited train_item
+                self.image_train_items[random_image] = train_item
+                #print('   ' +str(i))
 
         
         #print(self.image_train_items)
@@ -542,11 +571,7 @@ class AutoBucketing(Dataset):
         #print(example['instance_images'].shape)
         #print(example.keys())
         return example
-
-    def __get_image_for_trainer(self,image_train_item,debug_level=0,class_img=False):
-        example = {}
-        save = debug_level > 2
-        def normalize8(I):
+    def normalize8(self,I):
             mn = I.min()
             mx = I.max()
 
@@ -554,10 +579,15 @@ class AutoBucketing(Dataset):
 
             I = ((I - mn)/mx) * 255
             return I.astype(np.uint8)
+    def __get_image_for_trainer(self,image_train_item,debug_level=0,class_img=False):
+        example = {}
+        save = debug_level > 2
+        
         if class_img==False:
             image_train_tmp = image_train_item.hydrate(crop=False, save=0, crop_jitter=self.crop_jitter)
-            image_train_tmp_image = Image.fromarray(normalize8(image_train_tmp.image)).convert("RGB")
-            example["instance_images"] = self.image_transforms(image_train_tmp_image)
+            image_train_tmp_image = Image.fromarray(self.normalize8(image_train_tmp.image)).convert("RGB")
+            example["instance_images"] = self.image_transforms(image_train_tmp_image)       
+            #print(image_train_tmp.caption)     
             example["instance_prompt_ids"] = self.tokenizer(
                 image_train_tmp.caption,
                 padding="do_not_pad",
@@ -567,7 +597,7 @@ class AutoBucketing(Dataset):
             return example
         if class_img==True:
             image_train_tmp = image_train_item.hydrate(crop=False, save=4, crop_jitter=self.crop_jitter)
-            image_train_tmp_image = Image.fromarray(normalize8(image_train_tmp.image)).convert("RGB")
+            image_train_tmp_image = Image.fromarray(self.normalize8(image_train_tmp.image)).convert("RGB")
             example["class_images"] = self.image_transforms(image_train_tmp_image)
             example["class_prompt_ids"] = self.tokenizer(
                 image_train_tmp.caption,
@@ -864,7 +894,8 @@ class DreamBoothDataset(Dataset):
         num_class_images=None,
         use_image_names_as_captions=False,
         repeats=1,
-        use_text_files_as_captions=False
+        use_text_files_as_captions=False,
+        conditional_dropout=False,
     ):
         self.use_image_names_as_captions = use_image_names_as_captions
         self.size = size
@@ -874,6 +905,7 @@ class DreamBoothDataset(Dataset):
         self.use_text_files_as_captions = use_text_files_as_captions
         self.image_paths = []
         self.class_images_path = []
+        self.conditional_dropout = conditional_dropout
 
         for concept in concepts_list:
             if 'use_sub_dirs' in concept:
@@ -891,7 +923,30 @@ class DreamBoothDataset(Dataset):
                 for i in range(repeats):
                     self.__recurse_data_root(self, concept,use_sub_dirs=False,class_images=True)
         random.shuffle(self.image_paths)
-
+        if self.conditional_dropout != False:
+            #print('conditional dropout: ' + str(self.conditional_dropout))
+            #it's a float, convert to percentage
+            if self.conditional_dropout < 1:
+                self.conditional_dropout = self.conditional_dropout * 100
+            #calculate how many images to drop
+            self.num_images_to_drop = math.trunc(len(self.image_paths) * (self.conditional_dropout / 100))
+            print()
+            print(f" ** Conditional Dropout will drop: {self.num_images_to_drop} captions")
+            print()
+            selectedRandoms = []
+            for i in range(self.num_images_to_drop):
+                #pick a random image to drop
+                random_image = random.randint(0, len(self.image_paths) - 1)
+                while random_image in selectedRandoms:
+                    random_image = random.randint(0, len(self.image_paths) - 1)
+                selectedRandoms.append(random_image)
+                #remove it from the list
+                train_item = self.image_paths[random_image]
+                #edit the train_item caption to be the word 'drop'
+                train_item[1] = ''
+                #replace the image in the list with the edited train_item
+                self.image_paths[random_image] = train_item
+                #print('   ' +str(i))
         self.num_instance_images = len(self.image_paths)
         self._length = self.num_instance_images
         self.num_class_images = len(self.class_images_path)
@@ -924,9 +979,9 @@ class DreamBoothDataset(Dataset):
                 ext = os.path.splitext(f)[1].lower()
                 if ext in ['.jpg', '.jpeg', '.png', '.bmp', '.webp']:
                     if class_images == False:
-                        self.image_paths.append((current,concept_token))
+                        self.image_paths.append([current,concept_token])
                     else:
-                        self.class_images_path.append((current,concept_token))
+                        self.class_images_path.append([current,concept_token])
         if use_sub_dirs:
             sub_dirs = []
 
@@ -948,20 +1003,21 @@ class DreamBoothDataset(Dataset):
         example = {}
         instance_path, instance_prompt = self.image_paths[index % self.num_instance_images]
         instance_image = Image.open(instance_path)
-        if self.use_image_names_as_captions == True:
-            instance_prompt = str(instance_path).split(os.sep)[-1].split('.')[0].split('_')[0]
-        #else if there's a txt file with the same name as the image, read the caption from there
-        if self.use_text_files_as_captions == True:
-            #if there's a file with the same name as the image, but with a .txt extension, read the caption from there
-            #get the last . in the file name
-            last_dot = str(instance_path).rfind('.')
-            #get the path up to the last dot
-            txt_path = str(instance_path)[:last_dot] + '.txt'
+        if instance_prompt != '':
+            if self.use_image_names_as_captions == True:
+                instance_prompt = str(instance_path).split(os.sep)[-1].split('.')[0].split('_')[0]
+            #else if there's a txt file with the same name as the image, read the caption from there
+            if self.use_text_files_as_captions == True:
+                #if there's a file with the same name as the image, but with a .txt extension, read the caption from there
+                #get the last . in the file name
+                last_dot = str(instance_path).rfind('.')
+                #get the path up to the last dot
+                txt_path = str(instance_path)[:last_dot] + '.txt'
 
-            #if txt_path exists, read the caption from there
-            if os.path.exists(txt_path):
-                with open(txt_path, encoding='utf-8') as f:
-                    instance_prompt = f.readline().rstrip()
+                #if txt_path exists, read the caption from there
+                if os.path.exists(txt_path):
+                    with open(txt_path, encoding='utf-8') as f:
+                        instance_prompt = f.readline().rstrip()
         
         #print('identifier: ' + instance_prompt)
         instance_image = instance_image.convert("RGB")
@@ -1289,6 +1345,7 @@ def main():
             with_prior_loss=False,#args.with_prior_preservation,
             repeats=args.dataset_repeats,
             use_text_files_as_captions=args.use_text_files_as_captions,
+            conditional_dropout=args.conditional_dropout
         )
     else:
         train_dataset = DreamBoothDataset(
@@ -1301,6 +1358,7 @@ def main():
         use_image_names_as_captions=args.use_image_names_as_captions,
         repeats=args.dataset_repeats,
         use_text_files_as_captions=args.use_text_files_as_captions,
+        conditional_dropout=args.conditional_dropout
     )
     def collate_fn(examples):
         #print(examples)
