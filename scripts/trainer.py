@@ -42,11 +42,11 @@ from transformers import CLIPTextModel, CLIPTokenizer
 from typing import Dict, List, Generator, Tuple
 from PIL import Image
 from diffusers.utils.import_utils import is_xformers_available
-
+from trainer_util import EMAModel
 logger = get_logger(__name__)
 def parse_args():
     parser = argparse.ArgumentParser(description="Simple example of a training script.")
-    #parser.add_argument('--use_ema',default=False,action="store_true", help='Use EMA for finetuning')
+    parser.add_argument('--use_ema',default=False,action="store_true", help='Use EMA for finetuning')
     parser.add_argument('--clip_penultimate',default=False,action="store_true", help='Use penultimate CLIP layer for text embedding')
     parser.add_argument("--conditional_dropout", type=float, default=None,required=False, help="Conditional dropout probability")
     parser.add_argument('--disable_cudnn_benchmark', default=False, action="store_true")
@@ -1279,6 +1279,8 @@ def main():
                 "Could not enable memory efficient attention. Make sure xformers is installed"
                 f" correctly and a GPU is available: {e}"
             )
+    if args.use_ema == True:
+        ema_unet = EMAModel(unet.parameters())
     vae.requires_grad_(False)
     #vae.enable_slicing()
     if not args.train_text_encoder:
@@ -1442,6 +1444,8 @@ def main():
     # For mixed precision training we cast the text_encoder and vae weights to half-precision
     # as these models are only used for inference, keeping weights in full precision is not required.
     vae.to(accelerator.device, dtype=weight_dtype)
+    if args.use_ema == True:
+        ema_unet.to(accelerator.device, dtype=weight_dtype)
     if not args.train_text_encoder:
         text_encoder.to(accelerator.device, dtype=weight_dtype)
 
@@ -1497,11 +1501,19 @@ def main():
         num_training_steps=args.max_train_steps * args.gradient_accumulation_steps,
     )
 
-    if args.train_text_encoder:
+    if args.train_text_encoder and not args.use_ema:
         unet, text_encoder, optimizer, train_dataloader, lr_scheduler = accelerator.prepare(
             unet, text_encoder, optimizer, train_dataloader, lr_scheduler
         )
-    else:
+    elif args.train_text_encoder and args.use_ema:
+        unet, text_encoder, ema_unet, optimizer, train_dataloader, lr_scheduler = accelerator.prepare(
+            unet, text_encoder, ema_unet, optimizer, train_dataloader, lr_scheduler
+        )
+    elif not args.train_text_encoder and args.use_ema:
+        unet, ema_unet, optimizer, train_dataloader, lr_scheduler = accelerator.prepare(
+            unet, ema_unet, optimizer, train_dataloader, lr_scheduler
+        )
+    elif not args.train_text_encoder and not args.use_ema:
         unet, optimizer, train_dataloader, lr_scheduler = accelerator.prepare(
             unet, optimizer, train_dataloader, lr_scheduler
         )
@@ -1578,10 +1590,13 @@ def main():
             #scheduler = DDIMScheduler(beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear", clip_sample=False, set_alpha_to_one=False)
             #scheduler = EulerDiscreteScheduler.from_pretrained(args.pretrained_model_name_or_path, subfolder="scheduler", prediction_type="v_prediction")
             scheduler = DPMSolverMultistepScheduler.from_pretrained(args.pretrained_model_name_or_path, subfolder="scheduler")
-
+            unwrapped_unet = accelerator.unwrap_model(unet,True)
+            if args.use_ema:
+                ema_unet.copy_to(unwrapped_unet.parameters())
+                
             pipeline = DiffusionPipeline.from_pretrained(
                 args.pretrained_model_name_or_path,
-                unet=accelerator.unwrap_model(unet,True),
+                unet=unwrapped_unet,
                 text_encoder=text_enc_model,
                 vae=AutoencoderKL.from_pretrained(args.pretrained_vae_name_or_path or args.pretrained_model_name_or_path,subfolder=None if args.pretrained_vae_name_or_path else "vae" ),
                 safety_checker=None,
@@ -1659,6 +1674,7 @@ def main():
                             except:
                                 pass
                 del pipeline
+                del unwrapped_unet
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()
             if save_model == True:
@@ -1798,6 +1814,8 @@ def main():
                     lr_scheduler.step()
                     optimizer.zero_grad()
                     loss_avg.update(loss.detach_(), bsz)
+                    if args.use_ema == True:
+                        ema_unet.step(unet.parameters())
 
                 if not global_step % args.log_interval:
                     logs = {"loss": loss_avg.avg.item(), "lr": lr_scheduler.get_last_lr()[0]}
