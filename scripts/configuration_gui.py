@@ -992,6 +992,7 @@ class App(ctk.CTk):
         #self.canvas.configure(scrollregion=self.canvas.bbox("all"))
         #print(self.concept_widgets[0].concept.concept_path)
     def create_default_variables(self):
+        self.use_ema = False
         self.clip_penultimate = False
         self.conditional_dropout = ''
         self.cloud_toggle = False
@@ -1685,6 +1686,16 @@ class App(ctk.CTk):
         conditional_dropout_label_ttp = CreateToolTip(self.conditional_dropout_label, "Precentage of probability to drop out a caption token to train the model to be more robust to missing words.")
         self.conditional_dropout_entry = ctk.CTkEntry(self.training_frame_subframe)
         self.conditional_dropout_entry.insert(0, self.conditional_dropout)
+        #create use EMA switch
+        self.use_ema_var = tk.IntVar()
+        self.use_ema_var.set(self.use_ema)
+        #create label
+        self.use_ema_label = ctk.CTkLabel(self.training_frame_subframe, text="Use EMA")
+        use_ema_label_ttp = CreateToolTip(self.use_ema_label, "Use Exponential Moving Average to smooth the training paramaters. Will increase VRAM usage.")
+        #self.use_ema_label.grid(row=18, column=0, sticky="nsew")
+        #create checkbox
+        self.use_ema_checkbox = ctk.CTkSwitch(self.training_frame_subframe, variable=self.use_ema_var)
+
         #create with prior loss preservation checkbox
         self.with_prior_loss_preservation_var = tk.IntVar()
         self.with_prior_loss_preservation_var.set(self.with_prior_reservation)
@@ -2980,6 +2991,7 @@ class App(ctk.CTk):
         configure['sample_step_interval'] = self.sample_step_interval_entry.get()
         configure['conditional_dropout'] = self.conditional_dropout_entry.get()
         configure["clip_penultimate"] = self.clip_penultimate_var.get()
+        configure['use_ema'] = self.use_ema_var.get()
         #save the configure file
         #if the file exists, delete it
         if os.path.exists(file_name):
@@ -3100,6 +3112,7 @@ class App(ctk.CTk):
         self.conditional_dropout_entry.delete(0, tk.END)
         self.conditional_dropout_entry.insert(0, configure["conditional_dropout"])
         self.clip_penultimate_var.set(configure["clip_penultimate"])
+        self.use_ema_var.set(configure["use_ema"])
             
 
         #self.update_controlled_seed_sample()
@@ -3162,6 +3175,7 @@ class App(ctk.CTk):
         #self.cloud_mode = self.runpod_mode_var.get()
         self.conditional_dropout = self.conditional_dropout_entry.get()
         self.clip_penultimate = self.clip_penultimate_var.get()
+        self.use_ema = self.use_ema_var.get()
         #if self.cloud_mode == True:
         #    export='Linux'
         #    self.packageForCloud()
@@ -3401,7 +3415,11 @@ class App(ctk.CTk):
                 batBase += ' --clip_penultimate'
             else:
                 batBase += f' "--clip_penultimate" '
-        
+        if self.use_ema == True:
+            if export == 'Linux':
+                batBase += ' --use_ema'
+            else:
+                batBase += f' "--use_ema" '
         self.save_config('stabletune_last_run.json')
         
         if export == False:
