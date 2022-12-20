@@ -534,9 +534,9 @@ class AutoBucketing(Dataset):
             selectedRandoms = []
             for i in range(self.num_images_to_drop):
                 #pick a random image to drop
-                random_image = random.randint(0, self.image_paths - 1)
+                random_image = random.randint(0, len(self.image_train_items) - 1)
                 while random_image in selectedRandoms:
-                    random_image = random.randint(0, self.image_paths - 1)
+                    random_image = random.randint(0, len(self.image_train_items) - 1)
                 selectedRandoms.append(random_image)
                 #remove it from the list
                 train_item = self.image_train_items[random_image]
