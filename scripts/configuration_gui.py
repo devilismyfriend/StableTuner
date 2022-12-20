@@ -711,6 +711,7 @@ class App(ctk.CTk):
         self.create_trainer_settings_widgets()
         self.grid_train_settings()
         self.apply_general_style_to_widgets(self.training_frame_subframe)
+        self.override_training_style_widgets()
         #self.dg = DynamicGrid(self.training_frame, width=800, height=200)
         #self.dg.grid(row=1, column=0, padx=20, pady=20, sticky="nsew")
         #add_button  = tk.Button(self.training_frame, text="Add", command=self.dg.add_box)
@@ -991,8 +992,9 @@ class App(ctk.CTk):
         #self.canvas.configure(scrollregion=self.canvas.bbox("all"))
         #print(self.concept_widgets[0].concept.concept_path)
     def create_default_variables(self):
+        self.clip_penultimate = False
         self.conditional_dropout = ''
-        self.cloud_toggle = True
+        self.cloud_toggle = False
         self.generation_window = None
         self.concept_widgets = []
         self.sample_prompts = []
@@ -1218,6 +1220,29 @@ class App(ctk.CTk):
                 self.input_model_path_entry.insert(0,"stabilityai/stable-diffusion-2-1")
                 self.resolution_var.set("768")
             #self.master.update()
+    def override_training_style_widgets(self):
+        #return
+        for i in self.training_frame_subframe.children.values():
+            #print(i)
+            if 'ctkbutton' in str(i):
+                #print(i)
+                i.grid(padx=5, pady=5,sticky="w")
+            if 'ctkoptionmenu' in str(i):
+                #print(i)
+                i.grid(padx=10, pady=5,sticky="w")
+            if 'ctkentry' in str(i):
+                #print(i)
+                i.configure(width=160)
+                i.grid(padx=10, pady=5,sticky="w")
+                i.bind("<Button-3>", self.create_right_click_menu)
+            if 'ctkswitch' in str(i):
+                #print(i)
+                i.configure(text='')
+                i.grid(padx=10, pady=5,sticky="")
+            if 'ctklabel' in str(i):
+                #print(i)
+                i.grid(padx=10, pady=5,sticky="w")
+
     def override_playground_widgets_style(self):
         self.playground_title.grid(row=0, column=0, padx=20, pady=20)  
         self.play_model_label.grid(row=0, column=0, sticky="nsew")
@@ -1272,11 +1297,12 @@ class App(ctk.CTk):
 
     def grid_train_settings(self):
         #define grid row and column
-        self.training_frame_subframe.grid_columnconfigure(0, weight=1)
+        self.training_frame_subframe.grid_columnconfigure(0, weight=2)
         self.training_frame_subframe.grid_columnconfigure(1, weight=1)
-        self.training_frame_subframe.grid_columnconfigure(2, weight=1)
+        self.training_frame_subframe.grid_columnconfigure(2, weight=2)
         self.training_frame_subframe.grid_columnconfigure(3, weight=1)
-        rows = 10
+        
+        rows = 12
         columns = 4
         widgets = self.training_frame_subframe.children.values()
         #organize widgets in grid
@@ -1293,8 +1319,8 @@ class App(ctk.CTk):
         for i in range(0,len(widgets),2):
             pairs.append([widgets[i],widgets[i+1]])
         for p in pairs:
-            p[0].grid(row=curRow, column=curColumn, sticky="w")
-            p[1].grid(row=curRow, column=curColumn+1, sticky="w")
+            p[0].grid(row=curRow, column=curColumn, sticky="w",padx=1,pady=1)
+            p[1].grid(row=curRow, column=curColumn+1, sticky="w",padx=1,pady=1)
             curRow += 1
             if curRow == rows:
                 curRow = 0
@@ -1625,6 +1651,15 @@ class App(ctk.CTk):
         self.train_text_encoder_checkbox = ctk.CTkSwitch(self.training_frame_subframe, variable=self.train_text_encoder_var)
         #self.train_text_encoder_checkbox.grid(row=15, column=1, sticky="nsew")
         #create limit text encoder encoder entry
+        self.clip_penultimate_var = tk.IntVar()
+        self.clip_penultimate_var.set(self.clip_penultimate)
+        #create label
+        self.clip_penultimate_label = ctk.CTkLabel(self.training_frame_subframe, text="Clip Penultimate")
+        clip_penultimate_label_ttp = CreateToolTip(self.clip_penultimate_label, "Train using the Penultimate layer of the text encoder.")
+        #create checkbox
+        self.clip_penultimate_checkbox = ctk.CTkSwitch(self.training_frame_subframe, variable=self.clip_penultimate_var)
+        
+
         self.limit_text_encoder_var = tk.StringVar()
         self.limit_text_encoder_var.set(self.limit_text_encoder)
         #create label
@@ -1648,9 +1683,7 @@ class App(ctk.CTk):
         #add conditional dropout entry
         self.conditional_dropout_label = ctk.CTkLabel(self.training_frame_subframe, text="Conditional Dropout")
         conditional_dropout_label_ttp = CreateToolTip(self.conditional_dropout_label, "Precentage of probability to drop out a caption token to train the model to be more robust to missing words.")
-        self.conditional_dropout_label.grid(row=18, column=0, sticky="nsew")
         self.conditional_dropout_entry = ctk.CTkEntry(self.training_frame_subframe)
-        self.conditional_dropout_entry.grid(row=18, column=1, sticky="nsew")
         self.conditional_dropout_entry.insert(0, self.conditional_dropout)
         #create with prior loss preservation checkbox
         self.with_prior_loss_preservation_var = tk.IntVar()
@@ -2011,7 +2044,7 @@ class App(ctk.CTk):
                     required_folders = ["vae", "unet", "tokenizer", "text_encoder"]
                     if all(x in os.listdir(last_model_path) for x in required_folders):
                        # print(newest_dir)
-                        last_model_path = newest_dir.replace("/", os.sep).replace("\\", os.sep)
+                        last_model_path = last_model_path.replace("/", os.sep).replace("\\", os.sep)
                         if entry:
                             entry.delete(0, tk.END)
                             entry.insert(0, last_model_path)
@@ -2946,7 +2979,7 @@ class App(ctk.CTk):
         configure['disable_cudnn_benchmark'] = self.disable_cudnn_benchmark_var.get()
         configure['sample_step_interval'] = self.sample_step_interval_entry.get()
         configure['conditional_dropout'] = self.conditional_dropout_entry.get()
-
+        configure["clip_penultimate"] = self.clip_penultimate_var.get()
         #save the configure file
         #if the file exists, delete it
         if os.path.exists(file_name):
@@ -3066,7 +3099,7 @@ class App(ctk.CTk):
         self.sample_step_interval_entry.insert(0, configure["sample_step_interval"])
         self.conditional_dropout_entry.delete(0, tk.END)
         self.conditional_dropout_entry.insert(0, configure["conditional_dropout"])
-
+        self.clip_penultimate_var.set(configure["clip_penultimate"])
             
 
         #self.update_controlled_seed_sample()
@@ -3128,6 +3161,7 @@ class App(ctk.CTk):
         self.sample_step_interval = self.sample_step_interval_entry.get()
         #self.cloud_mode = self.runpod_mode_var.get()
         self.conditional_dropout = self.conditional_dropout_entry.get()
+        self.clip_penultimate = self.clip_penultimate_var.get()
         #if self.cloud_mode == True:
         #    export='Linux'
         #    self.packageForCloud()
@@ -3340,21 +3374,34 @@ class App(ctk.CTk):
                 batBase += ' --sample_on_training_start'
             else:
                 batBase += f' "--sample_on_training_start" '
-        try:
-            if self.conditional_dropout != '' or self.conditional_dropout != ' ' or self.conditional_dropout != '0':
-                #if % is in the string, remove it
-                if '%' in self.conditional_dropout:
-                    self.conditional_dropout = self.conditional_dropout.replace('%', '')
+        if len(self.conditional_dropout) > 0 and self.conditional_dropout != ' ' and self.conditional_dropout != '0':
+            #if % is in the string, remove it
+            if '%' in self.conditional_dropout:
+                self.conditional_dropout = self.conditional_dropout.replace('%', '')
                 #convert to float from percentage string
                 self.conditional_dropout = float(self.conditional_dropout) / 100
-                #print(self.conditional_dropout)
+            else:
+                #check if float
+                try:
+                    self.conditional_dropout = float(self.conditional_dropout)
+                except:
+                    print('Error: Conditional Dropout must be a percent between 0 and 100, or a decimal between 0 and 1.')
+            #print(self.conditional_dropout)
+            #if self.coniditional dropout is a float
+            if isinstance(self.conditional_dropout, float):
                 if export == 'Linux':
                     batBase += f' --conditional_dropout={self.conditional_dropout}'
                 else:
                     batBase += f' "--conditional_dropout={self.conditional_dropout}" '
-            #save configure
-        except:
-            pass
+        #save configure
+            
+            print('Error: Conditional Dropout must be a percent between 0 and 100, or a decimal between 0 and 1.')
+        if self.clip_penultimate == True:
+            if export == 'Linux':
+                batBase += ' --clip_penultimate'
+            else:
+                batBase += f' "--clip_penultimate" '
+        
         self.save_config('stabletune_last_run.json')
         
         if export == False:
