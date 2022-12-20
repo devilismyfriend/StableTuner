@@ -46,6 +46,8 @@ from diffusers.utils.import_utils import is_xformers_available
 logger = get_logger(__name__)
 def parse_args():
     parser = argparse.ArgumentParser(description="Simple example of a training script.")
+    #parser.add_argument('--use_ema',default=False,action="store_true", help='Use EMA for finetuning')
+    parser.add_argument('--clip_penultimate',default=False,action="store_true", help='Use penultimate CLIP layer for text embedding')
     parser.add_argument("--conditional_dropout", type=float, default=None,required=False, help="Conditional dropout probability")
     parser.add_argument('--disable_cudnn_benchmark', default=False, action="store_true")
     parser.add_argument('--use_text_files_as_captions', default=False, action="store_true")
@@ -1386,7 +1388,6 @@ def main():
 
         pixel_values = torch.stack(pixel_values)
         pixel_values = pixel_values.to(memory_format=torch.contiguous_format).float()
-
         input_ids = tokenizer.pad(
             {"input_ids": input_ids},
             padding="max_length",
@@ -1733,11 +1734,22 @@ def main():
                     with text_enc_context:
                         if not args.not_cache_latents:
                             if args.train_text_encoder:
-                                encoder_hidden_states = text_encoder(batch[0][1])[0]
+                                if args.clip_penultimate == True:
+                                    encoder_hidden_states = text_encoder(batch[0][1],output_hidden_states=True)
+                                    encoder_hidden_states = text_encoder.text_model.final_layer_norm(encoder_hidden_states['hidden_states'][-2])
+                                else:
+                                    encoder_hidden_states = text_encoder(batch[0][1])[0]
                             else:
                                 encoder_hidden_states = batch[0][1]
                         else:
-                            encoder_hidden_states = text_encoder(batch["input_ids"])[0]
+                            if args.train_text_encoder:
+                                if args.clip_penultimate == True:
+                                    encoder_hidden_states = text_encoder(batch["input_ids"],output_hidden_states=True)
+                                    encoder_hidden_states = text_encoder.text_model.final_layer_norm(encoder_hidden_states['hidden_states'][-2])
+                                else:
+                                    encoder_hidden_states = text_encoder(batch["input_ids"])[0]
+                            else:
+                                encoder_hidden_states = text_encoder(batch["input_ids"])[0]
 
                     # Predict the noise residual
                     #noise_pred = unet(noisy_latents, timesteps, encoder_hidden_states).sample
