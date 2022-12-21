@@ -1821,7 +1821,11 @@ class App(ctk.CTk):
         if not os.path.exists("exports"):
             os.mkdir("exports")
         exportDir = self.export_name
-        os.mkdir("exports" + os.sep + exportDir)
+        if not os.path.exists("exports" + os.sep + exportDir):
+            os.mkdir("exports" + os.sep + exportDir)
+        else:
+            #remove the old export folder
+            shutil.rmtree("exports" + os.sep + exportDir)
         self.full_export_path = "exports" + os.sep + exportDir
         os.mkdir(self.full_export_path + os.sep + 'output')
         os.mkdir(self.full_export_path + os.sep + 'datasets')
