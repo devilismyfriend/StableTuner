@@ -43,6 +43,7 @@ from typing import Dict, List, Generator, Tuple
 from PIL import Image
 from diffusers.utils.import_utils import is_xformers_available
 from trainer_util import EMAModel
+import gc
 logger = get_logger(__name__)
 def parse_args():
     parser = argparse.ArgumentParser(description="Simple example of a training script.")
@@ -1471,6 +1472,9 @@ def main():
                         text_encoder_cache.append(batch["input_ids"])
                     else:
                         text_encoder_cache.append(text_encoder(batch["input_ids"])[0])
+                    del batch
+                    gc.collect()
+                    torch.cuda.empty_cache()
             train_dataset = LatentsDataset(latents_cache, text_encoder_cache)
             if args.save_latents_cache:
                 if not latent_cache_dir.exists():
