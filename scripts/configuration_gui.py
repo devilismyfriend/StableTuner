@@ -748,6 +748,7 @@ class App(ctk.CTk):
             pass
 
     def create_default_variables(self):
+        self.duplicate_fill_buckets = True
         self.play_keep_seed = False
         self.use_ema = False
         self.clip_penultimate = False
@@ -1506,8 +1507,22 @@ class App(ctk.CTk):
         self.use_aspect_ratio_bucketing_checkbox = ctk.CTkSwitch(self.dataset_frame_subframe, variable=self.use_aspect_ratio_bucketing_var)
         self.use_aspect_ratio_bucketing_checkbox.grid(row=7, column=1, sticky="nsew")
         #do something on checkbox click
-        self.use_aspect_ratio_bucketing_checkbox.bind("<Button-1>", self.disable_with_prior_loss)
+        self.use_aspect_ratio_bucketing_checkbox.bind("<Button-1>", self.aspect_ratio_mode_toggles)
+        
         #add download dataset entry
+        #add a switch to duplicate fill bucket
+        self.duplicate_fill_buckets_var = tk.IntVar()
+        self.duplicate_fill_buckets_var.set(self.duplicate_fill_buckets)
+        #create label
+        self.duplicate_fill_buckets_label = ctk.CTkLabel(self.dataset_frame_subframe, text="Force Fill Buckets with Duplicates")
+        duplicate_fill_buckets_label_ttp = CreateToolTip(self.duplicate_fill_buckets_label, "Will duplicate to fill buckets, enable this to avoid buckets dropping images.")
+        self.duplicate_fill_buckets_label.grid(row=8, column=0, sticky="nsew")
+        #create checkbox
+        self.duplicate_fill_buckets_checkbox = ctk.CTkSwitch(self.dataset_frame_subframe, variable=self.duplicate_fill_buckets_var)
+        self.duplicate_fill_buckets_checkbox.grid(row=8, column=1, sticky="nsew")
+        #self.use_aspect_ratio_bucketing_checkbox.bind("<Button-1>", self.duplicate_fill_buckets_label.configure(state="disabled"))
+        #self.use_aspect_ratio_bucketing_checkbox.bind("<Button-1>", self.duplicate_fill_buckets_checkbox.configure(state="disabled"))
+        
     def create_sampling_settings_widgets(self):
         self.sampling_title = ctk.CTkLabel(self.sampling_frame, text="Sampling Settings", font=ctk.CTkFont(size=20, weight="bold"))
         self.sampling_title.grid(row=0, column=0, padx=20, pady=20)  
@@ -1938,13 +1953,19 @@ class App(ctk.CTk):
         
         #self.master.overrideredirect(True)
         #self.master.deiconify()
-    def disable_with_prior_loss(self, *args):
+    def aspect_ratio_mode_toggles(self, *args):
         if self.use_aspect_ratio_bucketing_var.get() == 1:
             self.with_prior_loss_preservation_var.set(0)
             self.with_prior_loss_preservation_checkbox.configure(state="disabled")
+            self.duplicate_fill_buckets_label.configure(state="normal")
+            self.duplicate_fill_buckets_checkbox.configure(state="normal")
+            
 
         else:
             self.with_prior_loss_preservation_checkbox.configure(state="normal")
+            self.duplicate_fill_buckets_label.configure(state="disabled")
+            self.duplicate_fill_buckets_checkbox.configure(state="disabled")
+            
     
     def download_dataset(self):
         #get the dataset name
@@ -2736,6 +2757,7 @@ class App(ctk.CTk):
         configure['conditional_dropout'] = self.conditional_dropout_entry.get()
         configure["clip_penultimate"] = self.clip_penultimate_var.get()
         configure['use_ema'] = self.use_ema_var.get()
+        configure['duplicate_fill_buckets'] = self.duplicate_fill_buckets_var.get()
         #save the configure file
         #if the file exists, delete it
         if os.path.exists(file_name):
@@ -2855,6 +2877,7 @@ class App(ctk.CTk):
         self.conditional_dropout_entry.insert(0, configure["conditional_dropout"])
         self.clip_penultimate_var.set(configure["clip_penultimate"])
         self.use_ema_var.set(configure["use_ema"])
+        self.duplicate_fill_buckets_var.set(configure["duplicate_fill_buckets"])
         self.update()
     
     def process_inputs(self,export=None):
@@ -2913,6 +2936,7 @@ class App(ctk.CTk):
         self.conditional_dropout = self.conditional_dropout_entry.get()
         self.clip_penultimate = self.clip_penultimate_var.get()
         self.use_ema = self.use_ema_var.get()
+        self.duplicate_fill_buckets = self.duplicate_fill_buckets_var.get()
         mode = 'normal'
         if self.cloud_mode == False:
             #check if output path exists
@@ -3184,6 +3208,12 @@ class App(ctk.CTk):
                 batBase += ' --use_ema'
             else:
                 batBase += f' "--use_ema" '
+        
+        if self.duplicate_fill_buckets == True:
+            if export == 'Linux':
+                batBase += ' --duplicate_fill_buckets'
+            else:
+                batBase += f' "--duplicate_fill_buckets" '
         self.save_config('stabletune_last_run.json')
         
         if export == False:

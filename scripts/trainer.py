@@ -47,6 +47,7 @@ import gc
 logger = get_logger(__name__)
 def parse_args():
     parser = argparse.ArgumentParser(description="Simple example of a training script.")
+    parser.add_argument('--duplicate_fill_buckets', default=False, action="store_true")
     parser.add_argument('--use_ema',default=False,action="store_true", help='Use EMA for finetuning')
     parser.add_argument('--clip_penultimate',default=False,action="store_true", help='Use penultimate CLIP layer for text embedding')
     parser.add_argument("--conditional_dropout", type=float, default=None,required=False, help="Conditional dropout probability")
@@ -482,6 +483,7 @@ class AutoBucketing(Dataset):
                  with_prior_loss=False,
                  use_text_files_as_captions=False,
                  conditional_dropout=None,
+                 duplicate_fill_buckets=False,
                  ):
 
         self.debug_level = debug_level
@@ -501,6 +503,7 @@ class AutoBucketing(Dataset):
         self.with_prior_loss = with_prior_loss
         self.use_text_files_as_captions = use_text_files_as_captions
         self.conditional_dropout = conditional_dropout
+        self.duplicate_fill_buckets = duplicate_fill_buckets
         self.image_transforms = transforms.Compose(
             [
                 transforms.ToTensor(),
@@ -509,7 +512,7 @@ class AutoBucketing(Dataset):
         )
         #shared_dataloader = None
         print("Creating new dataloader singleton")
-        shared_dataloader = DataLoaderMultiAspect(concepts_list, debug_level=debug_level,resolution=self.resolution, batch_size=self.batch_size, flip_p=flip_p,use_image_names_as_captions=self.use_image_names_as_captions,add_class_images_to_dataset=self.add_class_images_to_dataset,balance_datasets=self.balance_datasets,with_prior_loss=self.with_prior_loss,use_text_files_as_captions=self.use_text_files_as_captions)
+        shared_dataloader = DataLoaderMultiAspect(concepts_list, debug_level=debug_level,resolution=self.resolution, batch_size=self.batch_size, flip_p=flip_p,use_image_names_as_captions=self.use_image_names_as_captions,add_class_images_to_dataset=self.add_class_images_to_dataset,balance_datasets=self.balance_datasets,with_prior_loss=self.with_prior_loss,use_text_files_as_captions=self.use_text_files_as_captions,duplicate_fill_buckets=self.duplicate_fill_buckets)
         
         #print(self.image_train_items)
         if self.with_prior_loss and self.add_class_images_to_dataset == False:
@@ -709,7 +712,7 @@ class DataLoaderMultiAspect():
     batch_size: number of images per batch
     flip_p: probability of flipping image horizontally (i.e. 0-0.5)
     """
-    def __init__(self,concept_list, seed=555, debug_level=0,resolution=512, batch_size=1, flip_p=0.0,use_image_names_as_captions=True,add_class_images_to_dataset=False,balance_datasets=False,with_prior_loss=False,use_text_files_as_captions=False):
+    def __init__(self,concept_list, seed=555, debug_level=0,resolution=512, batch_size=1, flip_p=0.0,use_image_names_as_captions=True,add_class_images_to_dataset=False,balance_datasets=False,with_prior_loss=False,use_text_files_as_captions=False,duplicate_fill_buckets=False):
         self.resolution = resolution
         self.debug_level = debug_level
         self.flip_p = flip_p
@@ -718,6 +721,7 @@ class DataLoaderMultiAspect():
         self.with_prior_loss = with_prior_loss
         self.add_class_images_to_dataset = add_class_images_to_dataset
         self.use_text_files_as_captions = use_text_files_as_captions
+        self.duplicate_fill_buckets = duplicate_fill_buckets
         prepared_train_data = []
         
         self.aspects = get_aspect_buckets(resolution)
@@ -769,7 +773,7 @@ class DataLoaderMultiAspect():
                 use_image_names_as_captions = False
                 prepared_train_data.extend(self.__prescan_images(debug_level, self.image_paths, flip_p,use_image_names_as_captions,concept_class_prompt,use_text_files_as_captions=self.use_text_files_as_captions)) # ImageTrainItem[]
             
-        self.image_caption_pairs = self.__bucketize_images(prepared_train_data, batch_size=batch_size, debug_level=debug_level)
+        self.image_caption_pairs = self.__bucketize_images(prepared_train_data, batch_size=batch_size, debug_level=debug_level,duplicate_fill_buckets=self.duplicate_fill_buckets)
         if self.with_prior_loss and add_class_images_to_dataset == False:
             self.class_image_caption_pairs = []
             for concept in concept_list:
@@ -780,10 +784,12 @@ class DataLoaderMultiAspect():
                 random.Random(seed).shuffle(self.image_paths)
                 use_image_names_as_captions = False
                 self.class_image_caption_pairs.extend(self.__prescan_images(debug_level, self.class_images_path, flip_p,use_image_names_as_captions,concept_class_prompt,use_text_files_as_captions=self.use_text_files_as_captions))
-            self.class_image_caption_pairs = self.__bucketize_images(self.class_image_caption_pairs, batch_size=batch_size, debug_level=debug_level)
+            self.class_image_caption_pairs = self.__bucketize_images(self.class_image_caption_pairs, batch_size=batch_size, debug_level=debug_level,duplicate_fill_buckets=self.duplicate_fill_buckets)
         if debug_level > 0: print(f" * DLMA Example: {self.image_caption_pairs[0]} images")
         #print the length of image_caption_pairs
         print(" Number of image-caption pairs: ",len(self.image_caption_pairs))
+        if len(self.image_caption_pairs) == 0:
+            raise Exception("All the buckets are empty. Please check your data or reduce the batch size.")
     def get_all_images(self):
         if self.with_prior_loss == False:
             return self.image_caption_pairs
@@ -828,7 +834,7 @@ class DataLoaderMultiAspect():
         return decorated_image_train_items
 
     @staticmethod
-    def __bucketize_images(prepared_train_data: list, batch_size=1, debug_level=0):
+    def __bucketize_images(prepared_train_data: list, batch_size=1, debug_level=0,duplicate_fill_buckets=False):
         """
         Put images into buckets based on aspect ratio with batch_size*n images per bucket, discards remainder
         """
@@ -843,14 +849,26 @@ class DataLoaderMultiAspect():
             buckets[(target_wh[0],target_wh[1])].append(image_caption_pair) 
         
         print(f" ** Number of buckets: {len(buckets)}")
-
         if len(buckets) > 1: 
             for bucket in buckets:
                 print(f" ** Bucket {bucket} has {len(buckets[bucket])} images")
                 truncate_count = len(buckets[bucket]) % batch_size
                 current_bucket_size = len(buckets[bucket])
-                buckets[bucket] = buckets[bucket][:current_bucket_size - truncate_count]
-                print(f"  ** Bucket {bucket} with {current_bucket_size} will drop {truncate_count} images due to batch size {batch_size}")
+                if duplicate_fill_buckets == False:
+                    buckets[bucket] = buckets[bucket][:current_bucket_size - truncate_count]
+                    print(f"  ** Bucket {bucket} with {current_bucket_size}, will drop {truncate_count} images due to batch size {batch_size}")
+                else:
+                    #pick random images from the bucket to fill the batch
+                    shuffleBucket = buckets[bucket]
+                    #add the images to the bucket
+                    addAmount = batch_size - truncate_count
+                    for i in range(0,addAmount):
+                        bukcetLen = len(buckets[bucket])
+                        i = random.randint(0,bukcetLen-1)
+                        buckets[bucket].append(shuffleBucket[i])
+
+                    print(f"  ** Bucket {bucket} with {current_bucket_size}, will duplicate {addAmount} images due to batch size {batch_size}")
+                    
 
         # flatten the buckets
         image_caption_pairs = []
@@ -1358,7 +1376,8 @@ def main():
             with_prior_loss=False,#args.with_prior_preservation,
             repeats=args.dataset_repeats,
             use_text_files_as_captions=args.use_text_files_as_captions,
-            conditional_dropout=args.conditional_dropout
+            conditional_dropout=args.conditional_dropout,
+            duplicate_fill_buckets=args.duplicate_fill_buckets,
         )
     else:
         train_dataset = DreamBoothDataset(
@@ -1478,7 +1497,7 @@ def main():
                         text_encoder_cache.append(text_encoder(batch["input_ids"])[0])
                     del batch
                     gc.collect()
-                    torch.cuda.empty_cache()
+                    #torch.cuda.empty_cache()
             train_dataset = LatentsDataset(latents_cache, text_encoder_cache)
             if args.save_latents_cache:
                 if not latent_cache_dir.exists():
