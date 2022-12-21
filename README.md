@@ -17,6 +17,7 @@ Stable Tuner wants to be the easiest and most complete Stable Diffusion tuner :)
 
 Features
 * **For End Users** - ST was made to provide a solution that is convenient but powerful on windows, if you wanted to try finetuning, there's no better option, for Linux folks, a bash script will be added at a later date if there's enough interest.
+* **Your Training, Everywhere** - ST Now supports cloud training as well!, package up your data and start training on Runpod/Colab etc with a few clicks!
 * **Easy Installation** - ST makes installing convenient, using a bat file, ST will setup an environment ready for work and will install all the necessary components to get your training started fast!
 * **Friendly GUI** - ST features a full GUI to configure training runs, import and export settings, view tool tips for options, test your new model in the playground, convert the model to CKPT and more!
 * **Better Performance** - Using Diffusers, Xformers, CUDNN 1.8 and Bitsandbytes along with Latent caching allows for higher batch sizes and faster speeds, higher batch sizes = better quality model!.
