@@ -2914,6 +2914,16 @@ class App(ctk.CTk):
         self.clip_penultimate = self.clip_penultimate_var.get()
         self.use_ema = self.use_ema_var.get()
         mode = 'normal'
+        if self.cloud_mode == False:
+            #check if output path exists
+            if os.path.exists(self.output_path) == True:
+                #check if output path is empty
+                if len(os.listdir(self.output_path)) > 0:
+                    #show a messagebox asking if the user wants to overwrite the output path
+                    overwrite = messagebox.askyesno("Overwrite Output Path", "The output path is not empty. Do you want to overwrite it?")
+                    if overwrite == False:
+                        return
+                        
         if self.cloud_mode == True or export == 'LinuxCMD':
             if export == 'LinuxCMD':
                 mode = 'LinuxCMD'
