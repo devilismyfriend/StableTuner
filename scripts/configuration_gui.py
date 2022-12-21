@@ -1826,6 +1826,7 @@ class App(ctk.CTk):
         else:
             #remove the old export folder
             shutil.rmtree("exports" + os.sep + exportDir)
+            os.mkdir("exports" + os.sep + exportDir)
         self.full_export_path = "exports" + os.sep + exportDir
         os.mkdir(self.full_export_path + os.sep + 'output')
         os.mkdir(self.full_export_path + os.sep + 'datasets')
@@ -2912,6 +2913,7 @@ class App(ctk.CTk):
         self.conditional_dropout = self.conditional_dropout_entry.get()
         self.clip_penultimate = self.clip_penultimate_var.get()
         self.use_ema = self.use_ema_var.get()
+        mode = 'normal'
         if self.cloud_mode == True or export == 'LinuxCMD':
             if export == 'LinuxCMD':
                 mode = 'LinuxCMD'
