@@ -96,7 +96,10 @@ class ImageBrowser(ctk.CTkToplevel):
         self.caption_file_ext = ''
         self.caption_file_name_no_ext = ''
         self.output_format='text'
-
+        #check if bad_files.txt exists
+        if os.path.exists("bad_files.txt"):
+            #delete it
+            os.remove("bad_files.txt")
         self.use_blip = True
         self.debug = False
         self.create_widgets()
@@ -207,6 +210,10 @@ class ImageBrowser(ctk.CTkToplevel):
     def batch_folder(self):
         #show imgs in folder askdirectory
         #ask user if to batch current folder or select folder
+        #if bad_files.txt exists, delete it
+        self.bad_files = []
+        if os.path.exists('bad_files.txt'):
+            os.remove('bad_files.txt')
         try:
             #check if self.folder is set
             self.folder
@@ -261,7 +268,12 @@ class ImageBrowser(ctk.CTkToplevel):
             progress = i / len(self.image_list)
             pb.set_progress(progress)
             self.update()
-            img = Image.open(self.image_list[i]).convert("RGB")
+            try:
+                img = Image.open(self.image_list[i]).convert("RGB")
+            except:
+                self.bad_files.append(self.image_list[i])
+                #skip file
+                continue
             tensor = transforms.Compose([
                         transforms.Resize((self.blipSize, self.blipSize), interpolation=InterpolationMode.BICUBIC),
                         transforms.ToTensor(),
@@ -311,6 +323,12 @@ class ImageBrowser(ctk.CTkToplevel):
         #show message box when done
         pb.destroy()
         donemsg = tk.messagebox.showinfo("Batch Folder", "Batching complete!",parent=self.master)
+        if len(self.bad_files) > 0:
+            bad_files_msg = tk.messagebox.showinfo("Bad Files", "Couldn't process " + str(len(self.bad_files)) + "files,\nFor a list of problematic files see bad_files.txt",parent=self.master)
+            with open('bad_files.txt', 'w') as f:
+                for item in self.bad_files:
+                    f.write(item + '\n')
+
         #ask user if we should load the batch output folder
         ask3 = tk.messagebox.askquestion("Batch Folder", "Load batch output folder?")
         if ask3 == 'yes':
@@ -383,7 +401,7 @@ class ImageBrowser(ctk.CTkToplevel):
         #self.image_list.sort()
         #sort the image list alphabetically so that the images are in the same order every time
         self.image_list.sort(key=lambda x: x.lower())
-        
+
         self.image_count = len(self.image_list)
         if self.image_count == 0:
             tk.messagebox.showinfo("No Images", "No images found in the selected folder")
@@ -396,7 +414,19 @@ class ImageBrowser(ctk.CTkToplevel):
         self.load_image()
         self.caption_entry.focus_set()
     def load_image(self):
-        self.PILimage = Image.open(self.image_list[self.image_index]).convert('RGB')
+        try:
+            self.PILimage = Image.open(self.image_list[self.image_index]).convert('RGB')
+        except:
+            print(f'Error opening image {self.image_list[self.image_index]}')
+            print('Logged path to bad_files.txt')
+            #if bad_files.txt doesn't exist, create it
+            if not os.path.exists('bad_files.txt'):
+                with open('bad_files.txt', 'w') as f:
+                    f.write(self.image_list[self.image_index]+'\n')
+            else:
+                with open('bad_files.txt', 'a') as f:
+                    f.write(self.image_list[self.image_index]+'\n')
+            return
         #print(self.image_list[self.image_index])
         #self.image = self.image.resize((600, 600), Image.ANTIALIAS)
         #resize to fit 600x600 while maintaining aspect ratio
