@@ -12,12 +12,13 @@ from PIL import Image, ImageTk,ImageOps,ImageDraw
 import glob
 import converters
 import shutil
-
+from datetime import datetime
+import pyperclip
+import random
 import customtkinter as ctk
 import random
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
-#from scripts import converters
 #work in progress code, not finished, credits will be added at a later date.
 
 #class to make a generated image preview for the playground window, should open a new window alongside the playground window
@@ -52,7 +53,6 @@ class GeneratedImagePreview(ctk.CTkToplevel):
         self.geometry(f"{image.width + 50}x{image.height + 50}")
         self.image_preview_label.configure(image=ctk.CTkImage(image,size=(image.width,image.height)))
         #resize window
-        #self.image_preview_label.image = image
 #class to make a concept top level window
 class ConceptWidget(ctk.CTkFrame):
     #a widget that holds a concept and opens a concept window when clicked
@@ -600,24 +600,10 @@ class CreateToolTip(object):
 class App(ctk.CTk):    
     def __init__(self):
         super().__init__()
-        #self.master = self
-        #deiconify event
-        #self.master.bind("<Map>", self.on_resume)
-        #remove the default title bar
-        #self.master.overrideredirect(True)
-        #force keep window on top
-        #self.master.wm_attributes("-topmost", 1)
-        #create gui at center of screen
         self.grid_columnconfigure(1, weight=1)
         self.grid_columnconfigure((2, 3), weight=0)
         self.grid_rowconfigure((0, 1, 2), weight=1)
         self.geometry(f"{1100}x{585}")
-        #self.master.geometry("800x600+{}+{}".format(int(self.master.winfo_screenwidth()/2-1000/2), int(self.master.winfo_screenheight()/2-600/2)))
-        #create a title bar
-        #self.title_bar = TitleBar(self.master)
-        #self.title_bar.pack(side="top", fill="x",)
-        #self.master.configure(bg="#1e2124")
-        #define some colors
         self.stableTune_icon =PhotoImage(master=self,file = "resources/stableTuner_icon.png")
         self.iconphoto(False, self.stableTune_icon)
         self.dark_mode_var = "#1e2124"
@@ -630,23 +616,10 @@ class App(ctk.CTk):
         self.configure(cursor="left_ptr")
         #resizable window
         self.resizable(True, True)
-        #master canvas
-        #self.canvas = tk.Canvas(self.master)
-        #self.canvas.configure(highlightthickness=0)
-        #self.canvas.pack(side="top", fill="both", expand=True)
-        #self.scrollbar = ctk.CTkScrollbar(self.canvas, command=self.canvas.yview)
-        #create dark mdoe style for vertical scrollbar
-        #self.scrollbar.pack(side="right", fill="y")
-        #bind mousewheel to scroll
-        #self.canvas.bind_all("<MouseWheel>", lambda event: self.canvas.yview_scroll(int(-1*(event.delta/120)), "units"))
-        #self.canvas.configure(yscrollcommand=self.scrollbar.set)
-        #self.canvas.bind('<Configure>', lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
         self.create_default_variables()
         self.sidebar_frame = ctk.CTkFrame(self, width=140, corner_radius=0)
         self.sidebar_frame.grid(row=0, column=0, rowspan=10, sticky="nsew")
-        #self.sidebar_frame.grid_rowconfigure(4, weight=1)
         self.logo_img = ctk.CTkImage(Image.open("resources/stableTuner_logo.png").resize((300, 300), Image.Resampling.LANCZOS),size=(80,80))
-        #self.logo_img = ctk.CTkButton(self.sidebar_frame, image=self.logo_img, text='', height=100,width=100)
         self.logo_img = ctk.CTkLabel(self.sidebar_frame, image=self.logo_img, text='', height=50,width=50, font=ctk.CTkFont(size=15, weight="bold"))
         self.logo_img.grid(row=0, column=0, padx=20, pady=20)
         self.logo_label = ctk.CTkLabel(self.sidebar_frame, text="StableTuner", font=ctk.CTkFont(size=20, weight="bold"))
@@ -676,34 +649,23 @@ class App(ctk.CTk):
         #empty label
         self.empty_label = ctk.CTkLabel(self.sidebar_frame, text="", font=ctk.CTkFont(size=20, weight="bold"))
         self.empty_label.grid(row=11, column=0, padx=0, pady=0)
-        
-
-
-
         self.sidebar_button_11 = ctk.CTkButton(self.sidebar_frame,text='Caption Buddy',command=self.caption_buddy)
         self.sidebar_button_11.grid(row=13, column=0, padx=20, pady=5)
         self.sidebar_button_12 = ctk.CTkButton(self.sidebar_frame,text='Start Training!', command=lambda : self.process_inputs(export=False))
-        #bind right click
         self.sidebar_button_12.bind("<Button-3>", self.create_right_click_menu_export)
         self.sidebar_button_12.grid(row=14, column=0, padx=20, pady=5)
         self.general_frame = ctk.CTkFrame(self, width=140, corner_radius=0,fg_color='transparent')
         self.general_frame.grid_columnconfigure(0, weight=5)
         self.general_frame.grid_columnconfigure(1, weight=10)
-        
-        
         self.general_frame_subframe = ctk.CTkFrame(self.general_frame,width=300, corner_radius=20)
-        #self.general_frame_subframe.grid_columnconfigure(0, weight=1)
         self.general_frame_subframe.grid(row=2, column=0,sticky="nsew", padx=20, pady=20)
         self.general_frame_subframe_side_guide = ctk.CTkFrame(self.general_frame,width=250, corner_radius=20)
         self.general_frame_subframe_side_guide.grid(row=2, column=1,sticky="nsew", padx=20, pady=20)
-        #self.general_frame_subframe_side_guide.grid_columnconfigure(0, weight=1)
         self.create_general_settings_widgets()   
         self.apply_general_style_to_widgets(self.general_frame_subframe)
         self.override_general_style_widgets()
         self.training_frame = ctk.CTkFrame(self, width=400, corner_radius=0,fg_color='transparent')
         self.training_frame.grid_columnconfigure(0, weight=1)
-        #self.training_frame.grid_columnconfigure(0, weight=1)
-        #create sub frame
         self.training_frame_subframe = ctk.CTkFrame(self.training_frame,width=400, corner_radius=20)
         self.training_frame_subframe.grid_columnconfigure(0, weight=1)
         self.training_frame_subframe.grid_columnconfigure(1, weight=1)
@@ -712,94 +674,40 @@ class App(ctk.CTk):
         self.grid_train_settings()
         self.apply_general_style_to_widgets(self.training_frame_subframe)
         self.override_training_style_widgets()
-        #self.dg = DynamicGrid(self.training_frame, width=800, height=200)
-        #self.dg.grid(row=1, column=0, padx=20, pady=20, sticky="nsew")
-        #add_button  = tk.Button(self.training_frame, text="Add", command=self.dg.add_box)
-        #add_button.grid(row=2, column=0, padx=20, pady=20)
         self.dataset_frame = ctk.CTkFrame(self, width=140, corner_radius=0,fg_color='transparent')
-        self.dataset_frame.grid_columnconfigure(0, weight=1)
-        #self.dataset_frame.grid_columnconfigure(1, weight=10)
-        
-        #sub frame
+        self.dataset_frame.grid_columnconfigure(0, weight=1)        
         self.dataset_frame_subframe = ctk.CTkFrame(self.dataset_frame,width=400, corner_radius=20)
-        #self.dataset_frame_subframe.grid_columnconfigure(0, weight=5)
-        #self.dataset_frame_subframe.grid_columnconfigure(1, weight=1)
         self.dataset_frame_subframe.grid(row=2, column=0,sticky="nsew", padx=20, pady=20)
         self.create_dataset_settings_widgets()
         self.apply_general_style_to_widgets(self.dataset_frame_subframe)
-
         self.sampling_frame = ctk.CTkFrame(self, width=140, corner_radius=0,fg_color='transparent')
         self.sampling_frame.grid_columnconfigure(0, weight=1)
-        #sub frame
         self.sampling_frame_subframe = ctk.CTkFrame(self.sampling_frame,width=400, corner_radius=20)
-        #self.sampling_frame_subframe.grid_columnconfigure(0, weight=5)
-        #self.sampling_frame_subframe.grid_columnconfigure(1, weight=1)
         self.sampling_frame_subframe.grid(row=2, column=0,sticky="nsew", padx=20, pady=20)
         self.create_sampling_settings_widgets()
         self.apply_general_style_to_widgets(self.sampling_frame_subframe)
-
         self.data_frame = ctk.CTkFrame(self, width=140, corner_radius=0,fg_color='transparent')
         self.data_frame.grid_columnconfigure(0, weight=1)
-        
-        #self.dataset_frame_subframe = ctk.CTkFrame(self.data_frame,width=400, corner_radius=20)
         self.data_frame_subframe = ctk.CTkFrame(self.data_frame,width=400, corner_radius=20)
         self.data_frame_subframe.grid(row=2, column=0,sticky="nsew", padx=20, pady=5) 
         self.create_data_settings_widgets()
         self.apply_general_style_to_widgets(self.data_frame_subframe)
-        #self.data_frame_concepts_subframe_host = ScrollableFrame(self.data_frame, width=800, height=800)
         self.data_frame_concepts_subframe = ctk.CTkFrame(self.data_frame,width=400, corner_radius=20)
-        self.data_frame_concepts_subframe.grid(row=3, column=0,sticky="nsew", padx=20, pady=5)
-        #self.data_frame_concepts_subframe_host.grid(row=3, column=0,sticky="nsew", padx=20, pady=20)
-        #self.data_frame_concepts_subframe = self.data_frame_concepts_subframe_host.scrollable_frame
-        #sub frame
-        #self.data_frame_subframe = ctk.CTkFrame(self.data_frame,width=400, corner_radius=20)
-        #self.data_frame_subframe.grid(row=0, column=0,sticky="nsew", padx=20, pady=20)
-        
-        #self.data_frame_subframe = ScrollableFrame(self.data_frame, width=800, height=800)
-        #self.data_frame_subframe.grid_columnconfigure(0, weight=1)
-        #self.data_frame_subframe.scrollable_frame.grid(row=0, column=0,sticky="nsew", padx=20, pady=20)
-        #self.data_frame_subframe.scrollable_frame.grid_columnconfigure(0, weight=1)
-        #self.data_frame_subframe.grid(row=1, column=0,sticky="nsew", padx=20, pady=20)
-        #self.dg_frame = DynamicGrid(self.data_frame_subframe.scrollable_frame, width=800, height=800)
-        #self.dg_frame.pack(side="top", fill="both", expand=True)
-        #self.dg_frame.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")
-        #self.data_frame_subframe = ctk.CTkFrame(self.data_frame,width=400, corner_radius=20)
-        #self.data_frame_subframe.grid_columnconfigure(0, weight=5)
-        #self.data_frame_subframe.grid_columnconfigure(1, weight=1)
-        
-        #self.create_data_widgets()
-        #add_button  = tk.Button(self.data_frame, text="Add", command=self.dg_frame.add_box)
-        #add_button.grid(row=0, column=0, padx=20, pady=20)
-        
-
-        
-        #self.apply_general_style_to_widgets(self.data_frame_subframe)
-        
+        self.data_frame_concepts_subframe.grid(row=3, column=0,sticky="nsew", padx=20, pady=5)        
         self.playground_frame = ctk.CTkFrame(self, width=140, corner_radius=0,fg_color='transparent')
         self.playground_frame.grid_columnconfigure(0, weight=1)
-        #sub frame
         self.playground_frame_subframe = ctk.CTkFrame(self.playground_frame,width=400, corner_radius=20)
-        #self.playground_frame_subframe.grid_columnconfigure(0, weight=5)
-        #self.playground_frame_subframe.grid_columnconfigure(1, weight=1)
         self.playground_frame_subframe.grid(row=2, column=0,sticky="nsew", padx=20, pady=20)
         self.playground_frame_subframe.grid_columnconfigure(0, weight=1)
         self.playground_frame_subframe.grid_columnconfigure(1, weight=3)
         self.playground_frame_subframe.grid_columnconfigure(2, weight=1)
-        #self.playground_frame_subframe.grid_columnconfigure(3, weight=1)
-        #self.playground_frame_subframe.grid_columnconfigure(4, weight=1)
-        #self.create_playground_widgets()
         self.create_plyaground_widgets()
         self.apply_general_style_to_widgets(self.playground_frame_subframe)
         self.override_playground_widgets_style()
-        
         self.toolbox_frame = ctk.CTkFrame(self, width=140, corner_radius=0,fg_color='transparent')
         self.toolbox_frame.grid_columnconfigure(0, weight=1)
-        #sub frame
         self.toolbox_frame_subframe = ctk.CTkFrame(self.toolbox_frame,width=400, corner_radius=20)
-        #self.toolbox_frame_subframe.grid_columnconfigure(0, weight=5)
-        #self.toolbox_frame_subframe.grid_columnconfigure(1, weight=1)
         self.toolbox_frame_subframe.grid(row=2, column=0,sticky="nsew", padx=20, pady=20)
-        #self.create_toolbox_frame_widgets()
         self.create_toolbox_widgets()
         self.apply_general_style_to_widgets(self.toolbox_frame_subframe)
 
@@ -807,155 +715,7 @@ class App(ctk.CTk):
 
         self.select_frame_by_name('general') 
         self.update()
-        #return
-        #print('test')
-        '''
-        self.frame.pack(pady=20, padx=20, fill="both", expand=True)
         
-        #self.canvas.create_window((0,0), window=self.frame, anchor="nw")
-        #create tabs
-        self.tabsSizes = {0 : [680,400], 1 : [680,560], 2 : [680,300],3 : [680,440],4 : [680,500],5 : [680,400],6 : [680,490]}
-        #self.notebook = ttk.Notebook(self.frame)
-        self.notebook = ctk.CTkTabview(self.frame)
-        #self.notebook.grid(row=0, column=0, columnspan=2, sticky="nsew")
-        self.notebook.pack(pady=5, padx=10, fill="both", expand=True)
-        s = ttk.Style()
-        s.configure('new.TFrame', background='#333333',borderwidth=0,highlightthickness=0)
-        #create tabs
-        self.notebook.add('General Settings')
-        self.notebook.add('Training Settings')
-        self.notebook.add('Dataset Settings')
-        self.notebook.add('Sample Settings')
-        self.notebook.add('Concepts Settings')
-        self.notebook.add('Play Settings')
-        self.notebook.add('Toolbox')
-
-        self.general_tab = self.notebook.tab('General Settings')
-        #use pack to place the tab contents in the center of the tab
-        #self.general_tab.place(relx=0.5, rely=0.5, anchor="center")
-        self.training_tab_host = ScrollableFrame(self.notebook.tab('Training Settings'),style='new.TFrame')
-        self.training_tab_host.pack(fill="both", expand=True)
-        self.training_tab = self.training_tab_host.scrollable_frame
-        #self.training_tab.pack(fill="both", expand=False)
-        #self.training_tabl_scroll = ctk.CTkScrollbar(self.training_tab)
-        #self.training_tabl_scroll.place(relx=0.98, rely=0.05, relheight=0.9, anchor='ne')
-        
-        self.dataset_tab = self.notebook.tab('Dataset Settings')
-        #self.sampling_frame_subframe = self.notebook.tab('Sample Settings')
-        self.sampling_frame_subframe_host = ScrollableFrame(self.notebook.tab('Sample Settings'),style='new.TFrame')
-        self.sampling_frame_subframe_host.pack(fill="both", expand=True)
-        self.sampling_frame_subframe = self.sampling_frame_subframe_host.scrollable_frame
-        #self.dataset_frame_subframe = self.notebook.tab('Concepts Settings')
-        self.dataset_frame_subframe_host = ScrollableFrame(self.notebook.tab('Concepts Settings'),style='new.TFrame')
-        self.dataset_frame_subframe_host.pack(fill="both", expand=True)
-        self.dataset_frame_subframe = self.dataset_frame_subframe_host.scrollable_frame
-        self.play_tab = self.notebook.tab('Play Settings')
-        self.tools_tab = self.notebook.tab('Toolbox')
-        
-        #self.notebook.add(self.general_tab, text="General Settings",sticky="n")
-        #self.notebook.add(self.training_tab, text="Training Settings",sticky="n")
-        #self.notebook.add(self.dataset_tab, text="Dataset Settings",sticky="n")
-        #self.notebook.add(self.sampling_frame_subframe, text="Sample Settings",sticky="n")
-        #self.notebook.add(self.dataset_frame_subframe, text="Training Data",sticky="nw")
-        #self.notebook.add(self.play_tab, text="Model Playground",sticky="n")
-        #self.notebook.add(self.tools_tab, text="Toolbox",sticky="n")
-        #pad the frames to make them look better
-        #make a bottom frame
-        #self.bottom_frame = ctk.CTkFrame(self.master)
-        #self.bottom_frame.pack(side="bottom", fill="x", expand=False)
-        #configure grid
-        #self.bottom_frame.columnconfigure(0, weight=1)
-        #self.bottom_frame.columnconfigure(1, weight=1)
-        #self.bottom_frame.columnconfigure(2, weight=1)
-        #rowconfigure
-        #self.bottom_frame.rowconfigure(0, weight=1)
-        #notebook dark mode style
-        #self.notebook_style = ttk.Style()
-        #self.notebook_style.theme_use("clam")
-        #dark mode
-        #self.notebook_style.configure("TNotebook", background=self.dark_mode_var, borderwidth=0, highlightthickness=0, lightcolor=self.dark_mode_var, darkcolor=self.dark_mode_var, bordercolor=self.dark_mode_var, tabmargins=[0,0,0,0], padding=[0,0,0,0], relief="flat")
-        #self.notebook_style.configure("TNotebook.Tab", background=self.dark_mode_var, borderwidth=0, highlightthickness=0, lightcolor=self.dark_mode_var, foreground=self.dark_mode_text_var, bordercolor=self.dark_mode_var,highlightcolor=self.dark_mode_var, relief="flat")
-        #self.notebook_style.map("TNotebook.Tab", background=[("selected", self.dark_mode_var)], foreground=[("selected", self.dark_mode_title_var), ("active", self.dark_mode_title_var)])
-        
-        #on tab change resize window
-        #self.notebook.bind("<<NotebookTabChanged>>", self.on_tab_changed)
-        '''
-        #variables
-        #self.create_widgets()
-        '''
-        for child in self.training_tab.children.values():
-            child.configure(bg_color='#333333')
-            #print type of l
-            #print(type(l))
-            if type(child) == ctk.CTkSwitch:
-                child.configure(text='')
-                child.grid(sticky="e")
-        for child in self.dataset_frame_subframe.children.values():
-            child.configure(bg_color='#333333')
-            #print type of l
-            #print(type(l))
-            if type(child) == ctk.CTkSwitch:
-                child.configure(text='')
-                child.grid(sticky="e")
-        for child in self.play_tab.children.values():
-            try:
-                child.configure(bg_color='#333333')
-                #print type of l
-                #print(type(l))
-                if type(child) == ctk.CTkSwitch:
-                    child.configure(text='')
-                    child.grid(sticky="we")
-            except:
-                pass
-        for child in self.tools_tab.children.values():
-            try:
-                child.configure(bg_color='#333333')
-                #print type of l
-                #print(type(l))
-                if type(child) == ctk.CTkSwitch:
-                    child.configure(text='')
-                    child.grid(sticky="we")
-            except:
-                pass
-        for child in self.general_tab.children.values():
-            try:
-                child.configure(bg_color='#333333')
-                #print type of l
-                #print(type(l))
-                if type(child) == ctk.CTkSwitch:
-                    child.configure(text='')
-                    child.grid(sticky="we")
-            except:
-                pass
-        for child in self.dataset_tab.children.values():
-            try:
-                child.configure(bg_color='#333333')
-                #print type of l
-                #print(type(l))
-                if type(child) == ctk.CTkSwitch:
-                    child.configure(text='')
-                    child.grid(sticky="we")
-            except:
-                pass  
-        for child in self.sampling_frame_subframe.children.values():
-            child.configure(bg_color='#333333')
-            #print type of l
-            #print(type(l))
-            if type(child) == ctk.CTkSwitch:
-                child.configure(text='')
-                child.grid(sticky="e")
-        #apply dark theme to scrollable frame
-        
-        self.training_tab_host.update_scroll_region()
-        #width = self.notebook.winfo_reqwidth()
-        #height = self.notebook.winfo_reqheight()
-        #self.master.geometry(f"{width}x{height}")
-        #self.training_tabl_scroll.configure()
-        ##self.training_tab.configure(scrollregion=self.training_tab.bbox("all"))
-        #self.master.update()
-        #check if there is a stabletune_last_run.json file
-        #if there is, load the settings from it
-        '''
         if os.path.exists("stabletune_last_run.json"):
             try:
                 self.load_config(file_name="stabletune_last_run.json")
@@ -968,7 +728,6 @@ class App(ctk.CTk):
                     name_of_model = self.play_model_entry.get().split(os.sep)[-2]
                     res = self.resolution_var.get()
                     #time and date
-                    from datetime import datetime
                     #format time and date to %month%day%hour%minute
                     now = datetime.now()
                     dt_string = now.strftime("%m-%d-%H-%M")
@@ -985,13 +744,11 @@ class App(ctk.CTk):
             except Exception as e:
                 print(e)
                 pass
-            #self.play_model_entry.insert(0, self.output_path_entry.get()+os.sep+self.train_epochs_entry.get())
         else:
-            #self.load_config()
             pass
-        #self.canvas.configure(scrollregion=self.canvas.bbox("all"))
-        #print(self.concept_widgets[0].concept.concept_path)
+
     def create_default_variables(self):
+        self.play_keep_seed = False
         self.use_ema = False
         self.clip_penultimate = False
         self.conditional_dropout = ''
@@ -1153,7 +910,7 @@ class App(ctk.CTk):
         self.menu.configure(bg="#2d2d2d", fg="#ffffff", activebackground="#2d2d2d", activeforeground="#ffffff")
         #add commands to the menu
         self.menu.add_command(label="Export Trainer Command for Windows", command=lambda: self.process_inputs(export='Win'))
-        self.menu.add_command(label="Export Trainer Command for Linux", command=lambda: self.process_inputs(export='Linux'))
+        self.menu.add_command(label="Copy Trainer Command for Linux", command=lambda: self.process_inputs(export='LinuxCMD'))
         #display the menu
         try:
             self.menu.tk_popup(event.x_root, event.y_root)
@@ -1177,30 +934,6 @@ class App(ctk.CTk):
         finally:
             #make sure to release the grab (Tk 8.0a1 only)
             self.menu.grab_release()
-    def on_tab_changed(self, event):
-        #get the current selected notebook tab id
-        tab_id = self.notebook.select()
-        #get the tab object
-        tab = self.notebook.nametowidget(tab_id)
-        #get the tab index
-        tab_index = self.notebook.index(tab_id)
-        
-        #get the tab size
-        tab_size = self.tabsSizes[tab_index]
-        #resize the window to fit the widgets
-        self.master.geometry(f"{tab_size[0]}x{tab_size[1]}")
-        #hide self.start_training_btn if we are on the playground or tools tab
-        if tab_index == 5 or tab_index == 6:
-            self.start_training_btn.grid_remove()
-        else:
-            self.start_training_btn.grid()
-        #self.canvas.bind('<Configure>', lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
-        self.update()
-        
-    def open_file(self):
-        print("open file")
-
-        self.master.configure(menu=self.menubar)
     def quick_select_model(self,*args):
         val = self.quick_select_var.get()
         if val != "Click to select model":
@@ -1215,33 +948,33 @@ class App(ctk.CTk):
             elif val == 'Stable Diffusion 2 (768)':
                 self.input_model_path_entry.insert(0,"stabilityai/stable-diffusion-2")
                 self.resolution_var.set("768")
+                self.sample_height_entry.delete(0, tk.END)
+                self.sample_height_entry.insert(0,"768")
+                self.sample_width_entry.delete(0, tk.END)
+                self.sample_width_entry.insert(0,"768")
             elif val == 'Stable Diffusion 2.1 Base (512)':
                 self.input_model_path_entry.insert(0,"stabilityai/stable-diffusion-2-1-base")
             elif val == 'Stable Diffusion 2.1 (768)':
                 self.input_model_path_entry.insert(0,"stabilityai/stable-diffusion-2-1")
                 self.resolution_var.set("768")
-            #self.master.update()
+                self.sample_height_entry.delete(0, tk.END)
+                self.sample_height_entry.insert(0,"768")
+                self.sample_width_entry.delete(0, tk.END)
+                self.sample_width_entry.insert(0,"768")
     def override_training_style_widgets(self):
-        #return
         for i in self.training_frame_subframe.children.values():
-            #print(i)
             if 'ctkbutton' in str(i):
-                #print(i)
                 i.grid(padx=5, pady=5,sticky="w")
             if 'ctkoptionmenu' in str(i):
-                #print(i)
                 i.grid(padx=10, pady=5,sticky="w")
             if 'ctkentry' in str(i):
-                #print(i)
                 i.configure(width=160)
                 i.grid(padx=10, pady=5,sticky="w")
                 i.bind("<Button-3>", self.create_right_click_menu)
             if 'ctkswitch' in str(i):
-                #print(i)
                 i.configure(text='')
                 i.grid(padx=10, pady=5,sticky="")
             if 'ctklabel' in str(i):
-                #print(i)
                 i.grid(padx=10, pady=5,sticky="w")
 
     def override_playground_widgets_style(self):
@@ -1254,6 +987,7 @@ class App(ctk.CTk):
         self.play_negative_prompt_entry.grid(row=2, column=1,columnspan=2, sticky="nsew")
         self.play_seed_label.grid(row=3, column=0, sticky="nsew")
         self.play_seed_entry.grid(row=3, column=1, sticky="w")
+        self.play_keep_seed_checkbox.grid(row=3, column=1)
         self.play_steps_label.grid(row=4, column=0, sticky="nsew")
         self.play_steps_slider.grid(row=4, column=1, sticky="nsew")
         self.play_scheduler_label.grid(row=5, column=0, sticky="nsew")
@@ -1269,31 +1003,22 @@ class App(ctk.CTk):
         self.play_toolbox_label.grid(row=9, column=0, sticky="nsew")
         self.play_generate_image_button.grid(row=10, column=0, columnspan=2, sticky="nsew")
         self.play_convert_to_ckpt_button.grid(row=9, column=1, columnspan=1, sticky="w")
-        #self.play_interactive_generation_button.grid(row=9, column=1, columnspan=1, sticky="w")
     def override_general_style_widgets(self):
-        #self.input_model_path_button.grid(row=1, column=2, sticky="w")
-        #self.input_model_path_resume_button.grid(row=1, column=2, sticky="e")
         pass
     def apply_general_style_to_widgets(self,frame):
         for i in frame.children.values():
-            #print(i)
             if 'ctkbutton' in str(i):
-                #print(i)
                 i.grid(padx=5, pady=10,sticky="w")
             if 'ctkoptionmenu' in str(i):
-                #print(i)
                 i.grid(padx=10, pady=10,sticky="w")
             if 'ctkentry' in str(i):
-                #print(i)
                 i.configure(width=160)
                 i.grid(padx=10, pady=5,sticky="w")
                 i.bind("<Button-3>", self.create_right_click_menu)
             if 'ctkswitch' in str(i):
-                #print(i)
                 i.configure(text='')
                 i.grid(padx=10, pady=10,sticky="")
             if 'ctklabel' in str(i):
-                #print(i)
                 i.grid(padx=10,sticky="w")
 
     def grid_train_settings(self):
@@ -1426,11 +1151,6 @@ class App(ctk.CTk):
         #bind the load config button to a function
         self.load_config_button.bind("<Button-1>", lambda event: self.create_left_click_menu_config(event))
         self.load_config_button.grid(row=0, column=1, sticky="nsew")
-        #self.load_config_button.grid(row=2, column=1, sticky="nsew")
-        #get the location of load config button in the frame
-        #self.save_config_button = ctk.CTkButton(self.general_frame_subframe, text="Save Config", command=self.save_config)
-        #self.save_config_button.grid(row=0, column=2, sticky="nsew")
-        #self.save_config_button.grid(row=2, column=2, sticky="nsew")
         #create another button to resume from latest checkpoint
         self.input_model_path_resume_button = ctk.CTkButton(self.general_frame_subframe, text="Resume From Last Session",width=50, command=lambda : self.find_latest_generated_model(self.input_model_path_entry))
         self.input_model_path_resume_button.grid(row=0, column=2, sticky="nsew")
@@ -1496,15 +1216,15 @@ class App(ctk.CTk):
         self.telegram_chat_id_entry.insert(0, self.telegram_chat_id)
         
         #add a switch to toggle runpod mode
-        #self.runpod_mode_label = ctk.CTkLabel(self.general_frame_subframe, text="Package for cloud training")
-        #runpod_mode_label_ttp = CreateToolTip(self.runpod_mode_label, "cloud mode will package up a quick trainer session for RunPod.")
-        #self.runpod_mode_label.grid(row=9, column=0, sticky="nsew")
-        #self.runpod_mode_var = tk.IntVar()
-        #self.runpod_mode_checkbox = ctk.CTkSwitch(self.general_frame_subframe,variable=self.runpod_mode_var, command=self.toggle_runpod_mode)
-        #self.runpod_mode_checkbox.grid(row=9, column=1, sticky="nsew")
+        self.cloud_mode_label = ctk.CTkLabel(self.general_frame_subframe, text="Cloud Training Export")
+        cloud_mode_label_ttp = CreateToolTip(self.cloud_mode_label, "Cloud mode will package up a quick trainer session for RunPod/Colab etc.")
+        self.cloud_mode_label.grid(row=9, column=0, sticky="nsew")
+        self.cloud_mode_var = tk.IntVar()
+        self.cloud_mode_checkbox = ctk.CTkSwitch(self.general_frame_subframe,variable=self.cloud_mode_var, command=self.toggle_runpod_mode)
+        self.cloud_mode_checkbox.grid(row=9, column=1, sticky="nsew")
     
     def toggle_runpod_mode(self):
-        toggle = self.runpod_mode_var.get()
+        toggle = self.cloud_mode_var.get()
         #flip self.toggle
         if toggle == True:
             toggle = False
@@ -1951,6 +1671,13 @@ class App(ctk.CTk):
         self.play_seed_label = ctk.CTkLabel(self.playground_frame_subframe, text="Seed")
         self.play_seed_entry = ctk.CTkEntry(self.playground_frame_subframe)
         self.play_seed_entry.insert(0, self.play_seed)
+        #add a keep seed checkbox next to seed entry
+        self.play_keep_seed_var = tk.IntVar()
+        self.play_keep_seed_var.set(self.play_keep_seed)
+        self.play_keep_seed_checkbox = ctk.CTkCheckBox(self.playground_frame_subframe, text="Keep Seed", variable=self.play_keep_seed_var)
+        
+        #add a temperature slider from 0.1 to 1.0
+        
         #create a steps slider from 1 to 100
         self.play_steps_label = ctk.CTkLabel(self.playground_frame_subframe, text=f"Steps: {self.play_steps}")
         self.play_steps_slider = ctk.CTkSlider(self.playground_frame_subframe, from_=1, to=150, number_of_steps=149, command= lambda x: self.play_steps_label.configure(text="Steps: " + str(int(self.play_steps_slider.get()))))
@@ -2091,11 +1818,13 @@ class App(ctk.CTk):
 
     def packageForCloud(self):
         #check if there's an export folder in the cwd and if not create one
-        if not os.path.exists("export"):
-            os.mkdir("export")
-            os.mkdir("export" + os.sep + 'models')
-            os.mkdir("export" + os.sep + 'output')
-            os.mkdir("export" + os.sep + 'datasets')
+        if not os.path.exists("exports"):
+            os.mkdir("exports")
+        exportDir = self.export_name
+        os.mkdir("exports" + os.sep + exportDir)
+        self.full_export_path = "exports" + os.sep + exportDir
+        os.mkdir(self.full_export_path + os.sep + 'output')
+        os.mkdir(self.full_export_path + os.sep + 'datasets')
 
         #check if self.model_path is a directory
         if os.path.isdir(self.model_path):
@@ -2109,28 +1838,28 @@ class App(ctk.CTk):
             except:
                 pass
             #create a folder in the export folder with the model name
-            if not os.path.exists("export" + os.sep + 'models'+ os.sep + model_name):
-                os.mkdir("export" + os.sep + 'models'+ os.sep + model_name)
+            if not os.path.exists(self.full_export_path + os.sep + 'input_model'+ os.sep + model_name):
+                os.mkdir(self.full_export_path + os.sep + 'input_model'+ os.sep + model_name)
             #copy the model to the export folder
-            shutil.copytree(self.model_path, "export" + os.sep +'models'+ os.sep+ model_name + os.sep,dirs_exist_ok=True)
-            self.model_path= 'models' + '/' + model_name
+            shutil.copytree(self.model_path, self.full_export_path + os.sep +'input_model'+ os.sep+ model_name + os.sep,dirs_exist_ok=True)
+            self.model_path= 'input_model' + '/' + model_name
         if os.path.isdir(self.vae_path):
             #get the directory name
             vae_name = os.path.basename(self.vae_path)
             #create a folder in the export folder with the model name
-            if not os.path.exists("export" + os.sep + 'models'+ os.sep + vae_name):
-                os.mkdir("export" + os.sep + 'models'+ os.sep + vae_name)
+            if not os.path.exists(self.full_export_path + os.sep + 'input_vae_model'+ os.sep + vae_name):
+                os.mkdir(self.full_export_path + os.sep + 'input_vae_model'+ os.sep + vae_name)
             #copy the model to the export folder
-            shutil.copytree(self.vae_path, "export" + os.sep +'models'+ os.sep+ vae_name + os.sep + vae_name,dirs_exist_ok=True)
-            self.vae_path= 'models' + '/' + vae_name
+            shutil.copytree(self.vae_path, self.full_export_path + os.sep +'input_vae_model'+ os.sep+ vae_name + os.sep + vae_name,dirs_exist_ok=True)
+            self.vae_path= 'input_vae_model' + '/' + vae_name
         if self.output_path == '':
             self.output_path = 'output'
         else:
             #get the dirname
             output_name = os.path.basename(self.output_path)
             #create a folder in the export folder with the model name
-            if not os.path.exists("export" + os.sep + 'output'+ os.sep + output_name):
-                os.mkdir("export" + os.sep + 'output'+ os.sep + output_name)
+            if not os.path.exists(self.full_export_path + os.sep + 'output'+ os.sep + output_name):
+                os.mkdir(self.full_export_path + os.sep + 'output'+ os.sep + output_name)
             self.output_path = 'output' + '/' + output_name
         #loop through the concepts and add them to the export folder
         concept_counter = 0
@@ -2146,27 +1875,27 @@ class App(ctk.CTk):
                 concept_name = 'concept_' + str(concept_counter)
                 
             #create a folder in the export/datasets folder with the concept name
-            #if not os.path.exists("export" + os.sep + 'datasets'+ os.sep + concept_name):
-            #    os.mkdir("export" + os.sep + 'datasets'+ os.sep + concept_name)
+            #if not os.path.exists(self.full_export_path + os.sep + 'datasets'+ os.sep + concept_name):
+            #    os.mkdir(self.full_export_path + os.sep + 'datasets'+ os.sep + concept_name)
             #copy the concept to the export folder
-            shutil.copytree(concept['instance_data_dir'], "export" + os.sep + 'datasets'+ os.sep + concept_data_dir ,dirs_exist_ok=True)
+            shutil.copytree(concept['instance_data_dir'], self.full_export_path + os.sep + 'datasets'+ os.sep + concept_data_dir ,dirs_exist_ok=True)
             concept_class_name = concept['class_prompt']
             if concept_class_name == '':
                 #if class_data_dir is ''
                 if concept['class_data_dir'] != '':
                     concept_class_name = 'class_' + str(concept_counter)
                     #create a folder in the export/datasets folder with the concept name
-                    if not os.path.exists("export" + os.sep + 'datasets'+ os.sep + concept_class_name):
-                        os.mkdir("export" + os.sep + 'datasets'+ os.sep + concept_class_name)
+                    if not os.path.exists(self.full_export_path + os.sep + 'datasets'+ os.sep + concept_class_name):
+                        os.mkdir(self.full_export_path + os.sep + 'datasets'+ os.sep + concept_class_name)
                     #copy the concept to the export folder
-                    shutil.copytree(concept['class_data_dir'], "export" + os.sep + 'datasets'+ os.sep + concept_class_name+ os.sep,dirs_exist_ok=True)
+                    shutil.copytree(concept['class_data_dir'], self.full_export_path + os.sep + 'datasets'+ os.sep + concept_class_name+ os.sep,dirs_exist_ok=True)
             else:
                 if concept['class_data_dir'] != '':
                     #create a folder in the export/datasets folder with the concept name
-                    if not os.path.exists("export" + os.sep + 'datasets'+ os.sep + concept_class_name):
-                        os.mkdir("export" + os.sep + 'datasets'+ os.sep + concept_class_name)
+                    if not os.path.exists(self.full_export_path + os.sep + 'datasets'+ os.sep + concept_class_name):
+                        os.mkdir(self.full_export_path + os.sep + 'datasets'+ os.sep + concept_class_name)
                     #copy the concept to the export folder
-                    shutil.copytree(concept['class_data_dir'], "export" + os.sep + 'datasets'+ os.sep + concept_class_name+ os.sep,dirs_exist_ok=True)
+                    shutil.copytree(concept['class_data_dir'], self.full_export_path + os.sep + 'datasets'+ os.sep + concept_class_name+ os.sep,dirs_exist_ok=True)
             #create a new concept dict
             new_concept = {}
             new_concept['instance_prompt'] = concept_name
@@ -2177,11 +1906,18 @@ class App(ctk.CTk):
             new_concept['use_sub_dirs'] = concept['use_sub_dirs']
             new_concepts.append(new_concept)
         #make scripts folder
-        self.save_concept_to_json(filename='export' + os.sep + 'stabletune_concept_list.json', preMadeConcepts=new_concepts)
-        if not os.path.exists("export" + os.sep + 'scripts'):
-            os.mkdir("export" + os.sep + 'scripts')
+        self.save_concept_to_json(filename=self.full_export_path + os.sep + 'stabletune_concept_list.json', preMadeConcepts=new_concepts)
+        if not os.path.exists(self.full_export_path + os.sep + 'scripts'):
+            os.mkdir(self.full_export_path + os.sep + 'scripts')
         #copy the scripts/trainer.py the scripts folder
-        shutil.copy('scripts' + os.sep + 'trainer.py', "export" + os.sep + 'scripts' + os.sep + 'trainer.py')
+        shutil.copy('scripts' + os.sep + 'trainer.py', self.full_export_path + os.sep + 'scripts' + os.sep + 'trainer.py')
+        #copy trainer_utils.py to the scripts folder
+        shutil.copy('scripts' + os.sep + 'trainer_util.py', self.full_export_path + os.sep + 'scripts' + os.sep + 'trainer_util.py')
+        #copy converters.py to the scripts folder
+        shutil.copy('scripts' + os.sep + 'converters.py', self.full_export_path + os.sep + 'scripts' + os.sep + 'converters.py')
+        #copy model_util.py to the scripts folder
+        shutil.copy('scripts' + os.sep + 'model_util.py', self.full_export_path + os.sep + 'scripts' + os.sep + 'model_util.py')
+        
     def caption_buddy(self):
         import captionBuddy
         #self.master.overrideredirect(False)
@@ -2301,11 +2037,14 @@ class App(ctk.CTk):
             self.play_image_canvas.itemconfig(self.play_image, image=self.play_current_image)
             self.play_image_canvas.update()
         with torch.autocast("cuda"), torch.inference_mode():
+            if seed == "" or seed == " ":
+                seed = -1
             seed = int(seed)
-            if seed == -1:
+            if seed == -1 or seed == 0 or self.play_keep_seed_var.get() == 0:
                 #random seed
-                import random
-                seed = random.randint(0, 1000000)
+                seed = random.randint(0, 10000000)
+                self.play_seed_entry.delete(0, "end")
+                self.play_seed_entry.insert(0, seed)
             generator = torch.Generator("cuda").manual_seed(seed)
             #self.play_generate_image_button["text"] = "Generating, Please stand by..."
             #self.play_generate_image_button.configure(fg=self.dark_mode_title_var)
@@ -3092,8 +2831,6 @@ class App(ctk.CTk):
         self.sample_width_entry.insert(0, configure["sample_width"])
         self.sample_random_aspect_ratio_var.set(configure["sample_random_aspect_ratio"])
         self.sample_on_training_start_var.set(configure["sample_on_training_start"])
-        #self.concept_config_path_entry.delete(0, tk.END)
-        #self.concept_config_path_entry.insert(0,configure["concept_config_path"])
         self.use_aspect_ratio_bucketing_var.set(configure["aspect_ratio_bucketing"])
         self.seed_entry.delete(0, tk.END)
         self.seed_entry.insert(0, configure["seed"])
@@ -3113,12 +2850,7 @@ class App(ctk.CTk):
         self.conditional_dropout_entry.insert(0, configure["conditional_dropout"])
         self.clip_penultimate_var.set(configure["clip_penultimate"])
         self.use_ema_var.set(configure["use_ema"])
-            
-
-        #self.update_controlled_seed_sample()
-        #self.update_sample_prompts()
         self.update()
-        #self.canvas.configure(scrollregion=self.canvas.bbox("all"))
     
     def process_inputs(self,export=None):
         #collect and process all the inputs
@@ -3172,13 +2904,21 @@ class App(ctk.CTk):
         self.convert_to_ckpt_after_training = self.convert_to_ckpt_after_training_var.get()
         self.disable_cudnn_benchmark = self.disable_cudnn_benchmark_var.get()
         self.sample_step_interval = self.sample_step_interval_entry.get()
-        #self.cloud_mode = self.runpod_mode_var.get()
+        self.cloud_mode = self.cloud_mode_var.get()
         self.conditional_dropout = self.conditional_dropout_entry.get()
         self.clip_penultimate = self.clip_penultimate_var.get()
         self.use_ema = self.use_ema_var.get()
-        #if self.cloud_mode == True:
-        #    export='Linux'
-        #    self.packageForCloud()
+        if self.cloud_mode == True or export == 'LinuxCMD':
+            if export == 'LinuxCMD':
+                mode = 'LinuxCMD'
+            export='Linux'
+            #create a sessionName for the cloud based on the output path name and the time
+            #format time and date to %month%day%hour%minute
+            now = datetime.now()
+            dt_string = now.strftime("%m-%d-%H-%M")
+            self.export_name = self.output_path.split('/')[-1].split('\\')[-1] + '_' + dt_string
+            self.packageForCloud()
+        
         if int(self.train_epocs) == 0 or self.train_epocs == '':
             messagebox.showerror("Error", "Number of training epochs must be greater than 0")
             return
@@ -3428,7 +3168,6 @@ class App(ctk.CTk):
                 f.write(batBase)
             #close the window
             self.destroy()
-            #self.master.destroy()
             #run the bat file
             self.quit()
             train = os.system(r".\scripts\train.bat")
@@ -3450,26 +3189,44 @@ class App(ctk.CTk):
                 f.write(batBase)
             #show message
             messagebox.showinfo("Export", "Exported to train.bat")
-        elif export == 'Linux' and self.cloud_mode == False:
-            #write batBase to a shell script
-            with open("train.sh", "w", encoding="utf-8") as f:
-                f.write(batBase)
-            #show message
-            messagebox.showinfo("Export", "Exported to train.sh.\nDon't forget to take stabletune_concept_list.json with you!")
-            #close the window
-        '''
+        elif mode == 'LinuxCMD':
+            #copy batBase to clipboard
+            pyperclip.copy('!'+batBase)
+            shutil.rmtree(self.full_export_path)
+            messagebox.showinfo("Export", "Copied new training command to clipboard.")
+            return
         elif export == 'Linux' and self.cloud_mode == True:
-            with open("export"+os.sep+"train.sh", "w", encoding="utf-8") as f:
-                f.write(batBase)
-            
+            notebook = 'resources/stableTuner_notebook.ipynb'
+            #load the notebook as a dictionary
+            with open(notebook) as f:
+                nb = json.load(f)
+            #get the last cell
+            last_cell = nb['cells'][-1]
+            last_cell['source'] = '!'+batBase
+            #replace the last cell with the new one
+            nb['cells'][-1] = last_cell
+            #save the notebook to the export folder
+            shutil.copy('requirements.txt', self.full_export_path)
             #zip up everything in export without the folder itself
-            shutil.make_archive('export', 'zip', 'export')
-            #delete the export folder
-            shutil.rmtree('export')
+            shutil.make_archive('payload', 'zip', self.full_export_path)
+            #move the zip file to the export folder
+            shutil.move('payload.zip', self.full_export_path)
+            #save the notebook to the export folder
+            with open(self.full_export_path+os.sep+'stableTuner_notebook.ipynb', 'w') as f:
+                json.dump(nb, f)
+            #delete everything in the export folder except the zip file and the notebook
+            for file in os.listdir(self.full_export_path):
+                if file.endswith('.zip') or file.endswith('.ipynb'):
+                    continue
+                else:
+                    #if it's a folder, delete it
+                    if os.path.isdir(self.full_export_path+os.sep+file):
+                        shutil.rmtree(self.full_export_path+os.sep+file)
+                    #if it's a file, delete it
+                    else:
+                        os.remove(self.full_export_path+os.sep+file)
             #show message
-            messagebox.showinfo("Export", "Exported to train.sh.\nDon't forget to take stabletune_concept_list.json with you!")
-            #close the window
-        '''
+            messagebox.showinfo("Success", f"Your cloud\linux payload is ready to go!\nSaved to: {self.full_export_path}\n\nUpload the files and run the notebook to start training.")
         
 
 
