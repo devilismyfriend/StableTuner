@@ -2923,6 +2923,15 @@ class App(ctk.CTk):
                     overwrite = messagebox.askyesno("Overwrite Output Path", "The output path is not empty. Do you want to overwrite it?")
                     if overwrite == False:
                         return
+                    else:
+                        #delete the contents of the output path but the logs or 0 directory
+                        for file in os.listdir(self.output_path):
+                            if file != 'logs' and file != '0':
+                                if os.path.isdir(self.output_path + '/' + file) == True:
+                                    shutil.rmtree(self.output_path + '/' + file)
+                                else:
+                                    os.remove(self.output_path + '/' + file)
+
                         
         if self.cloud_mode == True or export == 'LinuxCMD':
             if export == 'LinuxCMD':

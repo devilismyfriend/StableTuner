@@ -1166,7 +1166,11 @@ def main():
         torch.backends.cudnn.benchmark = True
     if args.send_telegram_updates:
         send_telegram_message(f"Booting up Dreambooth!\n", args.telegram_chat_id, args.telegram_token)
-    logging_dir = Path(args.output_dir, "0", args.logging_dir)
+    logging_dir = Path(args.output_dir, "logs", args.logging_dir)
+    main_sample_dir = os.path.join(args.output_dir, "samples")
+    if os.path.exists(main_sample_dir):
+            shutil.rmtree(main_sample_dir)
+            os.makedirs(main_sample_dir)
     #create logging directory
     if not logging_dir.exists():
         logging_dir.mkdir(parents=True)
@@ -1451,7 +1455,7 @@ def main():
         text_encoder.to(accelerator.device, dtype=weight_dtype)
 
     if not args.not_cache_latents:
-        latent_cache_dir = Path(args.output_dir, "0", "latent_cache")
+        latent_cache_dir = Path(args.output_dir, "logs", "latent_cache")
         #check if latents_cache.pt exists in the output_dir
         if not os.path.exists(latent_cache_dir):
             os.makedirs(latent_cache_dir)
@@ -1565,7 +1569,7 @@ def main():
                 #check how much space is left on the drive
                 total, used, free = shutil.disk_usage("/")
                 if (free // (2**30)) < 4:
-                    folders.remove("0")
+                    #folders.remove("0")
                     #get the folder with the lowest number
                     oldest_folder = min(folder for folder in folders if folder.isdigit())
                     if args.send_telegram_updates:
@@ -1615,8 +1619,8 @@ def main():
                         "Could not enable memory efficient attention. Make sure xformers is installed"
                         f" correctly and a GPU is available: {e}"
                     )
-            save_dir = os.path.join(args.output_dir, f"{step}")
-            sample_dir = os.path.join(args.output_dir, f"samples/{step}")
+            save_dir = os.path.join(args.output_dir, f"{context}_{step}")
+            sample_dir = os.path.join(args.output_dir, f"samples/{context}_{step}")
             #if sample dir path does not exist, create it
             
             if args.stop_text_encoder_training == True:
@@ -1624,18 +1628,16 @@ def main():
             if step != 0:
                 if save_model:
                     pipeline.save_pretrained(save_dir)
-                else:
-                    if not os.path.isdir(save_dir):
-                        os.mkdir(save_dir)
-                with open(os.path.join(save_dir, "args.json"), "w") as f:
-                    json.dump(args.__dict__, f, indent=2)
+                    with open(os.path.join(save_dir, "args.json"), "w") as f:
+                            json.dump(args.__dict__, f, indent=2)
                 if args.stop_text_encoder_training == True:
                     #delete every folder in frozen_directory but the text encoder
                     for folder in os.listdir(save_dir):
                         if folder != "text_encoder" and os.path.isdir(os.path.join(save_dir, folder)):
                             shutil.rmtree(os.path.join(save_dir, folder))
-
+            imgs = []
             if args.add_sample_prompt is not None and args.stop_text_encoder_training != True:
+                
                 pipeline = pipeline.to(accelerator.device)
                 pipeline.set_progress_bar_config(disable=True)
                 #sample_dir = os.path.join(save_dir, "samples")
@@ -1683,7 +1685,8 @@ def main():
                     torch.cuda.empty_cache()
             if save_model == True:
                 print(f"[*] Weights saved to {save_dir}")
-            else:
+            elif save_model == False and len(imgs) > 0:
+                del imgs
                 print(f"[*] Samples saved to {save_dir}")
 
     # Only show the progress bar once on each machine.
@@ -1708,7 +1711,7 @@ def main():
             
             #save initial weights
             if args.sample_on_training_start==True and epoch==0:
-                save_and_sample_weights(epoch,'epoch',save_model=False)
+                save_and_sample_weights(epoch,'start',save_model=False)
             
             if args.train_text_encoder and args.stop_text_encoder_training == epoch:
                 args.stop_text_encoder_training = True
@@ -1832,7 +1835,9 @@ def main():
                     save_and_sample_weights(global_step,'step',save_model=False)
 
                 progress_bar.update(1)
+                progress_bar_e.refresh()
                 global_step += 1
+                
 
                 if global_step >= args.max_train_steps:
                     break
