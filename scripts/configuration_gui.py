@@ -3155,7 +3155,6 @@ class App(ctk.CTk):
                     batBase += f' "--conditional_dropout={self.conditional_dropout}" '
         #save configure
             
-            print('Error: Conditional Dropout must be a percent between 0 and 100, or a decimal between 0 and 1.')
         if self.clip_penultimate == True:
             if export == 'Linux':
                 batBase += ' --clip_penultimate'
