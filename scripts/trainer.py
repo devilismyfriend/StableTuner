@@ -829,9 +829,10 @@ class DataLoaderMultiAspect():
                     try:
                         with open(txt_file_path, 'r',encoding='utf-8') as f:
                             identifier = f.readline().rstrip()
+                            f.close()
                             if len(identifier) < 1:
                                 raise ValueError(f" *** Could not find valid text in: {txt_file_path}")
-
+                            
                     except:
                         print(f" {bcolors.FAIL} *** Error reading {txt_file_path} to get caption, falling back to filename{bcolors.ENDC}") 
                         identifier = caption_from_filename
@@ -1056,6 +1057,7 @@ class DreamBoothDataset(Dataset):
             if os.path.exists(txt_path):
                 with open(txt_path, encoding='utf-8') as f:
                     instance_prompt = f.readline().rstrip()
+                    f.close()
         if self.conditional_dropout != None:
             if og_prompt == '' and instance_prompt != '':
                 instance_prompt = ''
@@ -1107,7 +1109,9 @@ class LatentsDataset(Dataset):
     def __init__(self, latents_cache, text_encoder_cache):
         self.latents_cache = latents_cache
         self.text_encoder_cache = text_encoder_cache
-
+    def add_latent(self, latent, text_encoder):
+        self.latents_cache.append(latent)
+        self.text_encoder_cache.append(text_encoder)
     def __len__(self):
         return len(self.latents_cache)
 
@@ -1505,22 +1509,26 @@ def main():
                 os.remove(os.path.join(latent_cache_dir, "latents_cache.pt"))
             print(f" {bcolors.WARNING}Generating latents cache...{bcolors.ENDC}") 
 
-            latents_cache = []
-            text_encoder_cache = []
+            #latents_cache = []
+            #text_encoder_cache = []
+            train_dataset = LatentsDataset(([]), [])
             for batch in tqdm(train_dataloader, desc="Caching latents"):
                 with torch.no_grad():
                     batch["pixel_values"] = batch["pixel_values"].to(accelerator.device, non_blocking=True, dtype=weight_dtype)
                     batch["input_ids"] = batch["input_ids"].to(accelerator.device, non_blocking=True)
                     
-                    latents_cache.append(vae.encode(batch["pixel_values"]).latent_dist)
+                    cached_latent = vae.encode(batch["pixel_values"]).latent_dist
                     if args.train_text_encoder:
-                        text_encoder_cache.append(batch["input_ids"])
+                        cached_text_enc = batch["input_ids"]
                     else:
-                        text_encoder_cache.append(text_encoder(batch["input_ids"])[0])
+                        cached_text_enc = text_encoder(batch["input_ids"])[0]
+                    train_dataset.add_latent(cached_latent, cached_text_enc)
                     del batch
+                    del cached_latent
+                    del cached_text_enc
                     gc.collect()
                     #torch.cuda.empty_cache()
-            train_dataset = LatentsDataset(latents_cache, text_encoder_cache)
+            
             if args.save_latents_cache:
                 if not latent_cache_dir.exists():
                     latent_cache_dir.mkdir(parents=True)
@@ -1833,18 +1841,20 @@ def main():
             pass
     try:
         print(f" {bcolors.OKBLUE}Starting Training!{bcolors.ENDC}")
-        print(f"{bcolors.WARNING}Use 'CTRL+F12' mid-training to open up a generation GUI to play around with the model!{bcolors.ENDC}")
-        def toggle_gui(event = None):
-            if keyboard.is_pressed('ctrl'):
-                print(f" {bcolors.WARNING}GUI will boot as soon as the current step finish.{bcolors.ENDC}")
-                nonlocal mid_generation
-                mid_generation = True
-                #global mid_generation
-                #mid_generation = True
+        try:
+            def toggle_gui(event = None):
+                if keyboard.is_pressed('ctrl'):
+                    print(f" {bcolors.WARNING}GUI will boot as soon as the current step finish.{bcolors.ENDC}")
+                    nonlocal mid_generation
+                    mid_generation = True
+            keyboard.on_press_key('f12',toggle_gui)
+            print(f"{bcolors.WARNING}Use 'CTRL+F12' mid-training to open up a generation GUI to play around with the model!{bcolors.ENDC}")
+        except:
+            pass
         mid_generation = False
         #lambda set mid_generation to true
         
-        keyboard.on_press_key('f12',toggle_gui)
+        
         for epoch in range(args.num_train_epochs):
             unet.train()
             if args.train_text_encoder:
