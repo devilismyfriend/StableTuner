@@ -1612,7 +1612,10 @@ def main():
             elif args.train_text_encoder == False:
                 text_enc_model = CLIPTextModel.from_pretrained(args.pretrained_model_name_or_path, subfolder="text_encoder" )
             elif args.train_text_encoder and args.stop_text_encoder_training <= epoch:
-                text_enc_model = CLIPTextModel.from_pretrained(frozen_directory, subfolder="text_encoder" )
+                if 'frozen_directory' in locals():
+                    text_enc_model = CLIPTextModel.from_pretrained(frozen_directory, subfolder="text_encoder")
+                else:
+                    text_enc_model = accelerator.unwrap_model(text_encoder,True)
                 
             #scheduler = DDIMScheduler(beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear", clip_sample=False, set_alpha_to_one=False)
             #scheduler = EulerDiscreteScheduler.from_pretrained(args.pretrained_model_name_or_path, subfolder="scheduler", prediction_type="v_prediction")
