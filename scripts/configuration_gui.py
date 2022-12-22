@@ -2938,7 +2938,7 @@ class App(ctk.CTk):
         self.use_ema = self.use_ema_var.get()
         self.duplicate_fill_buckets = self.duplicate_fill_buckets_var.get()
         mode = 'normal'
-        if self.cloud_mode == False:
+        if self.cloud_mode == False and export == None:
             #check if output path exists
             if os.path.exists(self.output_path) == True:
                 #check if output path is empty
@@ -3245,6 +3245,19 @@ class App(ctk.CTk):
             messagebox.showinfo("Export", "Exported to train.bat")
         elif mode == 'LinuxCMD':
             #copy batBase to clipboard
+            trainer_index = batBase.find('trainer.py')+11
+            batStart = batBase[:trainer_index]
+            batCommands = batBase[trainer_index:]
+            #split on -- and remove the first element
+            batCommands = batCommands.split('--')
+            batBase = batStart+' \\\n'
+            for command in batCommands[1:]:
+                #add the -- back
+                if command != batCommands[-1]:
+                    command = '  --'+command+'\\'+'\n'
+                else:
+                    command = '  --'+command
+                batBase += command
             pyperclip.copy('!'+batBase)
             shutil.rmtree(self.full_export_path)
             messagebox.showinfo("Export", "Copied new training command to clipboard.")
@@ -3255,10 +3268,31 @@ class App(ctk.CTk):
             with open(notebook) as f:
                 nb = json.load(f)
             #get the last cell
-            last_cell = nb['cells'][-1]
-            last_cell['source'] = '!'+batBase
-            #replace the last cell with the new one
-            nb['cells'][-1] = last_cell
+            #find the cell with the source that contains changeMe
+            #format batBase so it won't be one line
+            #find index in batBase of the trainer.py
+            trainer_index = batBase.find('trainer.py')+11
+            batStart = batBase[:trainer_index]
+            batCommands = batBase[trainer_index:]
+            #split on -- and remove the first element
+            batCommands = batCommands.split('--')
+            batBase = batStart+' \\\n'
+            for command in batCommands[1:]:
+                #add the -- back
+                if command != batCommands[-1]:
+                    command = '  --'+command+'\\'+'\n'
+                else:
+                    command = '  --'+command
+                batBase += command
+            for i in range(len(nb['cells'])):
+                if 'changeMe' in nb['cells'][i]['source']:
+                    code_cell = nb['cells'][i]
+                    index = i
+                    code_cell['source'] = '!'+batBase
+                    #replace the last cell with the new one
+                    nb['cells'][index] = code_cell
+                    break
+            
             #save the notebook to the export folder
             shutil.copy('requirements.txt', self.full_export_path)
             #zip up everything in export without the folder itself
