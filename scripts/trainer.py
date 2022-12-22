@@ -13,7 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-
+import keyboard
+import gradio as gr
 import argparse
 import random
 import hashlib
@@ -44,6 +45,16 @@ from PIL import Image
 from diffusers.utils.import_utils import is_xformers_available
 from trainer_util import EMAModel
 import gc
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
 logger = get_logger(__name__)
 def parse_args():
     parser = argparse.ArgumentParser(description="Simple example of a training script.")
@@ -452,14 +463,15 @@ def get_aspect_buckets(resolution):
         raise ValueError("Resolution must be at least 512")
     try: 
         rounded_resolution = int(resolution / 64) * 64
-        print("Rounded resolution to", rounded_resolution)
+        print(f" {bcolors.WARNING} Rounded resolution to: {rounded_resolution}{bcolors.ENDC}")   
         all_image_sizes = __get_all_aspects()
         aspects = next(filter(lambda sizes: sizes[0][0]==rounded_resolution, all_image_sizes), None)
         ASPECTS = aspects
         #print(aspects)
         return aspects
     except Exception as e:
-        print(f" *** Could not find selected resolution: {rounded_resolution}")
+        print(f" {bcolors.FAIL} *** Could not find selected resolution: {rounded_resolution}{bcolors.ENDC}")   
+
         raise e
 
 def __get_all_aspects():
@@ -511,7 +523,8 @@ class AutoBucketing(Dataset):
             ]
         )
         #shared_dataloader = None
-        print("Creating new dataloader singleton")
+        print(f" {bcolors.WARNING}Creating new dataloader singleton{bcolors.ENDC}")   
+
         shared_dataloader = DataLoaderMultiAspect(concepts_list, debug_level=debug_level,resolution=self.resolution, batch_size=self.batch_size, flip_p=flip_p,use_image_names_as_captions=self.use_image_names_as_captions,add_class_images_to_dataset=self.add_class_images_to_dataset,balance_datasets=self.balance_datasets,with_prior_loss=self.with_prior_loss,use_text_files_as_captions=self.use_text_files_as_captions,duplicate_fill_buckets=self.duplicate_fill_buckets)
         
         #print(self.image_train_items)
@@ -535,7 +548,7 @@ class AutoBucketing(Dataset):
             #calculate how many images to drop
             self.num_images_to_drop = math.trunc(self.num_train_images * (self.conditional_dropout / 100))
             print()
-            print(f" ** Conditional Dropout will drop: {self.num_images_to_drop} captions")
+            print(f" {bcolors.WARNING} ** Conditional Dropout will drop: {self.num_images_to_drop} captions{bcolors.ENDC}")   
             print()
             selectedRandoms = []
             for i in range(self.num_images_to_drop):
@@ -555,7 +568,8 @@ class AutoBucketing(Dataset):
         
         #print(self.image_train_items)
         print()
-        print(f" ** Validation Set: {set}, steps: {self._length / batch_size:.0f}, repeats: {repeats} ")
+        print(f" {bcolors.WARNING} ** Validation Set: {set}, steps: {self._length / batch_size:.0f}, repeats: {repeats} {bcolors.ENDC}")   
+
         print()
     
     
@@ -725,17 +739,19 @@ class DataLoaderMultiAspect():
         prepared_train_data = []
         
         self.aspects = get_aspect_buckets(resolution)
-        print(f"* DLMA resolution {resolution}, buckets: {self.aspects}")
+        #print(f"* DLMA resolution {resolution}, buckets: {self.aspects}")
         #process sub directories flag
             
-        print(" Preloading images...")
+        print(f" {bcolors.WARNING} Preloading images...{bcolors.ENDC}")   
+
         if balance_datasets:
-            print(" Balancing datasets...")
+            print(f" {bcolors.WARNING} Balancing datasets...{bcolors.ENDC}") 
             #get the concept with the least number of images in instance_data_dir
             min_concept = min(concept_list, key=lambda x: len(os.listdir(x['instance_data_dir'])))
             #get the number of images in the concept with the least number of images
             min_concept_num_images = len(os.listdir(min_concept['instance_data_dir']))
             print(" Min concept: ",min_concept['instance_data_dir']," with ",min_concept_num_images," images")
+            
             balance_cocnept_list = []
             for concept in concept_list:
                 #if concept has a key do not balance it
@@ -787,7 +803,7 @@ class DataLoaderMultiAspect():
             self.class_image_caption_pairs = self.__bucketize_images(self.class_image_caption_pairs, batch_size=batch_size, debug_level=debug_level,duplicate_fill_buckets=self.duplicate_fill_buckets)
         if debug_level > 0: print(f" * DLMA Example: {self.image_caption_pairs[0]} images")
         #print the length of image_caption_pairs
-        print(" Number of image-caption pairs: ",len(self.image_caption_pairs))
+        print(f" {bcolors.WARNING} Number of image-caption pairs: {len(self.image_caption_pairs)}{bcolors.ENDC}") 
         if len(self.image_caption_pairs) == 0:
             raise Exception("All the buckets are empty. Please check your data or reduce the batch size.")
     def get_all_images(self):
@@ -817,7 +833,7 @@ class DataLoaderMultiAspect():
                                 raise ValueError(f" *** Could not find valid text in: {txt_file_path}")
 
                     except:
-                        print(f" *** Error reading {txt_file_path} to get caption, falling back to filename")
+                        print(f" {bcolors.FAIL} *** Error reading {txt_file_path} to get caption, falling back to filename{bcolors.ENDC}") 
                         identifier = caption_from_filename
                         pass
             #print("identifier: ",identifier)
@@ -952,7 +968,7 @@ class DreamBoothDataset(Dataset):
             #calculate how many images to drop
             self.num_images_to_drop = math.trunc(len(self.image_paths) * (self.conditional_dropout / 100))
             print()
-            print(f" ** Conditional Dropout will drop: {self.num_images_to_drop} captions")
+            print(f" {bcolors.WARNING} ** Conditional Dropout will drop: {self.num_images_to_drop} captions{bcolors.ENDC}") 
             print()
             selectedRandoms = []
             for i in range(self.num_images_to_drop):
@@ -972,7 +988,8 @@ class DreamBoothDataset(Dataset):
         self._length = self.num_instance_images
         self.num_class_images = len(self.class_images_path)
         self._length = max(self.num_class_images, self.num_instance_images)
-        print (f" ** Dataset length: {self._length}, {int(self.num_instance_images / repeats)} images using {repeats} repeats")
+        print(f" {bcolors.WARNING} ** Dataset length: {self._length}, {int(self.num_instance_images / repeats)} images using {repeats} repeats{bcolors.ENDC}") 
+
         self.image_transforms = transforms.Compose(
             [
                 transforms.Resize(size, interpolation=transforms.InterpolationMode.BILINEAR),
@@ -1176,6 +1193,8 @@ def send_media_group(chat_id,telegram_token, images, caption=None, reply_to_mess
         media[0]['parse_mode'] = 'HTML'
         return requests.post(SEND_MEDIA_GROUP, data={'chat_id': chat_id, 'media': json.dumps(media),'disable_notification':True, 'reply_to_message_id': reply_to_message_id }, files=files)
 def main():
+    print(f" {bcolors.OKBLUE}Booting Up StableTuner{bcolors.ENDC}") 
+    print(f" {bcolors.OKBLUE}Please wait a moment as we load up some stuff...{bcolors.ENDC}") 
     #torch.cuda.set_per_process_memory_fraction(0.5)
     args = parse_args()
     if args.disable_cudnn_benchmark:
@@ -1183,7 +1202,7 @@ def main():
     else:
         torch.backends.cudnn.benchmark = True
     if args.send_telegram_updates:
-        send_telegram_message(f"Booting up Dreambooth!\n", args.telegram_chat_id, args.telegram_token)
+        send_telegram_message(f"Booting up StableTuner!\n", args.telegram_chat_id, args.telegram_token)
     logging_dir = Path(args.output_dir, "logs", args.logging_dir)
     main_sample_dir = os.path.join(args.output_dir, "samples")
     if os.path.exists(main_sample_dir):
@@ -1441,11 +1460,13 @@ def main():
             last_run_batch_size = last_run["batch_size"]
             last_run_dataset_length = last_run["dataset_length"]
             if last_run_batch_size != args.train_batch_size:
-                print("The batch_size has changed since the last run. Regenerating Latent Cache.")
+                print(f" {bcolors.WARNING}The batch_size has changed since the last run. Regenerating Latent Cache.{bcolors.ENDC}") 
+
                 args.regenerate_latent_cache = True
                 #save the new batch_size and dataset_length to last_run.json
             if last_run_dataset_length != train_dataset_length:
-                print("The dataset length has changed since the last run. Regenerating Latent Cache.")
+                print(f" {bcolors.WARNING}The dataset length has changed since the last run. Regenerating Latent Cache.{bcolors.ENDC}") 
+
                 args.regenerate_latent_cache = True
                 #save the new batch_size and dataset_length to last_run.json
         with open(logging_dir / "last_run.json", "w") as f:
@@ -1482,7 +1503,8 @@ def main():
             if os.path.exists(os.path.join(latent_cache_dir, "latents_cache.pt")):
                 #if it exists, delete it
                 os.remove(os.path.join(latent_cache_dir, "latents_cache.pt"))
-            print("Generating latents cache...")
+            print(f" {bcolors.WARNING}Generating latents cache...{bcolors.ENDC}") 
+
             latents_cache = []
             text_encoder_cache = []
             for batch in tqdm(train_dataloader, desc="Caching latents"):
@@ -1504,7 +1526,8 @@ def main():
                     latent_cache_dir.mkdir(parents=True)
                 torch.save(train_dataset, os.path.join(latent_cache_dir,"latents_cache.pt"))
         else:
-            print("Loading latents cache from file...")
+            print(f" {bcolors.WARNING}Loading latents cache from file...{bcolors.ENDC}") 
+
             train_dataset = torch.load(os.path.join(latent_cache_dir,"latents_cache.pt"))
         train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=1, collate_fn=lambda x: x, shuffle=False)
 
@@ -1567,7 +1590,90 @@ def main():
     logger.info(f"  Total train batch size (w. parallel, distributed & accumulation) = {total_batch_size}")
     logger.info(f"  Gradient Accumulation steps = {args.gradient_accumulation_steps}")
     logger.info(f"  Total optimization steps = {args.max_train_steps}")
+    def mid_train_playground(step):
+        
+        print(f"{bcolors.WARNING} Booting up GUI{bcolors.ENDC}")
+        epoch = step // num_update_steps_per_epoch
+        if args.train_text_encoder and args.stop_text_encoder_training == True:
+            text_enc_model = accelerator.unwrap_model(text_encoder,True)
+        elif args.train_text_encoder and args.stop_text_encoder_training > epoch:
+            text_enc_model = accelerator.unwrap_model(text_encoder,True)
+        elif args.train_text_encoder == False:
+            text_enc_model = CLIPTextModel.from_pretrained(args.pretrained_model_name_or_path, subfolder="text_encoder" )
+        elif args.train_text_encoder and args.stop_text_encoder_training <= epoch:
+            if 'frozen_directory' in locals():
+                text_enc_model = CLIPTextModel.from_pretrained(frozen_directory, subfolder="text_encoder")
+            else:
+                text_enc_model = accelerator.unwrap_model(text_encoder,True)
+        scheduler = DPMSolverMultistepScheduler.from_pretrained(args.pretrained_model_name_or_path, subfolder="scheduler")
+        unwrapped_unet = accelerator.unwrap_model(unet,True)
+        if args.use_ema:
+            ema_unet.copy_to(unwrapped_unet.parameters())
+            
+        pipeline = DiffusionPipeline.from_pretrained(
+            args.pretrained_model_name_or_path,
+            unet=unwrapped_unet,
+            text_encoder=text_enc_model,
+            vae=AutoencoderKL.from_pretrained(args.pretrained_vae_name_or_path or args.pretrained_model_name_or_path,subfolder=None if args.pretrained_vae_name_or_path else "vae" ),
+            safety_checker=None,
+            torch_dtype=torch.float16
+        )
+        pipeline.scheduler = scheduler
+        if is_xformers_available():
+                try:
+                    pipeline.enable_xformers_memory_efficient_attention()
+                except Exception as e:
+                    logger.warning(
+                        "Could not enable memory efficient attention. Make sure xformers is installed"
+                        f" correctly and a GPU is available: {e}"
+                    )
+        pipeline = pipeline.to(accelerator.device)
+        def inference(prompt, negative_prompt, num_samples, height=512, width=512, num_inference_steps=50,seed=-1,guidance_scale=7.5):
+            with torch.autocast("cuda"), torch.inference_mode():
+                if seed != -1:
+                    g_cuda = torch.Generator(device='cuda')
+                    g_cuda.manual_seed(int(seed))
+                else:
+                    seed = random.randint(0, 100000)
+                    g_cuda = torch.Generator(device='cuda')
+                    g_cuda.manual_seed(seed)
+                    return pipeline(
+                            prompt, height=int(height), width=int(width),
+                            negative_prompt=negative_prompt,
+                            num_images_per_prompt=int(num_samples),
+                            num_inference_steps=int(num_inference_steps), guidance_scale=guidance_scale,
+                            generator=g_cuda).images, seed
+        
+        with gr.Blocks() as demo:
+            with gr.Row():
+                with gr.Column():
+                    prompt = gr.Textbox(label="Prompt", value="photo of zwx dog in a bucket")
+                    negative_prompt = gr.Textbox(label="Negative Prompt", value="")
+                    run = gr.Button(value="Generate")
+                    with gr.Row():
+                        num_samples = gr.Number(label="Number of Samples", value=4)
+                        guidance_scale = gr.Number(label="Guidance Scale", value=7.5)
+                    with gr.Row():
+                        height = gr.Number(label="Height", value=512)
+                        width = gr.Number(label="Width", value=512)
+                    with gr.Row():
+                        num_inference_steps = gr.Slider(label="Steps", value=25)
+                        seed = gr.Number(label="Seed", value=-1)
+                with gr.Column():
+                    gallery = gr.Gallery()
+                    seedDisplay = gr.Number(label="Used Seed:", value=0)
 
+            run.click(inference, inputs=[prompt, negative_prompt, num_samples, height, width, num_inference_steps,seed, guidance_scale], outputs=[gallery,seedDisplay])
+        
+        demo.launch(share=True,prevent_thread_lock=True)
+        print(f"{bcolors.WARNING}Gradio Session is active, Press 'F12' to resume training{bcolors.ENDC}")
+        keyboard.wait('f12')
+        demo.close()
+        del demo
+        del text_enc_model
+        del unwrapped_unet
+        del pipeline
+        return
     def save_and_sample_weights(step,context='checkpoint',save_model=True):
         #check how many folders are in the output dir
         #if there are more than 5, delete the oldest one
@@ -1706,10 +1812,10 @@ def main():
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()
             if save_model == True:
-                print(f"[*] Weights saved to {save_dir}")
+                print(f" {bcolors.OKGREEN}[*] Weights saved to {save_dir}{bcolors.ENDC}")
             elif save_model == False and len(imgs) > 0:
                 del imgs
-                print(f"[*] Samples saved to {save_dir}")
+                print(f" {bcolors.OKGREEN}[*] Samples saved to {sample_dir}{bcolors.ENDC}")
 
     # Only show the progress bar once on each machine.
     progress_bar = tqdm(range(args.max_train_steps), disable=not accelerator.is_local_main_process)
@@ -1726,6 +1832,19 @@ def main():
         except:
             pass
     try:
+        print(f" {bcolors.OKBLUE}Starting Training!{bcolors.ENDC}")
+        print(f"{bcolors.WARNING}Use 'CTRL+F12' mid-training to open up a generation GUI to play around with the model!{bcolors.ENDC}")
+        def toggle_gui(event = None):
+            if keyboard.is_pressed('ctrl'):
+                print(f" {bcolors.WARNING}GUI will boot as soon as the current step finish.{bcolors.ENDC}")
+                nonlocal mid_generation
+                mid_generation = True
+                #global mid_generation
+                #mid_generation = True
+        mid_generation = False
+        #lambda set mid_generation to true
+        
+        keyboard.on_press_key('f12',toggle_gui)
         for epoch in range(args.num_train_epochs):
             unet.train()
             if args.train_text_encoder:
@@ -1738,7 +1857,7 @@ def main():
             if args.train_text_encoder and args.stop_text_encoder_training == epoch:
                 args.stop_text_encoder_training = True
                 if accelerator.is_main_process:
-                    print(" Stopping text encoder training")   
+                    print(f" {bcolors.WARNING} Stopping text encoder training{bcolors.ENDC}")   
                     current_percentage = (epoch/args.num_train_epochs)*100
                     #round to the nearest whole number
                     current_percentage = round(current_percentage,0)
@@ -1859,8 +1978,10 @@ def main():
                 progress_bar.update(1)
                 progress_bar_e.refresh()
                 global_step += 1
-                
 
+                if mid_generation==True:
+                    mid_train_playground(global_step)
+                    mid_generation=False
                 if global_step >= args.max_train_steps:
                     break
             progress_bar_e.update(1)
