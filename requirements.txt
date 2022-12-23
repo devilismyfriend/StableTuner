@@ -17,3 +17,4 @@ tokenizers==0.13.2
 pyperclip==1.8.2
 gradio
 keyboard
+huggingface
