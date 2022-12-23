@@ -879,12 +879,15 @@ class DataLoaderMultiAspect():
                     shuffleBucket = buckets[bucket]
                     #add the images to the bucket
                     addAmount = batch_size - truncate_count
-                    for i in range(0,addAmount):
-                        bukcetLen = len(buckets[bucket])
-                        i = random.randint(0,bukcetLen-1)
-                        buckets[bucket].append(shuffleBucket[i])
+                    if addAmount == batch_size:
+                        addAmount = 0
+                    else:
+                        for i in range(0,addAmount):
+                            bukcetLen = len(buckets[bucket])
+                            i = random.randint(0,bukcetLen-1)
+                            buckets[bucket].append(shuffleBucket[i])
 
-                    print(f"  ** Bucket {bucket} with {current_bucket_size}, will duplicate {addAmount} images due to batch size {batch_size}")
+                        print(f"  ** Bucket {bucket} with {current_bucket_size}, will duplicate {addAmount} images due to batch size {batch_size}")
                     
 
         # flatten the buckets
