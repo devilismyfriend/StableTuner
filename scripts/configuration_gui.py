@@ -748,7 +748,8 @@ class App(ctk.CTk):
             pass
 
     def create_default_variables(self):
-        self.duplicate_fill_buckets = True
+        self.aspect_ratio_bucketing_mode = 'Dynamic Fill'
+        self.dynamic_bucketing_mode = 'Duplicate'
         self.play_keep_seed = False
         self.use_ema = False
         self.clip_penultimate = False
@@ -1509,17 +1510,37 @@ class App(ctk.CTk):
         #do something on checkbox click
         self.use_aspect_ratio_bucketing_checkbox.bind("<Button-1>", self.aspect_ratio_mode_toggles)
         
+        #option menu to select aspect ratio bucketing mode
+        self.aspect_ratio_bucketing_mode_var = tk.StringVar()
+        self.aspect_ratio_bucketing_mode_var.set(self.aspect_ratio_bucketing_mode)
+        self.aspect_ratio_bucketing_mode_label = ctk.CTkLabel(self.dataset_frame_subframe, text="Aspect Ratio Bucketing Mode")
+        aspect_ratio_bucketing_mode_label_ttp = CreateToolTip(self.aspect_ratio_bucketing_mode_label, "Select what the Auto Bucketing will do in case the bucket doesn't match the batch size, dynamic will choose the least amount of adding/removing of images per bucket.")
+        self.aspect_ratio_bucketing_mode_label.grid(row=8, column=0, sticky="nsew")
+        self.aspect_ratio_bucketing_mode_option_menu = ctk.CTkOptionMenu(self.dataset_frame_subframe, variable=self.aspect_ratio_bucketing_mode_var, values=['Dynamic Fill', 'Drop Fill', 'Duplicate Fill'])
+        self.aspect_ratio_bucketing_mode_option_menu.grid(row=8, column=1, sticky="nsew")
+        #option menu to select dynamic bucketing mode (if enabled)
+        self.dynamic_bucketing_mode_var = tk.StringVar()
+        self.dynamic_bucketing_mode_var.set(self.dynamic_bucketing_mode)
+        self.dynamic_bucketing_mode_label = ctk.CTkLabel(self.dataset_frame_subframe, text="Dynamic Preference")
+        dynamic_bucketing_mode_label_ttp = CreateToolTip(self.dynamic_bucketing_mode_label, "If you're using dynamic mode, choose what you prefer in the case that dropping and duplicating are the same amount of images.")
+        self.dynamic_bucketing_mode_label.grid(row=9, column=0, sticky="nsew")
+        self.dynamic_bucketing_mode_option_menu = ctk.CTkOptionMenu(self.dataset_frame_subframe, variable=self.dynamic_bucketing_mode_var, values=['Duplicate', 'Drop'])
+        self.dynamic_bucketing_mode_option_menu.grid(row=9, column=1, sticky="nsew")
+        #option menu to select dynamic bucketing mode (if enabled)
+
+        
+
         #add download dataset entry
         #add a switch to duplicate fill bucket
-        self.duplicate_fill_buckets_var = tk.IntVar()
-        self.duplicate_fill_buckets_var.set(self.duplicate_fill_buckets)
+        #self.duplicate_fill_buckets_var = tk.IntVar()
+        #self.duplicate_fill_buckets_var.set(self.duplicate_fill_buckets)
         #create label
-        self.duplicate_fill_buckets_label = ctk.CTkLabel(self.dataset_frame_subframe, text="Force Fill Buckets with Duplicates")
-        duplicate_fill_buckets_label_ttp = CreateToolTip(self.duplicate_fill_buckets_label, "Will duplicate to fill buckets, enable this to avoid buckets dropping images.")
-        self.duplicate_fill_buckets_label.grid(row=8, column=0, sticky="nsew")
+        #self.duplicate_fill_buckets_label = ctk.CTkLabel(self.dataset_frame_subframe, text="Force Fill Buckets with Duplicates")
+        #duplicate_fill_buckets_label_ttp = CreateToolTip(self.duplicate_fill_buckets_label, "Will duplicate to fill buckets, enable this to avoid buckets dropping images.")
+        #self.duplicate_fill_buckets_label.grid(row=8, column=0, sticky="nsew")
         #create checkbox
-        self.duplicate_fill_buckets_checkbox = ctk.CTkSwitch(self.dataset_frame_subframe, variable=self.duplicate_fill_buckets_var)
-        self.duplicate_fill_buckets_checkbox.grid(row=8, column=1, sticky="nsew")
+        #self.duplicate_fill_buckets_checkbox = ctk.CTkSwitch(self.dataset_frame_subframe, variable=self.duplicate_fill_buckets_var)
+        #self.duplicate_fill_buckets_checkbox.grid(row=8, column=1, sticky="nsew")
         #self.use_aspect_ratio_bucketing_checkbox.bind("<Button-1>", self.duplicate_fill_buckets_label.configure(state="disabled"))
         #self.use_aspect_ratio_bucketing_checkbox.bind("<Button-1>", self.duplicate_fill_buckets_checkbox.configure(state="disabled"))
         
@@ -1957,14 +1978,18 @@ class App(ctk.CTk):
         if self.use_aspect_ratio_bucketing_var.get() == 1:
             self.with_prior_loss_preservation_var.set(0)
             self.with_prior_loss_preservation_checkbox.configure(state="disabled")
-            self.duplicate_fill_buckets_label.configure(state="normal")
-            self.duplicate_fill_buckets_checkbox.configure(state="normal")
+            self.aspect_ratio_bucketing_mode_label.configure(state="normal")
+            self.aspect_ratio_bucketing_mode_option_menu.configure(state="normal")
+            self.dynamic_bucketing_mode_label.configure(state="normal")
+            self.dynamic_bucketing_mode_option_menu.configure(state="normal")
             
 
         else:
             self.with_prior_loss_preservation_checkbox.configure(state="normal")
-            self.duplicate_fill_buckets_label.configure(state="disabled")
-            self.duplicate_fill_buckets_checkbox.configure(state="disabled")
+            self.aspect_ratio_bucketing_mode_label.configure(state="disabled")
+            self.aspect_ratio_bucketing_mode_option_menu.configure(state="disabled")
+            self.dynamic_bucketing_mode_label.configure(state="disabled")
+            self.dynamic_bucketing_mode_option_menu.configure(state="disabled")
             
     
     def download_dataset(self):
@@ -2757,7 +2782,8 @@ class App(ctk.CTk):
         configure['conditional_dropout'] = self.conditional_dropout_entry.get()
         configure["clip_penultimate"] = self.clip_penultimate_var.get()
         configure['use_ema'] = self.use_ema_var.get()
-        configure['duplicate_fill_buckets'] = self.duplicate_fill_buckets_var.get()
+        configure['aspect_ratio_bucketing_mode'] = self.aspect_ratio_bucketing_mode_var.get()
+        configure['dynamic_bucketing_mode'] = self.dynamic_bucketing_mode_var.get()
         #save the configure file
         #if the file exists, delete it
         if os.path.exists(file_name):
@@ -2877,7 +2903,18 @@ class App(ctk.CTk):
         self.conditional_dropout_entry.insert(0, configure["conditional_dropout"])
         self.clip_penultimate_var.set(configure["clip_penultimate"])
         self.use_ema_var.set(configure["use_ema"])
-        self.duplicate_fill_buckets_var.set(configure["duplicate_fill_buckets"])
+        if configure["aspect_ratio_bucketing"]:
+            self.aspect_ratio_bucketing_mode_label.configure(state='normal')
+            self.aspect_ratio_bucketing_mode_option_menu.configure(state='normal')
+            self.dynamic_bucketing_mode_label.configure(state='normal')
+            self.dynamic_bucketing_mode_option_menu.configure(state='normal')
+        else:
+            self.aspect_ratio_bucketing_mode_label.configure(state='disabled')
+            self.aspect_ratio_bucketing_mode_option_menu.configure(state='disabled')
+            self.dynamic_bucketing_mode_label.configure(state='disabled')
+            self.dynamic_bucketing_mode_option_menu.configure(state='disabled')
+        self.aspect_ratio_bucketing_mode_var.set(configure["aspect_ratio_bucketing_mode"])
+        self.dynamic_bucketing_mode_var.set(configure["dynamic_bucketing_mode"])
         self.update()
     
     def process_inputs(self,export=None):
@@ -2936,7 +2973,8 @@ class App(ctk.CTk):
         self.conditional_dropout = self.conditional_dropout_entry.get()
         self.clip_penultimate = self.clip_penultimate_var.get()
         self.use_ema = self.use_ema_var.get()
-        self.duplicate_fill_buckets = self.duplicate_fill_buckets_var.get()
+        self.aspect_ratio_bucketing_mode = self.aspect_ratio_bucketing_mode_var.get()
+        self.dynamic_bucketing_mode = self.dynamic_bucketing_mode_var.get()
         mode = 'normal'
         if self.cloud_mode == False and export == None:
             #check if output path exists
@@ -3062,6 +3100,24 @@ class App(ctk.CTk):
                 batBase += ' --use_bucketing'
             else:
                 batBase += f' "--use_bucketing" '
+            if self.aspect_ratio_bucketing_mode == 'Dynamic Fill':
+                com = 'dynamic'
+            if self.aspect_ratio_bucketing_mode == 'Drop Fill':
+                com = 'truncate'
+            if self.aspect_ratio_bucketing_mode == 'Duplicate Fill':
+                com = 'add'
+            if export == 'Linux':
+                batBase += f' --aspect_mode="{com}"'
+            else:
+                batBase += f' "--aspect_mode={com}" '
+            if self.dynamic_bucketing_mode == 'Duplicate':
+                com = 'add'
+            if self.dynamic_bucketing_mode == 'Drop':
+                com = 'truncate'
+            if export == 'Linux':
+                batBase += f' --aspect_mode_action_preference="{com}"'
+            else:
+                batBase += f' "--aspect_mode_action_preference={com}" '
         if self.use_8bit_adam == True:
             if export == 'Linux':
                 batBase += ' --use_8bit_adam'
@@ -3209,11 +3265,6 @@ class App(ctk.CTk):
             else:
                 batBase += f' "--use_ema" '
         
-        if self.duplicate_fill_buckets == True:
-            if export == 'Linux':
-                batBase += ' --duplicate_fill_buckets'
-            else:
-                batBase += f' "--duplicate_fill_buckets" '
         self.save_config('stabletune_last_run.json')
         
         if export == False:
