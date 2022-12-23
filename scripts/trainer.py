@@ -584,7 +584,7 @@ class AutoBucketing(Dataset):
         print()
         print(f" {bcolors.WARNING} ** Validation Set: {set}, steps: {self._length / batch_size:.0f}, repeats: {repeats} {bcolors.ENDC}")   
         print()
-    
+        
     
     def __len__(self):
         return self._length
@@ -787,7 +787,7 @@ class DataLoaderMultiAspect():
                 use_sub_dirs = False
             self.image_paths = []
             #self.class_image_paths = []
-            min_concept_num_images = -1
+            min_concept_num_images = None
             if balance_datasets:
                 min_concept_num_images = balance_cocnept_list[concept_list.index(concept)]
             data_root = concept['instance_data_dir']
@@ -862,7 +862,6 @@ class DataLoaderMultiAspect():
             image_train_item = ImageTrainItem(image=None, caption=identifier, target_wh=target_wh, pathname=pathname, flip_p=flip_p)
 
             decorated_image_train_items.append(image_train_item)
-
         return decorated_image_train_items
 
     @staticmethod
@@ -873,7 +872,6 @@ class DataLoaderMultiAspect():
         
         # TODO: this is not terribly efficient but at least linear time
         buckets = {}
-
         for image_caption_pair in prepared_train_data:
             target_wh = image_caption_pair.target_wh
 
@@ -883,13 +881,16 @@ class DataLoaderMultiAspect():
         print(f" ** Number of buckets: {len(buckets)}")
         for bucket in buckets:
             bucket_len = len(buckets[bucket])
+            #real_len = len(buckets[bucket])+1
+            #print(real_len)
             truncate_amount = bucket_len % batch_size
-            #print(truncate_amount)
             add_amount = batch_size - bucket_len % batch_size
-            #print(add_amount)
             action = None
+            #print(f" ** Bucket {bucket} has {bucket_len} images")
             if aspect_mode == 'dynamic':
-                if add_amount < truncate_amount and add_amount != 0 and add_amount != batch_size or batch_size > bucket_len:
+                if batch_size == bucket_len:
+                    action = None
+                elif add_amount < truncate_amount and add_amount != 0 and add_amount != batch_size or truncate_amount == 0:
                     action = 'add'
                     #print(f'should add {add_amount}')
                 elif truncate_amount < add_amount and truncate_amount != 0 and truncate_amount != batch_size and batch_size < bucket_len:
@@ -901,6 +902,9 @@ class DataLoaderMultiAspect():
                         action = 'add'
                     elif action_preference == 'truncate':
                         action = 'truncate'
+                elif batch_size > bucket_len:
+                    action = 'add'
+                
             elif aspect_mode == 'add':
                 action = 'add'
             elif aspect_mode == 'truncate':
@@ -908,40 +912,40 @@ class DataLoaderMultiAspect():
             if action == None:
                 action = None
                 #print('no need to add or truncate')
-            print(f" ** Bucket {bucket} has {len(buckets[bucket])} images")
-            if action == 'add':
+            if action == None:
+                #print('test')
+                current_bucket_size = bucket_len
+                print(f"  ** Bucket {bucket} found {bucket_len}, nice!")
+            elif action == 'add':
                 #copy the bucket
-                shuffleBucket = random.sample(buckets[bucket], len(buckets[bucket]))     
+                shuffleBucket = random.sample(buckets[bucket], bucket_len)     
                 #add the images to the bucket
-                current_bucket_size = len(buckets[bucket])
-                truncate_count = (len(buckets[bucket])) % batch_size
+                current_bucket_size = bucket_len
+                truncate_count = (bucket_len) % batch_size
                 #how many images to add to the bucket to fill the batch
                 addAmount = batch_size - truncate_count
                 if addAmount != batch_size:
-                    
-                    for i in range(0,addAmount):
-                        #print(str(i+1))
-                        
+                    added=0
+                    while added != addAmount:
                         randomIndex = random.randint(0,len(shuffleBucket)-1)
                         #print(str(randomIndex))
                         buckets[bucket].append(shuffleBucket[randomIndex])
-                    print(f"  ** Bucket {bucket} with {current_bucket_size}, will duplicate {addAmount} images due to batch size {batch_size}")
+                        added+=1
+                    print(f"  ** Bucket {bucket} found {bucket_len} images, will duplicate {added} images due to batch size {batch_size}")
                 else:
-                    print(f"  ** Bucket {bucket} with {current_bucket_size}, won't change due to batch size {batch_size}")
+                    print(f"  ** Bucket {bucket} found {bucket_len}, nice!")
             elif action == 'truncate':
-                print(f" ** Bucket {bucket} has {len(buckets[bucket])} images")
-                truncate_count = (len(buckets[bucket])) % batch_size
-                current_bucket_size = len(buckets[bucket])
+                truncate_count = (bucket_len) % batch_size
+                current_bucket_size = bucket_len
                 buckets[bucket] = buckets[bucket][:current_bucket_size - truncate_count]
-                print(f"  ** Bucket {bucket} with {current_bucket_size}, will drop {truncate_count} images due to batch size {batch_size}")
-            elif action == None:
-                current_bucket_size = len(buckets[bucket])
-                print(f"  ** Bucket {bucket} with {current_bucket_size}, won't change due to batch size {batch_size}")
+                print(f"  ** Bucket {bucket} found {bucket_len} images, will drop {truncate_count} images due to batch size {batch_size}")
+            
 
         # flatten the buckets
         image_caption_pairs = []
         for bucket in buckets:
             image_caption_pairs.extend(buckets[bucket])
+        
         return image_caption_pairs
 
     @staticmethod
@@ -1580,7 +1584,6 @@ def main():
                     del cached_text_enc
                     #gc.collect()
                     #torch.cuda.empty_cache()
-            
             if args.save_latents_cache:
                 if not latent_cache_dir.exists():
                     latent_cache_dir.mkdir(parents=True)
@@ -1896,14 +1899,32 @@ def main():
         try:
             def toggle_gui(event = None):
                 if keyboard.is_pressed('ctrl'):
-                    print(f" {bcolors.WARNING}GUI will boot as soon as the current step finish.{bcolors.ENDC}")
+                    print(f" {bcolors.WARNING}GUI will boot as soon as the current step is done.{bcolors.ENDC}")
                     nonlocal mid_generation
                     mid_generation = True
+            def toggle_checkpoint(event = None):
+                if keyboard.is_pressed('ctrl'):
+                    print(f" {bcolors.WARNING}Saving the model as soon as this epoch is done.{bcolors.ENDC}")
+                    #nonlocal mid_checkpoint
+                    nonlocal mid_checkpoint
+                    mid_checkpoint = True
+            def toggle_sample(event = None):
+                if keyboard.is_pressed('ctrl'):
+                    print(f" {bcolors.WARNING}Sampling will begin as soon as this epoch is done.{bcolors.ENDC}")
+                    #nonlocal mid_checkpoint
+                    nonlocal mid_sample
+                    mid_sample = True
             keyboard.on_press_key('f12',toggle_gui)
-            print(f"{bcolors.WARNING}Use 'CTRL+F12' mid-training to open up a generation GUI to play around with the model!{bcolors.ENDC}")
+            keyboard.on_press_key('f11',toggle_checkpoint)
+            keyboard.on_press_key('f10',toggle_sample)
+            print(f"{bcolors.WARNING}Use 'CTRL+F12' to open up a GUI to play around with the model (will pause training){bcolors.ENDC}")
+            print(f"{bcolors.WARNING}Use 'CTRL+F11' to save a checkpoint of the current epoch{bcolors.ENDC}")
+            print(f"{bcolors.WARNING}Use 'CTRL+F10' to generate samples for current epoch{bcolors.ENDC}")
         except:
             pass
         mid_generation = False
+        mid_checkpoint = False
+        mid_sample = False
         #lambda set mid_generation to true
         
         
@@ -2054,7 +2075,13 @@ def main():
                         save_and_sample_weights(epoch,'epoch')
                     else:
                         save_and_sample_weights(epoch,'epoch',False)
-            
+            if epoch % args.save_every_n_epoch and mid_checkpoint==True or mid_sample==True:
+                if mid_checkpoint==True:
+                    save_and_sample_weights(epoch,'epoch',True)
+                    mid_checkpoint=False
+                elif mid_sample==True:
+                    save_and_sample_weights(epoch,'epoch',False)
+                    mid_sample=False
             accelerator.wait_for_everyone()
     except Exception:
         try:
