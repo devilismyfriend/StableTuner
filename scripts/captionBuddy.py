@@ -519,6 +519,10 @@ class ImageBrowser(ctk.CTkToplevel):
                 f.write(self.caption)
         elif self.output_format == 'filename':
             #duplicate image with caption as file name
+            #make sure self.caption doesn't contain any illegal characters
+            illegal_chars = ['/', '\\', ':', '*', '?', '"', "'",'<', '>', '|', '.']
+            for char in illegal_chars:
+                self.caption = self.caption.replace(char, '')
             self.PILimage.save(os.path.join(outputFolder, self.caption+'.png'))
         self.caption_entry.delete(0, tk.END)
         self.caption_entry.insert(0, self.caption)
