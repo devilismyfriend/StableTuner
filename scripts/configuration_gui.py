@@ -68,11 +68,12 @@ class ConceptWidget(ctk.CTkFrame):
             self.concept_data_path = ""
             self.concept_class_name = ""
             self.concept_class_path = ""
+            self.flip_p = ''
             self.concept_do_not_balance = False
             self.process_sub_dirs = False
             self.image_preview = self.default_image_preview
             #create concept
-            self.concept = Concept(self.concept_name, self.concept_data_path, self.concept_class_name, self.concept_class_path, self.concept_do_not_balance,self.process_sub_dirs, self.image_preview, None)
+            self.concept = Concept(self.concept_name, self.concept_data_path, self.concept_class_name, self.concept_class_path,self.flip_p, self.concept_do_not_balance,self.process_sub_dirs, self.image_preview, None)
         else:
             self.concept = concept
             self.concept.image_preview = self.make_image_preview()
@@ -184,7 +185,7 @@ class ConceptWindow(ctk.CTkToplevel):
         self.parent = parent
         self.conceptWidget = conceptWidget
         self.concept = concept
-        self.geometry("583x260")
+        self.geometry("576x297")
         self.resizable(False, False)
         #self.protocol("WM_DELETE_WINDOW", self.on_close)
         self.grab_set()
@@ -246,21 +247,29 @@ class ConceptWindow(ctk.CTkToplevel):
         #make a button to browse for Class Path
         self.class_path_button = ctk.CTkButton(self.concept_frame_subframe,width=30, text="...", command=lambda: self.browse_for_path(entry_box=self.class_path_entry))
         self.class_path_button.grid(row=3, column=2, sticky="w",padx=5,pady=5)
+        #entry and label for flip probability
+        self.flip_probability_label = ctk.CTkLabel(self.concept_frame_subframe, text="Flip Probability:")
+        self.flip_probability_label.grid(row=4, column=0, sticky="nsew",padx=5,pady=5)
+        self.flip_probability_entry = ctk.CTkEntry(self.concept_frame_subframe,width=200,placeholder_text="0.0 - 1.0")
+        self.flip_probability_entry.grid(row=4, column=1, sticky="e",padx=5,pady=5)
+        if self.concept.flip_p != '':
+            self.flip_probability_entry.insert(0, self.concept.flip_p)
+        #self.flip_probability_entry.bind("<button-3>", self.create_right_click_menu)
         
         #make a label for dataset balancingprocess_sub_dirs
         self.balance_dataset_label = ctk.CTkLabel(self.concept_frame_subframe, text="Don't Balance Dataset")
-        self.balance_dataset_label.grid(row=4, column=0, sticky="nsew",padx=5,pady=5)
+        self.balance_dataset_label.grid(row=5, column=0, sticky="nsew",padx=5,pady=5)
         #make a switch to enable or disable dataset balancing
         self.balance_dataset_switch = ctk.CTkSwitch(self.concept_frame_subframe, text="", variable=tk.BooleanVar())
-        self.balance_dataset_switch.grid(row=4, column=1, sticky="e",padx=5,pady=5)
+        self.balance_dataset_switch.grid(row=5, column=1, sticky="e",padx=5,pady=5)
         if self.concept.concept_do_not_balance == True:
             self.balance_dataset_switch.toggle()
 
         self.process_sub_dirs = ctk.CTkLabel(self.concept_frame_subframe, text="Search Sub-Directories")
-        self.process_sub_dirs.grid(row=5, column=0, sticky="nsew",padx=5,pady=5)
+        self.process_sub_dirs.grid(row=6, column=0, sticky="nsew",padx=5,pady=5)
         #make a switch to enable or disable dataset balancing
         self.process_sub_dirs_switch = ctk.CTkSwitch(self.concept_frame_subframe, text="", variable=tk.BooleanVar())
-        self.process_sub_dirs_switch.grid(row=5, column=1, sticky="e",padx=5,pady=5)
+        self.process_sub_dirs_switch.grid(row=6, column=1, sticky="e",padx=5,pady=5)
         if self.concept.process_sub_dirs == True:
             self.process_sub_dirs_switch.toggle()
         #self.balance_dataset_switch.set(self.concept.concept_do_not_balance)
@@ -276,12 +285,14 @@ class ConceptWindow(ctk.CTkToplevel):
 
         #make a save button
         self.save_button = ctk.CTkButton(self.concept_frame_subframe, text="Save", command=self.save)
-        self.save_button.grid(row=5, column=3,columnspan=3,rowspan=1, sticky="nsew",padx=10,pady=10)
+        self.save_button.grid(row=6, column=3,columnspan=3,rowspan=1, sticky="nsew",padx=10,pady=10)
 
         #make a delete button
         #self.delete_button = ctk.CTkButton(self.concept_frame_subframe, text="Delete", command=self.delete)
         #self.delete_button.grid(row=6, column=3,columnspan=2, sticky="nsew")
         self.concept_frame_subframe.pack(fill="both", expand=True)
+        #placeholder hack focus in and out of the entry box flip probability
+        
     def create_right_click_menu(self, event):
         #create a menu
         self.menu = Menu(self.master, tearoff=0)
@@ -403,6 +414,8 @@ class ConceptWindow(ctk.CTkToplevel):
         class_name = self.class_name_entry.get()
         #get the class path
         class_path = self.class_path_entry.get()
+        #get the flip probability
+        flip_p = self.flip_probability_entry.get()
         #get the dataset balancing
         balance_dataset = self.balance_dataset_switch.get()
         #create the concept
@@ -412,14 +425,14 @@ class ConceptWindow(ctk.CTkToplevel):
         #get the main window
         image_preview_label = self.image_preview_label
         #update the concept
-        self.concept.update(concept_name, concept_path, class_name, class_path,balance_dataset,process_sub_dirs,image_preview,image_preview_label)
+        self.concept.update(concept_name, concept_path, class_name, class_path,flip_p,balance_dataset,process_sub_dirs,image_preview,image_preview_label)
         self.conceptWidget.update_button()
         #close the window
         self.destroy()
 
 #class of the concept
 class Concept:
-    def __init__(self, concept_name, concept_path, class_name, class_path, balance_dataset=None,process_sub_dirs=None,image_preview=None, image_container=None):
+    def __init__(self, concept_name, concept_path, class_name, class_path,flip_p, balance_dataset=None,process_sub_dirs=None,image_preview=None, image_container=None):
         if concept_name == None:
             concept_name = ""
         if concept_path == None:
@@ -428,6 +441,8 @@ class Concept:
             class_name = ""
         if class_path == None:
             class_path = ""
+        if flip_p == None:
+            flip_p = ""
         if balance_dataset == None:
             balance_dataset = False
         if process_sub_dirs == None:
@@ -442,16 +457,18 @@ class Concept:
         self.concept_path = concept_path
         self.concept_class_name = class_name
         self.concept_class_path = class_path
+        self.flip_p = flip_p
         self.concept_do_not_balance = balance_dataset
         self.image_preview = image_preview
         self.image_container = image_container
         self.process_sub_dirs = process_sub_dirs
     #update the concept
-    def update(self, concept_name, concept_path, class_name, class_path,balance_dataset,process_sub_dirs, image_preview, image_container):
+    def update(self, concept_name, concept_path, class_name, class_path,flip_p,balance_dataset,process_sub_dirs, image_preview, image_container):
         self.concept_name = concept_name
         self.concept_path = concept_path
         self.concept_class_name = class_name
         self.concept_class_path = class_path
+        self.flip_p = flip_p
         self.image_preview = image_preview
         self.image_container = image_container
         self.concept_do_not_balance = balance_dataset
@@ -460,7 +477,7 @@ class Concept:
         self.process_sub_dirs = process_sub_dirs
     #get the cocept details
     def get_details(self):
-        return self.concept_name, self.concept_path, self.concept_class_name, self.concept_class_path, self.concept_do_not_balance,self.process_sub_dirs, self.image_preview, self.image_container
+        return self.concept_name, self.concept_path, self.concept_class_name, self.concept_class_path,self.flip_p, self.concept_do_not_balance,self.process_sub_dirs, self.image_preview, self.image_container
 #class to make popup right click menu with select all, copy, paste, cut, and delete when right clicked on an entry box
 class DynamicGrid(ctk.CTkFrame):
     def __init__(self, parent, *args, **kwargs):
@@ -734,7 +751,12 @@ class App(ctk.CTk):
                     #construct name
                     name = name_of_model+'_'+res+"_e"+epoch+"_"+dt_string
                     #print(self.play_model_entry.get())
-                    self.convert_to_ckpt(model_path=self.play_model_entry.get(), output_path=self.output_path_entry.get(),name=name)
+                    #if self.play_model_entry.get() is a directory and all required folders exist
+                    if os.path.isdir(self.play_model_entry.get()) and all([os.path.exists(os.path.join(self.play_model_entry.get(), folder)) for folder in self.required_folders]):
+                        #print("all folders exist")
+                        self.convert_to_ckpt(model_path=self.play_model_entry.get(), output_path=self.output_path_entry.get(),name=name)
+
+                    #self.convert_to_ckpt(model_path=self.play_model_entry.get(), output_path=self.output_path_entry.get(),name=name)
                     #open stabletune_last_run.json and change convert_to_ckpt_after_training to False
                     with open("stabletune_last_run.json", "r") as f:
                         data = json.load(f)
@@ -748,6 +770,7 @@ class App(ctk.CTk):
             pass
 
     def create_default_variables(self):
+        self.required_folders = ["vae", "unet", "tokenizer", "text_encoder"]
         self.aspect_ratio_bucketing_mode = 'Dynamic Fill'
         self.dynamic_bucketing_mode = 'Duplicate'
         self.play_keep_seed = False
@@ -1815,8 +1838,8 @@ class App(ctk.CTk):
                 #check if the output path has a model in it
                 if os.path.exists(last_model_path):
                     #check if the model is a ckpt
-                    required_folders = ["vae", "unet", "tokenizer", "text_encoder"]
-                    if all(x in os.listdir(last_model_path) for x in required_folders):
+                    
+                    if all(x in os.listdir(last_model_path) for x in self.required_folders):
                        # print(newest_dir)
                         last_model_path = last_model_path.replace("/", os.sep).replace("\\", os.sep)
                         if entry:
@@ -1824,24 +1847,24 @@ class App(ctk.CTk):
                             entry.insert(0, last_model_path)
                             return
                     else:
-                        required_folders = ["vae", "unet", "tokenizer", "text_encoder"]
+                        
                         newest_dirs = sorted(glob.iglob(last_output_path + os.sep + '*'), key=os.path.getctime, reverse=True)
                         #sort newest_dirs by date
                         for newest_dir in newest_dirs:
                             #check if the newest dir has all the required folders
-                            if all(x in os.listdir(newest_dir) for x in required_folders):
+                            if all(x in os.listdir(newest_dir) for x in self.required_folders):
                                 last_model_path = newest_dir.replace("/", os.sep).replace("\\", os.sep)
                                 if entry:
                                     entry.delete(0, tk.END)
                                     entry.insert(0, last_model_path)
                                     return
                 else:
-                        required_folders = ["vae", "unet", "tokenizer", "text_encoder"]
+                        
                         newest_dirs = sorted(glob.iglob(last_output_path + os.sep + '*'), key=os.path.getctime, reverse=True)
                         #sort newest_dirs by date
                         for newest_dir in newest_dirs:
                             #check if the newest dir has all the required folders
-                            if all(x in os.listdir(newest_dir) for x in required_folders):
+                            if all(x in os.listdir(newest_dir) for x in self.required_folders):
                                 last_model_path = newest_dir.replace("/", os.sep).replace("\\", os.sep)
                                 if entry:
                                     entry.delete(0, tk.END)
@@ -2466,8 +2489,8 @@ class App(ctk.CTk):
             #check if the file is a model index file
             #check if folder has folders for: vae, unet, tokenizer, text_encoder
             model_dir = os.path.dirname(file_path)
-            required_folders = ["vae", "unet", "tokenizer", "text_encoder"]
-            for folder in required_folders:
+            
+            for folder in self.required_folders:
                 if not os.path.isdir(os.path.join(model_dir, folder)):
                     #show error message
                     messagebox.showerror("Error", "The selected model is missing the {} folder.".format(folder))
@@ -2548,7 +2571,7 @@ class App(ctk.CTk):
                 concepts = []
                 for widget in self.concept_widgets:
                     concept = widget.concept
-                    concept_dict = {'instance_prompt' : concept.concept_name, 'class_prompt' : concept.concept_class_name, 'instance_data_dir' : concept.concept_path, 'class_data_dir' : concept.concept_class_path, 'do_not_balance' : concept.concept_do_not_balance, 'use_sub_dirs' : concept.process_sub_dirs}
+                    concept_dict = {'instance_prompt' : concept.concept_name, 'class_prompt' : concept.concept_class_name, 'instance_data_dir' : concept.concept_path, 'class_data_dir' : concept.concept_class_path,'flip_p' : concept.flip_p, 'do_not_balance' : concept.concept_do_not_balance, 'use_sub_dirs' : concept.process_sub_dirs}
                     concepts.append(concept_dict)
                 if file != None:
                     #write the json to the file
@@ -2572,7 +2595,9 @@ class App(ctk.CTk):
             concept_json = json.load(f)
         for concept in concept_json:
             #print(concept)
-            concept = Concept(concept_name=concept["instance_prompt"], class_name=concept["class_prompt"], concept_path=concept["instance_data_dir"], class_path=concept["class_data_dir"],balance_dataset=concept["do_not_balance"], process_sub_dirs=concept["use_sub_dirs"])
+            if 'flip_p' not in concept:
+                concept['flip_p'] = ''
+            concept = Concept(concept_name=concept["instance_prompt"], class_name=concept["class_prompt"], concept_path=concept["instance_data_dir"], class_path=concept["class_data_dir"],flip_p=concept['flip_p'],balance_dataset=concept["do_not_balance"], process_sub_dirs=concept["use_sub_dirs"])
             self.add_new_concept(concept)        #self.canvas.configure(scrollregion=self.canvas.bbox("all"))
         self.update()
         return concept_json
@@ -2715,7 +2740,7 @@ class App(ctk.CTk):
         self.concepts = []
         for i in range(len(self.concept_widgets)):
             concept = self.concept_widgets[i].concept
-            self.concepts.append({'instance_prompt' : concept.concept_name, 'class_prompt' : concept.concept_class_name, 'instance_data_dir' : concept.concept_path, 'class_data_dir' : concept.concept_class_path, 'do_not_balance' : concept.concept_do_not_balance, 'use_sub_dirs' : concept.process_sub_dirs})
+            self.concepts.append({'instance_prompt' : concept.concept_name, 'class_prompt' : concept.concept_class_name, 'instance_data_dir' : concept.concept_path, 'class_data_dir' : concept.concept_class_path,'flip_p' : concept.flip_p, 'do_not_balance' : concept.concept_do_not_balance, 'use_sub_dirs' : concept.process_sub_dirs})
     def save_config(self, config_file=None):
         #save the configure file
         import json
@@ -2790,6 +2815,7 @@ class App(ctk.CTk):
             os.remove(file_name)
         with open(file_name, "w",encoding='utf-8') as f:
             json.dump(configure, f, indent=4)
+            f.close()
     def load_config(self,file_name=None):
         #load the configure file
         #ask the user for a file name
@@ -2809,7 +2835,18 @@ class App(ctk.CTk):
             self.concept_labels = []
             self.concepts = []
             for i in range(len(configure["concepts"])):
-                concept = Concept(concept_name=configure["concepts"][i]["instance_prompt"], class_name=configure["concepts"][i]["class_prompt"], concept_path=configure["concepts"][i]["instance_data_dir"], class_path=configure["concepts"][i]["class_data_dir"],balance_dataset=configure["concepts"][i]["do_not_balance"],process_sub_dirs=configure["concepts"][i]["use_sub_dirs"])
+                inst_prompt = configure["concepts"][i]["instance_prompt"]
+                class_prompt = configure["concepts"][i]["class_prompt"]
+                inst_data_dir = configure["concepts"][i]["instance_data_dir"]
+                class_data_dir = configure["concepts"][i]["class_data_dir"]
+                if 'flip_p' not in configure["concepts"][i]:
+                    print(configure["concepts"][i].keys())
+                    print('test')
+                    configure["concepts"][i]['flip_p'] = ''
+                flip_p = configure["concepts"][i]["flip_p"]
+                balance_dataset = configure["concepts"][i]["do_not_balance"]
+                process_sub_dirs = configure["concepts"][i]["use_sub_dirs"]
+                concept = Concept(concept_name=inst_prompt, class_name=class_prompt, concept_path=inst_data_dir, class_path=class_data_dir,flip_p=flip_p,balance_dataset=balance_dataset,process_sub_dirs=process_sub_dirs)
                 self.add_new_concept(concept)
         except Exception as e:
             print(e)
@@ -3280,14 +3317,10 @@ class App(ctk.CTk):
             if train == 0:
                 app = App()
                 app.mainloop()
-            else:
-                #cancel conversion on restart
-                with open('stabletune_last_run.json', 'r') as f:
-                    data = json.load(f)
-                data['execute_post_conversion'] = False
-                with open('stabletune_last_run.json', 'w') as f:
-                    json.dump(data, f)
+            #if user closed the window or keyboard interrupt, then cancel conversion
+            elif train == 1:
                 os.system("pause")
+            
             #restart the app
         elif export == 'win':
             with open("train.bat", "w", encoding="utf-8") as f:

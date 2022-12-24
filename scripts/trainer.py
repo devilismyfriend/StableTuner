@@ -511,7 +511,7 @@ class AutoBucketing(Dataset):
                  aspect_mode='dynamic',
                  action_preference='dynamic'
                  ):
-
+        
         self.debug_level = debug_level
         self.resolution = resolution
         self.center_crop = center_crop
@@ -794,6 +794,12 @@ class DataLoaderMultiAspect():
             data_root_class = concept['class_data_dir']
             concept_prompt = concept['instance_prompt']
             concept_class_prompt = concept['class_prompt']
+            if 'flip_p' in concept.keys():
+                flip_p = concept['flip_p']
+                if flip_p == '':
+                    flip_p = 0.0
+                else:
+                    flip_p = float(flip_p)
             self.__recurse_data_root(self=self, recurse_root=data_root,use_sub_dirs=use_sub_dirs)
             random.Random(seed).shuffle(self.image_paths)
             prepared_train_data.extend(self.__prescan_images(debug_level, self.image_paths, flip_p,use_image_names_as_captions,concept_prompt,use_text_files_as_captions=self.use_text_files_as_captions)[0:min_concept_num_images]) # ImageTrainItem[]
