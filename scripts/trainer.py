@@ -628,7 +628,9 @@ class AutoBucketing(Dataset):
                 truncation=True,
                 max_length=self.tokenizer.model_max_length,
             ).input_ids
+            image_train_item.self_destruct()
             return example
+            
         if class_img==True:
             image_train_tmp = image_train_item.hydrate(crop=False, save=4, crop_jitter=self.crop_jitter)
             image_train_tmp_image = Image.fromarray(self.normalize8(image_train_tmp.image)).convert("RGB")
@@ -639,6 +641,7 @@ class AutoBucketing(Dataset):
                 truncation=True,
                 max_length=self.tokenizer.model_max_length,
             ).input_ids
+            image_train_item.self_destruct()
             return example
 
 _RANDOM_TRIM = 0.04
@@ -661,7 +664,9 @@ class ImageTrainItem():
             self.image = []
         else:
             self.image = image
-
+    def self_destruct(self):
+        self.image = []
+        self.cropped_img = None
     def hydrate(self, crop=False, save=False, crop_jitter=20):
         """
         crop: hard center crop to 512x512
