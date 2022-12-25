@@ -657,9 +657,10 @@ class ImageTrainItem():
         self.caption = caption
         self.target_wh = target_wh
         self.pathname = pathname
+        self.flip_p = flip_p
         self.flip = transforms.RandomHorizontalFlip(p=flip_p)
         self.cropped_img = None
-
+        self.is_dupe = []
         if image is None:
             self.image = []
         else:
@@ -667,6 +668,7 @@ class ImageTrainItem():
     def self_destruct(self):
         self.image = []
         self.cropped_img = None
+        self.is_dupe.append(1)
     def hydrate(self, crop=False, save=False, crop_jitter=20):
         """
         crop: hard center crop to 512x512
@@ -674,6 +676,10 @@ class ImageTrainItem():
         crop_jitter: randomly shift cropp by N pixels when using multiple aspect ratios to improve training quality
         """
         if not hasattr(self, 'image') or len(self.image) == 0:
+            if len(self.is_dupe) > 0:
+                chance = float(len(self.is_dupe)) / 10.0
+                self.flip = transforms.RandomHorizontalFlip(p=self.flip_p+chance if chance < 1.0 else 1.0)
+                self.crop_jitter = crop_jitter + (len(self.is_dupe) * 10) if crop_jitter < 50 else 50
             self.image = Image.open(self.pathname).convert('RGB')
 
             width, height = self.image.size
