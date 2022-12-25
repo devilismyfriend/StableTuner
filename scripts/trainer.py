@@ -726,7 +726,10 @@ class ImageTrainItem():
                         self.image = self.image.crop((0, top, width, bottom))
                         #LAZCOS resample
                 self.image = self.image.resize(self.target_wh, resample=Image.Resampling.LANCZOS)
-
+            #print the pixel count of the image
+            #print path to image file
+            #print(self.pathname)
+            #print(self.image.size[0] * self.image.size[1])
             self.image = self.flip(self.image)
 
         if type(self.image) is not np.ndarray:
@@ -1391,7 +1394,7 @@ def main():
     if is_xformers_available():
         try:
             unet.enable_xformers_memory_efficient_attention()
-            vae.enable_xformers_memory_efficient_attention()
+            #vae.enable_xformers_memory_efficient_attention()
         except Exception as e:
             logger.warning(
                 "Could not enable memory efficient attention. Make sure xformers is installed"
@@ -1517,6 +1520,7 @@ def main():
             max_length=tokenizer.model_max_length,
             return_tensors="pt",\
             ).input_ids
+            
         batch = {
             "input_ids": input_ids,
             "pixel_values": pixel_values,
@@ -1586,7 +1590,7 @@ def main():
 
             train_dataset = LatentsDataset([], [])
             counter = 0
-            for batch in tqdm(train_dataloader, desc="Caching latents"):
+            for batch in tqdm(train_dataloader, desc="Caching latents", bar_format='%s{l_bar}%s%s{bar}%s%s{r_bar}%s'%(bcolors.OKBLUE,bcolors.ENDC, bcolors.OKBLUE, bcolors.ENDC,bcolors.OKBLUE,bcolors.ENDC,)):
                 with torch.no_grad():
                     batch["pixel_values"] = batch["pixel_values"].to(accelerator.device, non_blocking=True, dtype=weight_dtype)
                     batch["input_ids"] = batch["input_ids"].to(accelerator.device, non_blocking=True)
@@ -1902,8 +1906,8 @@ def main():
                 print(f" {bcolors.OKGREEN}[*] Samples saved to {sample_dir}{bcolors.ENDC}")
 
     # Only show the progress bar once on each machine.
-    progress_bar = tqdm(range(args.max_train_steps), disable=not accelerator.is_local_main_process)
-    progress_bar_e = tqdm(range(args.num_train_epochs), disable=not accelerator.is_local_main_process)
+    progress_bar = tqdm(range(args.max_train_steps),bar_format='%s{l_bar}%s%s{bar}%s%s{r_bar}%s'%(bcolors.OKBLUE,bcolors.ENDC, bcolors.OKBLUE, bcolors.ENDC,bcolors.OKBLUE,bcolors.ENDC,), disable=not accelerator.is_local_main_process)
+    progress_bar_e = tqdm(range(args.num_train_epochs),bar_format='%s{l_bar}%s%s{bar}%s%s{r_bar}%s'%(bcolors.OKBLUE,bcolors.ENDC, bcolors.OKGREEN, bcolors.ENDC,bcolors.OKBLUE,bcolors.ENDC,), disable=not accelerator.is_local_main_process)
 
     progress_bar.set_description("Steps")
     progress_bar_e.set_description("Epochs")
@@ -1918,31 +1922,31 @@ def main():
     try:
         print(f" {bcolors.OKBLUE}Starting Training!{bcolors.ENDC}")
         try:
-            def toggle_gui(event = None):
-                if keyboard.is_pressed('ctrl'):
+            def toggle_gui(event=None):
+                if keyboard.is_pressed("ctrl") and keyboard.is_pressed("shift") and keyboard.is_pressed("g"):
                     print(f" {bcolors.WARNING}GUI will boot as soon as the current step is done.{bcolors.ENDC}")
                     nonlocal mid_generation
                     mid_generation = True
-            def toggle_checkpoint(event = None):
-                if keyboard.is_pressed('ctrl'):
+
+            def toggle_checkpoint(event=None):
+                if keyboard.is_pressed("ctrl") and keyboard.is_pressed("shift") and keyboard.is_pressed("s"):
                     print(f" {bcolors.WARNING}Saving the model as soon as this epoch is done.{bcolors.ENDC}")
-                    #nonlocal mid_checkpoint
                     nonlocal mid_checkpoint
                     mid_checkpoint = True
-            def toggle_sample(event = None):
-                if keyboard.is_pressed('ctrl'):
+
+            def toggle_sample(event=None):
+                if keyboard.is_pressed("ctrl") and keyboard.is_pressed("shift") and keyboard.is_pressed("p"):
                     print(f" {bcolors.WARNING}Sampling will begin as soon as this epoch is done.{bcolors.ENDC}")
-                    #nonlocal mid_checkpoint
                     nonlocal mid_sample
                     mid_sample = True
-            keyboard.on_press_key('f12',toggle_gui)
-            keyboard.on_press_key('f11',toggle_checkpoint)
-            keyboard.on_press_key('f10',toggle_sample)
-            print(f"{bcolors.WARNING}Use 'CTRL+F12' to open up a GUI to play around with the model (will pause training){bcolors.ENDC}")
-            print(f"{bcolors.WARNING}Use 'CTRL+F11' to save a checkpoint of the current epoch{bcolors.ENDC}")
-            print(f"{bcolors.WARNING}Use 'CTRL+F10' to generate samples for current epoch{bcolors.ENDC}")
         except:
             pass
+        keyboard.on_press_key("g", toggle_gui)
+        keyboard.on_press_key("s", toggle_checkpoint)
+        keyboard.on_press_key("p", toggle_sample)
+        print(f"{bcolors.WARNING}Use 'CTRL+SHIFT+G' to open up a GUI to play around with the model (will pause training){bcolors.ENDC}")
+        print(f"{bcolors.WARNING}Use 'CTRL+SHIFT+S' to save a checkpoint of the current epoch{bcolors.ENDC}")
+        print(f"{bcolors.WARNING}Use 'CTRL+SHIFT+P' to generate samples for current epoch{bcolors.ENDC}")
         mid_generation = False
         mid_checkpoint = False
         mid_sample = False
