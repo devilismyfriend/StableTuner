@@ -1257,9 +1257,6 @@ def send_media_group(chat_id,telegram_token, images, caption=None, reply_to_mess
         media[0]['caption'] = caption
         media[0]['parse_mode'] = 'HTML'
         return requests.post(SEND_MEDIA_GROUP, data={'chat_id': chat_id, 'media': json.dumps(media),'disable_notification':True, 'reply_to_message_id': reply_to_message_id }, files=files)
-from memory_profiler import profile
-fp = open("memory_profiler.txt", "w+")
-@profile(stream=fp)
 def main():
     print(f" {bcolors.OKBLUE}Booting Up StableTuner{bcolors.ENDC}") 
     print(f" {bcolors.OKBLUE}Please wait a moment as we load up some stuff...{bcolors.ENDC}") 
