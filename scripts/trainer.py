@@ -1257,6 +1257,9 @@ def send_media_group(chat_id,telegram_token, images, caption=None, reply_to_mess
         media[0]['caption'] = caption
         media[0]['parse_mode'] = 'HTML'
         return requests.post(SEND_MEDIA_GROUP, data={'chat_id': chat_id, 'media': json.dumps(media),'disable_notification':True, 'reply_to_message_id': reply_to_message_id }, files=files)
+from memory_profiler import profile
+fp = open("memory_profiler.txt", "w+")
+@profile(stream=fp)
 def main():
     print(f" {bcolors.OKBLUE}Booting Up StableTuner{bcolors.ENDC}") 
     print(f" {bcolors.OKBLUE}Please wait a moment as we load up some stuff...{bcolors.ENDC}") 
@@ -1333,23 +1336,11 @@ def main():
                     )
                     pipeline.set_progress_bar_config(disable=True)
                     pipeline.to(accelerator.device)
-                
-                #if args.use_bucketing == False:
                 num_new_images = args.num_class_images - cur_class_images
                 logger.info(f"Number of class images to sample: {num_new_images}.")
-
                 sample_dataset = PromptDataset(concept["class_prompt"], num_new_images)
                 sample_dataloader = torch.utils.data.DataLoader(sample_dataset, batch_size=args.sample_batch_size)
                 sample_dataloader = accelerator.prepare(sample_dataloader)
-                #else:
-                    #create class images that match up to the concept target buckets
-                #    instance_images_dir = Path(concept["instance_data_dir"])
-                #    cur_instance_images = len(list(instance_images_dir.iterdir()))
-                    #target_wh = min(self.aspects, key=lambda aspects:abs(aspects[0]/aspects[1] - image_aspect))
-                #    num_new_images = cur_instance_images - cur_class_images
-                
-                
-
                 with torch.autocast("cuda"):
                     for example in tqdm(
                         sample_dataloader, desc="Generating class images", disable=not accelerator.is_local_main_process
@@ -1360,27 +1351,21 @@ def main():
                             hash_image = hashlib.sha1(image.tobytes()).hexdigest()
                             image_filename = class_images_dir / f"{example['index'][i] + cur_class_images}-{hash_image}.jpg"
                             image.save(image_filename)
-
         del pipeline
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
-
     # Load the tokenizer
     if args.tokenizer_name:
         tokenizer = CLIPTokenizer.from_pretrained(args.tokenizer_name )
     elif args.pretrained_model_name_or_path:
-        #print(os.getcwd())
         tokenizer = CLIPTokenizer.from_pretrained(args.pretrained_model_name_or_path, subfolder="tokenizer" )
-
     # Load models and create wrapper for stable diffusion
     text_encoder = CLIPTextModel.from_pretrained(args.pretrained_model_name_or_path, subfolder="text_encoder" )
     vae = AutoencoderKL.from_pretrained(args.pretrained_model_name_or_path, subfolder="vae" )
     unet = UNet2DConditionModel.from_pretrained(args.pretrained_model_name_or_path, subfolder="unet" )
-    
     if is_xformers_available():
         try:
             unet.enable_xformers_memory_efficient_attention()
-            vae.enable_xformers_memory_efficient_attention()
         except Exception as e:
             logger.warning(
                 "Could not enable memory efficient attention. Make sure xformers is installed"
@@ -1402,7 +1387,6 @@ def main():
         args.learning_rate = (
             args.learning_rate * args.gradient_accumulation_steps * args.train_batch_size * accelerator.num_processes
         )
-
     # Use 8-bit Adam for lower memory usage or to fine-tune the model in 16GB GPUs
     if args.use_8bit_adam and args.use_deepspeed_adam==False:
         try:
@@ -1419,7 +1403,6 @@ def main():
             raise ImportError(
                 "To use 8-bit DeepSpeed Adam, try updating your cuda and deepspeed integrations."
             )
-        
         optimizer_class = DeepSpeedCPUAdam
     else:
         optimizer_class = torch.optim.AdamW
@@ -1435,19 +1418,6 @@ def main():
         eps=args.adam_epsilon,
     )
     noise_scheduler = DDPMScheduler.from_config(args.pretrained_model_name_or_path, subfolder="scheduler")
-
-    #noise_scheduler = EulerDiscreteScheduler.from_pretrained(args.pretrained_model_name_or_path, subfolder="scheduler", prediction_type="v_prediction")
-    '''
-    train_dataset = DreamBoothDataset(
-        concepts_list=args.concepts_list,
-        tokenizer=tokenizer,
-        with_prior_preservation=args.with_prior_preservation,
-        size=args.resolution,
-        center_crop=args.center_crop,
-        num_class_images=args.num_class_images,
-        use_image_names_as_captions=args.use_image_names_as_captions,
-    )
-    '''
     if args.use_bucketing:
         train_dataset = AutoBucketing(
             concepts_list=args.concepts_list,
@@ -1478,25 +1448,11 @@ def main():
         conditional_dropout=args.conditional_dropout
     )
     def collate_fn(examples):
-        #print(examples)
-        #print('test')
         input_ids = [example["instance_prompt_ids"] for example in examples]
         pixel_values = [example["instance_images"] for example in examples]
-        #print('test')
-        # Concat class and instance examples for prior preservation.
-        # We do this to avoid doing two forward passes.
         if args.with_prior_preservation:
             input_ids += [example["class_prompt_ids"] for example in examples]
             pixel_values += [example["class_images"] for example in examples]
-        ### no need to do it now when it's loaded by the multiAspectsDataset
-        #if args.with_prior_preservation:
-        #    input_ids += [example["class_prompt_ids"] for example in examples]
-        #    pixel_values += [example["class_images"] for example in examples]
-        
-        #print(pixel_values)
-        #unpack the pixel_values from tensor to list
-
-
         pixel_values = torch.stack(pixel_values)
         pixel_values = pixel_values.to(memory_format=torch.contiguous_format).float()
         input_ids = tokenizer.pad(
@@ -1510,15 +1466,11 @@ def main():
             "pixel_values": pixel_values,
         }
         return batch
-
     train_dataloader = torch.utils.data.DataLoader(
         train_dataset, batch_size=args.train_batch_size, shuffle=False, collate_fn=collate_fn, pin_memory=True
     )
     #get the length of the dataset
     train_dataset_length = len(train_dataset)
-
-    #code to check if latent cache needs to be resaved
-    #check if last_run.json file exists in logging_dir
     if os.path.exists(logging_dir / "last_run.json"):
         #if it exists, load it
         with open(logging_dir / "last_run.json", "r") as f:
@@ -1537,20 +1489,17 @@ def main():
                 #save the new batch_size and dataset_length to last_run.json
         with open(logging_dir / "last_run.json", "w") as f:
             json.dump({"batch_size": args.train_batch_size, "dataset_length": train_dataset_length}, f)
-                
     else:
         #if it doesn't exist, create it
         last_run = {"batch_size": args.train_batch_size, "dataset_length": train_dataset_length}
         #create the file
         with open(logging_dir / "last_run.json", "w") as f:
             json.dump(last_run, f)
-
     weight_dtype = torch.float32
     if args.mixed_precision == "fp16":
         weight_dtype = torch.float16
     elif args.mixed_precision == "bf16":
         weight_dtype = torch.bfloat16
-
     # Move text_encode and vae to gpu.
     # For mixed precision training we cast the text_encoder and vae weights to half-precision
     # as these models are only used for inference, keeping weights in full precision is not required.
@@ -1559,7 +1508,6 @@ def main():
         ema_unet.to(accelerator.device, dtype=weight_dtype)
     if not args.train_text_encoder:
         text_encoder.to(accelerator.device, dtype=weight_dtype)
-
     if not args.not_cache_latents:
         latent_cache_dir = Path(args.output_dir, "logs", "latent_cache")
         #check if latents_cache.pt exists in the output_dir
@@ -1570,56 +1518,55 @@ def main():
                 #if it exists, delete it
                 os.remove(os.path.join(latent_cache_dir, "latents_cache.pt"))
             print(f" {bcolors.WARNING}Generating latents cache...{bcolors.ENDC}") 
-
-            #latents_cache = []
-            #text_encoder_cache = []
-            train_dataset = LatentsDataset(([]), [])
-            for batch in tqdm(train_dataloader, desc="Caching latents"):
+            progress_bar = tqdm(range(len(train_dataloader)), disable=not accelerator.is_local_main_process)
+            progress_bar.set_description(f"Generating Cache")
+            train_dataset = LatentsDataset([], [])
+            train_iter = iter(train_dataloader)
+            for i in range(len(train_dataloader)):
+                curBatch = next(train_iter)
+                #print(curBatch["pixel_values"].shape)
+                #print(curBatch["input_ids"].shape)
                 with torch.no_grad():
-                    batch["pixel_values"] = batch["pixel_values"].to(accelerator.device, non_blocking=True, dtype=weight_dtype)
-                    batch["input_ids"] = batch["input_ids"].to(accelerator.device, non_blocking=True)
-                    
-                    cached_latent = vae.encode(batch["pixel_values"]).latent_dist
+                    curBatch["pixel_values"] = curBatch["pixel_values"].to(accelerator.device, non_blocking=True, dtype=weight_dtype)
+                    curBatch["input_ids"] = curBatch["input_ids"].to(accelerator.device, non_blocking=True)    
+                    cached_latent = vae.encode(curBatch["pixel_values"]).latent_dist
                     if args.train_text_encoder:
-                        cached_text_enc = batch["input_ids"]
+                        cached_text_enc = curBatch["input_ids"]
                     else:
-                        cached_text_enc = text_encoder(batch["input_ids"])[0]
+                        cached_text_enc = text_encoder(curBatch["input_ids"])[0]
                     train_dataset.add_latent(cached_latent, cached_text_enc)
-                    del batch
                     del cached_latent
                     del cached_text_enc
-                    #gc.collect()
-                    #torch.cuda.empty_cache()
+                del curBatch
+                progress_bar.update(1)
+            
+            
             if args.save_latents_cache:
                 if not latent_cache_dir.exists():
                     latent_cache_dir.mkdir(parents=True)
                 torch.save(train_dataset, os.path.join(latent_cache_dir,"latents_cache.pt"))
+            train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=1, collate_fn=lambda x: x, shuffle=False)
         else:
             print(f" {bcolors.WARNING}Loading latents cache from file...{bcolors.ENDC}") 
-
             train_dataset = torch.load(os.path.join(latent_cache_dir,"latents_cache.pt"))
-        train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=1, collate_fn=lambda x: x, shuffle=False)
-
+        
         del vae
         if not args.train_text_encoder:
             del text_encoder
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
-
     # Scheduler and math around the number of training steps.
     overrode_max_train_steps = False
     num_update_steps_per_epoch = math.ceil(len(train_dataloader) / args.gradient_accumulation_steps)
     if args.max_train_steps is None:
         args.max_train_steps = args.num_train_epochs * num_update_steps_per_epoch
         overrode_max_train_steps = True
-
     lr_scheduler = get_scheduler(
         args.lr_scheduler,
         optimizer=optimizer,
         num_warmup_steps=args.lr_warmup_steps * args.gradient_accumulation_steps,
         num_training_steps=args.max_train_steps * args.gradient_accumulation_steps,
     )
-
     if args.train_text_encoder and not args.use_ema:
         unet, text_encoder, optimizer, train_dataloader, lr_scheduler = accelerator.prepare(
             unet, text_encoder, optimizer, train_dataloader, lr_scheduler
@@ -1636,21 +1583,18 @@ def main():
         unet, optimizer, train_dataloader, lr_scheduler = accelerator.prepare(
             unet, optimizer, train_dataloader, lr_scheduler
         )
-
     # We need to recalculate our total training steps as the size of the training dataloader may have changed.
     num_update_steps_per_epoch = math.ceil(len(train_dataloader) / args.gradient_accumulation_steps)
     if overrode_max_train_steps:
         args.max_train_steps = args.num_train_epochs * num_update_steps_per_epoch * args.gradient_accumulation_steps
     # Afterwards we recalculate our number of training epochs
     args.num_train_epochs = math.ceil(args.max_train_steps / num_update_steps_per_epoch)
-
     # We need to initialize the trackers we use, and also store our configuration.
     # The trackers initializes automatically on the main process.
     if accelerator.is_main_process:
         accelerator.init_trackers("dreambooth")
     # Train!
     total_batch_size = args.train_batch_size * accelerator.num_processes * args.gradient_accumulation_steps
-
     logger.info("***** Running training *****")
     logger.info(f"  Num examples = {len(train_dataset)}")
     logger.info(f"  Num batches each epoch = {len(train_dataloader)}")
@@ -1712,7 +1656,6 @@ def main():
                             num_images_per_prompt=int(num_samples),
                             num_inference_steps=int(num_inference_steps), guidance_scale=guidance_scale,
                             generator=g_cuda).images, seed
-        
         with gr.Blocks() as demo:
             with gr.Row():
                 with gr.Column():
@@ -1733,7 +1676,6 @@ def main():
                     seedDisplay = gr.Number(label="Used Seed:", value=0)
 
             run.click(inference, inputs=[prompt, negative_prompt, num_samples, height, width, num_inference_steps,seed, guidance_scale], outputs=[gallery,seedDisplay])
-        
         demo.launch(share=True,prevent_thread_lock=True)
         print(f"{bcolors.WARNING}Gradio Session is active, Press 'F12' to resume training{bcolors.ENDC}")
         keyboard.wait('f12')
@@ -1744,12 +1686,6 @@ def main():
         del pipeline
         return
     def save_and_sample_weights(step,context='checkpoint',save_model=True):
-        #check how many folders are in the output dir
-        #if there are more than 5, delete the oldest one
-        #save the model
-        #save the optimizer
-        #save the lr_scheduler
-        #save the args
         height = args.sample_height
         width = args.sample_width
         if args.sample_aspect_ratios:
@@ -1763,7 +1699,6 @@ def main():
                 #check how much space is left on the drive
                 total, used, free = shutil.disk_usage("/")
                 if (free // (2**30)) < 4:
-                    #folders.remove("0")
                     #get the folder with the lowest number
                     oldest_folder = min(folder for folder in folders if folder.isdigit())
                     if args.send_telegram_updates:
@@ -1776,7 +1711,6 @@ def main():
         # Create the pipeline using using the trained modules and save it.
         if accelerator.is_main_process:
             if context =='step':
-                #what is the current epoch
                 epoch = step // num_update_steps_per_epoch
             else:
                 epoch = step
@@ -1791,14 +1725,10 @@ def main():
                     text_enc_model = CLIPTextModel.from_pretrained(frozen_directory, subfolder="text_encoder")
                 else:
                     text_enc_model = accelerator.unwrap_model(text_encoder,True)
-                
-            #scheduler = DDIMScheduler(beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear", clip_sample=False, set_alpha_to_one=False)
-            #scheduler = EulerDiscreteScheduler.from_pretrained(args.pretrained_model_name_or_path, subfolder="scheduler", prediction_type="v_prediction")
             scheduler = DPMSolverMultistepScheduler.from_pretrained(args.pretrained_model_name_or_path, subfolder="scheduler")
             unwrapped_unet = accelerator.unwrap_model(unet,True)
             if args.use_ema:
                 ema_unet.copy_to(unwrapped_unet.parameters())
-                
             pipeline = DiffusionPipeline.from_pretrained(
                 args.pretrained_model_name_or_path,
                 unet=unwrapped_unet,
@@ -1834,7 +1764,6 @@ def main():
                             shutil.rmtree(os.path.join(save_dir, folder))
             imgs = []
             if args.add_sample_prompt is not None and args.stop_text_encoder_training != True:
-                
                 pipeline = pipeline.to(accelerator.device)
                 pipeline.set_progress_bar_config(disable=True)
                 #sample_dir = os.path.join(save_dir, "samples")
@@ -1885,11 +1814,8 @@ def main():
             elif save_model == False and len(imgs) > 0:
                 del imgs
                 print(f" {bcolors.OKGREEN}[*] Samples saved to {sample_dir}{bcolors.ENDC}")
-
-    # Only show the progress bar once on each machine.
     progress_bar = tqdm(range(args.max_train_steps), disable=not accelerator.is_local_main_process)
     progress_bar_e = tqdm(range(args.num_train_epochs), disable=not accelerator.is_local_main_process)
-
     progress_bar.set_description("Steps")
     progress_bar_e.set_description("Epochs")
     global_step = 0
@@ -1911,13 +1837,11 @@ def main():
             def toggle_checkpoint(event = None):
                 if keyboard.is_pressed('ctrl'):
                     print(f" {bcolors.WARNING}Saving the model as soon as this epoch is done.{bcolors.ENDC}")
-                    #nonlocal mid_checkpoint
                     nonlocal mid_checkpoint
                     mid_checkpoint = True
             def toggle_sample(event = None):
                 if keyboard.is_pressed('ctrl'):
                     print(f" {bcolors.WARNING}Sampling will begin as soon as this epoch is done.{bcolors.ENDC}")
-                    #nonlocal mid_checkpoint
                     nonlocal mid_sample
                     mid_sample = True
             keyboard.on_press_key('f12',toggle_gui)
@@ -1931,18 +1855,13 @@ def main():
         mid_generation = False
         mid_checkpoint = False
         mid_sample = False
-        #lambda set mid_generation to true
-        
-        
         for epoch in range(args.num_train_epochs):
             unet.train()
             if args.train_text_encoder:
                 text_encoder.train()
-            
             #save initial weights
             if args.sample_on_training_start==True and epoch==0:
                 save_and_sample_weights(epoch,'start',save_model=False)
-            
             if args.train_text_encoder and args.stop_text_encoder_training == epoch:
                 args.stop_text_encoder_training = True
                 if accelerator.is_main_process:
@@ -1961,7 +1880,6 @@ def main():
                     os.mkdir(frozen_directory)
                     save_and_sample_weights(epoch,'epoch')
                     args.stop_text_encoder_training = epoch
-
             for step, batch in enumerate(train_dataloader):
                 with accelerator.accumulate(unet):
                     # Convert images to latent space
@@ -1971,18 +1889,15 @@ def main():
                         else:
                             latent_dist = vae.encode(batch["pixel_values"].to(dtype=weight_dtype)).latent_dist
                         latents = latent_dist.sample() * 0.18215
-
                     # Sample noise that we'll add to the latents
                     noise = torch.randn_like(latents)
                     bsz = latents.shape[0]
                     # Sample a random timestep for each image
                     timesteps = torch.randint(0, noise_scheduler.config.num_train_timesteps, (bsz,), device=latents.device)
                     timesteps = timesteps.long()
-
                     # Add noise to the latents according to the noise magnitude at each timestep
                     # (this is the forward diffusion process)
                     noisy_latents = noise_scheduler.add_noise(latents, noise, timesteps)
-
                     # Get the text embedding for conditioning
                     with text_enc_context:
                         if not args.not_cache_latents:
@@ -2003,7 +1918,6 @@ def main():
                                     encoder_hidden_states = text_encoder(batch["input_ids"])[0]
                             else:
                                 encoder_hidden_states = text_encoder(batch["input_ids"])[0]
-
                     # Predict the noise residual
                     #noise_pred = unet(noisy_latents, timesteps, encoder_hidden_states).sample
                     model_pred = unet(noisy_latents, timesteps, encoder_hidden_states).sample
@@ -2017,21 +1931,6 @@ def main():
                         raise ValueError(f"Unknown prediction type {noise_scheduler.config.prediction_type}")
                     del timesteps, noise, latents, noisy_latents, encoder_hidden_states
                     if args.with_prior_preservation:
-                        # Chunk the noise and noise_pred into two parts and compute the loss on each part separately.
-                        """
-                        noise_pred, noise_pred_prior = torch.chunk(noise_pred, 2, dim=0)
-                        noise, noise_prior = torch.chunk(noise, 2, dim=0)
-
-                        # Compute instance loss
-                        loss = F.mse_loss(noise_pred.float(), noise.float(), reduction="none").mean([1, 2, 3]).mean()
-
-                        # Compute prior loss
-                        prior_loss = F.mse_loss(noise_pred_prior.float(), noise_prior.float(), reduction="mean")
-
-                        # Add the prior loss to the instance loss.
-                        loss = loss + args.prior_loss_weight * prior_loss
-                        """
-                        # Chunk the noise and model_pred into two parts and compute the loss on each part separately.
                         model_pred, model_pred_prior = torch.chunk(model_pred, 2, dim=0)
                         target, target_prior = torch.chunk(target, 2, dim=0)
                         loss = F.mse_loss(model_pred.float(), target.float(), reduction="none").mean([1, 2, 3]).mean()
@@ -2089,10 +1988,10 @@ def main():
                     save_and_sample_weights(epoch,'epoch',False)
                     mid_sample=False
             accelerator.wait_for_everyone()
+            return
     except Exception:
         try:
             send_telegram_message("Something went wrong while training! :(", args.telegram_chat_id, args.telegram_token)
-            #save_and_sample_weights(global_step,'checkpoint')
             send_telegram_message(f"Saved checkpoint {global_step} on exit", args.telegram_chat_id, args.telegram_token)
         except Exception:
             pass
