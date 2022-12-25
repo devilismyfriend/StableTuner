@@ -1504,6 +1504,7 @@ def main():
 
         pixel_values = torch.stack(pixel_values)
         pixel_values = pixel_values.to(memory_format=torch.contiguous_format).float()
+        
         input_ids = tokenizer.pad(
             {"input_ids": input_ids},
             padding="max_length",
@@ -1576,9 +1577,9 @@ def main():
                 os.remove(os.path.join(latent_cache_dir, "latents_cache.pt"))
             print(f" {bcolors.WARNING}Generating latents cache...{bcolors.ENDC}") 
 
-            #latents_cache = []
-            #text_encoder_cache = []
-            train_dataset = LatentsDataset(([]), [])
+
+            train_dataset = LatentsDataset([], [])
+            counter = 0
             for batch in tqdm(train_dataloader, desc="Caching latents"):
                 with torch.no_grad():
                     batch["pixel_values"] = batch["pixel_values"].to(accelerator.device, non_blocking=True, dtype=weight_dtype)
@@ -1593,8 +1594,11 @@ def main():
                     del batch
                     del cached_latent
                     del cached_text_enc
-                    #gc.collect()
-                    #torch.cuda.empty_cache()
+                    counter += 1
+                    if counter % 500 == 0:
+                        gc.collect()
+                        torch.cuda.empty_cache()
+                        accelerator.free_memory()
             if args.save_latents_cache:
                 if not latent_cache_dir.exists():
                     latent_cache_dir.mkdir(parents=True)
