@@ -976,6 +976,13 @@ class DataLoaderMultiAspect():
             if os.path.isfile(current):
                 ext = os.path.splitext(f)[1].lower()
                 if ext in ['.jpg', '.jpeg', '.png', '.bmp', '.webp']:
+                    #try to open the file to make sure it's a valid image
+                    try:
+                        img = Image.open(current)
+                    except:
+                        print(f" ** Skipping {current} because it failed to open, please check the file")
+                        continue
+                    del img
                     if class_images == False:
                         self.image_paths.append(current)
                     else:
