@@ -1622,6 +1622,7 @@ def main():
                 gen_cache = True
                 
         if gen_cache == False :
+            print(f" {bcolors.OKGREEN}Loading Latent Cache from {latent_cache_dir}{bcolors.ENDC}")
             del vae
             if not args.train_text_encoder:
                 del text_encoder
@@ -1688,7 +1689,7 @@ def main():
     train_dataloader = torch.utils.data.DataLoader(cached_dataset, batch_size=1, collate_fn=lambda x: x, shuffle=False)
     if torch.cuda.is_available():
             torch.cuda.empty_cache()
-
+    print(f" {bcolors.OKGREEN}Latents are ready.{bcolors.ENDC}")
     # Scheduler and math around the number of training steps.
     overrode_max_train_steps = False
     num_update_steps_per_epoch = math.ceil(len(train_dataloader) / args.gradient_accumulation_steps)
