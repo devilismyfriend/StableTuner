@@ -1426,7 +1426,7 @@ def main():
     if is_xformers_available():
         try:
             unet.enable_xformers_memory_efficient_attention()
-            #vae.enable_xformers_memory_efficient_attention()
+            vae.enable_xformers_memory_efficient_attention()
         except Exception as e:
             logger.warning(
                 "Could not enable memory efficient attention. Make sure xformers is installed"
@@ -1435,7 +1435,7 @@ def main():
     if args.use_ema == True:
         ema_unet = EMAModel(unet.parameters())
     vae.requires_grad_(False)
-    #vae.enable_slicing()
+    vae.enable_slicing()
     if not args.train_text_encoder:
         text_encoder.requires_grad_(False)
 
