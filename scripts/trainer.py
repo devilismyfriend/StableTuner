@@ -1215,7 +1215,11 @@ class CachedLatentsDataset(Dataset):
         del self.cache
         return self.latents, self.text_encoder
     def add_pt_cache(self, cache_path):
-        self.cache_paths += (cache_path,)
+        if len(self.cache_paths) == 0:
+            self.cache_paths = (cache_path,)
+        else:
+            self.cache_paths += (cache_path,)
+        
 class LatentsDataset(Dataset):
     def __init__(self, latents_cache=None, text_encoder_cache=None):
         self.latents_cache = latents_cache
@@ -1568,7 +1572,6 @@ def main():
     )
     #get the length of the dataset
     train_dataset_length = len(train_dataset)
-
     #code to check if latent cache needs to be resaved
     #check if last_run.json file exists in logging_dir
     if os.path.exists(logging_dir / "last_run.json"):
@@ -1621,9 +1624,13 @@ def main():
         if not os.path.exists(latent_cache_dir):
             os.makedirs(latent_cache_dir)
         for i in range(0,data_len-1):
-            if not os.path.exists(os.path.join(latent_cache_dir, f"latents_cache_{i}.pt")) or args.regenerate_latent_cache == True or args.save_latents_cache == False:
+            if not os.path.exists(os.path.join(latent_cache_dir, f"latents_cache_{i}.pt")) or args.save_latents_cache == False:
                 gen_cache = True
-                
+        if args.regenerate_latent_cache == True:
+                files = os.listdir(latent_cache_dir)
+                gen_cache = True
+                for file in files:
+                    os.remove(os.path.join(latent_cache_dir,file))     
         if gen_cache == False :
             print(f" {bcolors.OKGREEN}Loading Latent Cache from {latent_cache_dir}{bcolors.ENDC}")
             del vae
@@ -1632,7 +1639,6 @@ def main():
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
             #load all the cached latents into a single dataset
-            train_dataset = LatentsDataset([], [])
             for i in range(0,data_len-1):
                 cached_dataset.add_pt_cache(os.path.join(latent_cache_dir,f"latents_cache_{i}.pt"))
                 #train_dataset += torch.load(os.path.join(latent_cache_dir,f"latents_cache_{i}.pt"))
@@ -1640,10 +1646,7 @@ def main():
                     os.remove(os.path.join(latent_cache_dir,f"latents_cache_{i}.pt"))
         if gen_cache == True:
             #delete all the cached latents if they exist to avoid problems
-            if args.regenerate_latent_cache:
-                files = os.listdir(latent_cache_dir)
-                for file in files:
-                    os.remove(os.path.join(latent_cache_dir,file))
+            
             print(f" {bcolors.WARNING}Generating latents cache...{bcolors.ENDC}") 
             train_dataset = LatentsDataset([], [])
             counter = 0
@@ -1678,17 +1681,6 @@ def main():
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
             #load all the cached latents into a single dataset
-            #train_dataset = LatentsDataset([], [])
-            for i in range(0,counter):
-                #train_dataset += torch.load(os.path.join(latent_cache_dir,f"latents_cache_{i}.pt"))
-                cached_dataset.add_pt_cache(os.path.join(latent_cache_dir,f"latents_cache_{i}.pt"))
-                if not args.save_latents_cache:
-                    os.remove(os.path.join(latent_cache_dir,f"latents_cache_{i}.pt"))
-            if not args.save_latents_cache:
-                #remove all the cached latents
-                for i in range(0,counter):
-                    if os.path.exists(os.path.join(latent_cache_dir, f"latents_cache_{i}.pt")):
-                        os.remove(os.path.join(latent_cache_dir,f"latents_cache_{i}.pt"))
     train_dataloader = torch.utils.data.DataLoader(cached_dataset, batch_size=1, collate_fn=lambda x: x, shuffle=False)
     if torch.cuda.is_available():
             torch.cuda.empty_cache()
@@ -1728,7 +1720,9 @@ def main():
     num_update_steps_per_epoch = math.ceil(len(train_dataloader) / args.gradient_accumulation_steps)
     if overrode_max_train_steps:
         args.max_train_steps = args.num_train_epochs * num_update_steps_per_epoch * args.gradient_accumulation_steps
+        #print(args.max_train_steps, num_update_steps_per_epoch)
     # Afterwards we recalculate our number of training epochs
+    #print(args.max_train_steps, num_update_steps_per_epoch)
     args.num_train_epochs = math.ceil(args.max_train_steps / num_update_steps_per_epoch)
 
     # We need to initialize the trackers we use, and also store our configuration.
