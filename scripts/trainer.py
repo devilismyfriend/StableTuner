@@ -1087,12 +1087,16 @@ class DreamBoothDataset(Dataset):
     def __recurse_data_root(self, recurse_root,use_sub_dirs=True,class_images=False):
         #if recurse root is a dict
         if isinstance(recurse_root, dict):
-            concept_token = recurse_root['instance_prompt']
-            data = recurse_root['instance_data_dir']
-            
-            if class_images:
+            if class_images == True:
+                #print(f" {bcolors.WARNING} ** Processing class images: {recurse_root['class_data_dir']}{bcolors.ENDC}")
                 concept_token = recurse_root['class_prompt']
                 data = recurse_root['class_data_dir']
+            else:
+                #print(f" {bcolors.WARNING} ** Processing instance images: {recurse_root['instance_data_dir']}{bcolors.ENDC}")
+                concept_token = recurse_root['instance_prompt']
+                data = recurse_root['instance_data_dir']
+            
+            
         else:
             concept_token = None
         #progress bar
@@ -1124,7 +1128,7 @@ class DreamBoothDataset(Dataset):
                     sub_dirs.append(current)
 
             for dir in sub_dirs:
-                if class_images != False:
+                if class_images == False:
                     self.__recurse_data_root(self=self, recurse_root={'instance_data_dir' : dir, 'instance_prompt' : concept_token})
                 else:
                     self.__recurse_data_root(self=self, recurse_root={'class_data_dir' : dir, 'class_prompt' : concept_token})
