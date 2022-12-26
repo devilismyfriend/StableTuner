@@ -970,9 +970,9 @@ class DataLoaderMultiAspect():
 
     @staticmethod
     def __recurse_data_root(self, recurse_root,use_sub_dirs=True,class_images=False):
+        progress_bar = tqdm(os.listdir(recurse_root), desc=f" {bcolors.WARNING} ** Processing {recurse_root}{bcolors.ENDC}")
         for f in os.listdir(recurse_root):
             current = os.path.join(recurse_root, f)
-
             if os.path.isfile(current):
                 ext = os.path.splitext(f)[1].lower()
                 if ext in ['.jpg', '.jpeg', '.png', '.bmp', '.webp']:
@@ -981,12 +981,14 @@ class DataLoaderMultiAspect():
                         img = Image.open(current)
                     except:
                         print(f" ** Skipping {current} because it failed to open, please check the file")
+                        progress_bar.update(1)
                         continue
                     del img
                     if class_images == False:
                         self.image_paths.append(current)
                     else:
                         self.class_images_path.append(current)
+            progress_bar.update(1)
         if use_sub_dirs:
             sub_dirs = []
 
@@ -1093,6 +1095,8 @@ class DreamBoothDataset(Dataset):
                 data = recurse_root['class_data_dir']
         else:
             concept_token = None
+        #progress bar
+        progress_bar = tqdm(os.listdir(data), desc=f" {bcolors.WARNING} ** Processing {data}{bcolors.ENDC}")
         for f in os.listdir(data):
             current = os.path.join(data, f)
 
@@ -1103,12 +1107,14 @@ class DreamBoothDataset(Dataset):
                         img = Image.open(current)
                     except:
                         print(f" ** Skipping {current} because it failed to open, please check the file")
+                        progress_bar.update(1)
                         continue
                     del img
                     if class_images == False:
                         self.image_paths.append([current,concept_token])
                     else:
                         self.class_images_path.append([current,concept_token])
+            progress_bar.update(1)
         if use_sub_dirs:
             sub_dirs = []
 
