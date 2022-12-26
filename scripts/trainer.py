@@ -2001,14 +2001,15 @@ def main():
                     print(f" {bcolors.WARNING}Sampling will begin as soon as this epoch is done.{bcolors.ENDC}")
                     nonlocal mid_sample
                     mid_sample = True
+            keyboard.on_press_key("g", toggle_gui)
+            keyboard.on_press_key("s", toggle_checkpoint)
+            keyboard.on_press_key("p", toggle_sample)
+            print(f"{bcolors.WARNING}Use 'CTRL+SHIFT+G' to open up a GUI to play around with the model (will pause training){bcolors.ENDC}")
+            print(f"{bcolors.WARNING}Use 'CTRL+SHIFT+S' to save a checkpoint of the current epoch{bcolors.ENDC}")
+            print(f"{bcolors.WARNING}Use 'CTRL+SHIFT+P' to generate samples for current epoch{bcolors.ENDC}")
         except:
             pass
-        keyboard.on_press_key("g", toggle_gui)
-        keyboard.on_press_key("s", toggle_checkpoint)
-        keyboard.on_press_key("p", toggle_sample)
-        print(f"{bcolors.WARNING}Use 'CTRL+SHIFT+G' to open up a GUI to play around with the model (will pause training){bcolors.ENDC}")
-        print(f"{bcolors.WARNING}Use 'CTRL+SHIFT+S' to save a checkpoint of the current epoch{bcolors.ENDC}")
-        print(f"{bcolors.WARNING}Use 'CTRL+SHIFT+P' to generate samples for current epoch{bcolors.ENDC}")
+
         mid_generation = False
         mid_checkpoint = False
         mid_sample = False
