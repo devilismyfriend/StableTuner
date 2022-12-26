@@ -96,12 +96,6 @@ def parse_args():
         help="Will save and generate samples before training",
     )
     parser.add_argument(
-        "--save_latents_cache",
-        default=False,
-        action="store_true",
-        help="Will save and generate samples before training",
-    )
-    parser.add_argument(
         "--sample_on_training_start",
         default=False,
         action="store_true",
@@ -1624,7 +1618,7 @@ def main():
         if not os.path.exists(latent_cache_dir):
             os.makedirs(latent_cache_dir)
         for i in range(0,data_len-1):
-            if not os.path.exists(os.path.join(latent_cache_dir, f"latents_cache_{i}.pt")) or args.save_latents_cache == False:
+            if not os.path.exists(os.path.join(latent_cache_dir, f"latents_cache_{i}.pt")):
                 gen_cache = True
         if args.regenerate_latent_cache == True:
                 files = os.listdir(latent_cache_dir)
@@ -1641,12 +1635,8 @@ def main():
             #load all the cached latents into a single dataset
             for i in range(0,data_len-1):
                 cached_dataset.add_pt_cache(os.path.join(latent_cache_dir,f"latents_cache_{i}.pt"))
-                #train_dataset += torch.load(os.path.join(latent_cache_dir,f"latents_cache_{i}.pt"))
-                if not args.save_latents_cache:
-                    os.remove(os.path.join(latent_cache_dir,f"latents_cache_{i}.pt"))
         if gen_cache == True:
             #delete all the cached latents if they exist to avoid problems
-            
             print(f" {bcolors.WARNING}Generating latents cache...{bcolors.ENDC}") 
             train_dataset = LatentsDataset([], [])
             counter = 0

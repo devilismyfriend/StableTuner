@@ -813,7 +813,7 @@ class App(ctk.CTk):
         self.auto_balance_concept_datasets = False
         self.sample_width = 512
         self.sample_height = 512
-        self.save_latents_cache = True
+        #self.save_latents_cache = True
         self.regenerate_latents_cache = False
         self.use_aspect_ratio_bucketing = True
         self.do_not_use_latents_cache = True
@@ -1367,14 +1367,14 @@ class App(ctk.CTk):
         self.use_latent_cache_checkbox = ctk.CTkSwitch(self.training_frame_subframe, variable=self.use_latent_cache_var)
         #self.use_latent_cache_checkbox.grid(row=12, column=1, sticky="nsew")
         #create save latent cache checkbox
-        self.save_latent_cache_var = tk.IntVar()
-        self.save_latent_cache_var.set(self.save_latents_cache)
+        #self.save_latent_cache_var = tk.IntVar()
+        #self.save_latent_cache_var.set(self.save_latents_cache)
         #create label
-        self.save_latent_cache_label = ctk.CTkLabel(self.training_frame_subframe, text="Save Latent Cache")
-        save_latent_cache_label_ttp = CreateToolTip(self.save_latent_cache_label, "Save the latents cache to disk after generation, will be remade if batch size changes.")
+        #self.save_latent_cache_label = ctk.CTkLabel(self.training_frame_subframe, text="Save Latent Cache")
+        #save_latent_cache_label_ttp = CreateToolTip(self.save_latent_cache_label, "Save the latents cache to disk after generation, will be remade if batch size changes.")
         #self.save_latent_cache_label.grid(row=13, column=0, sticky="nsew")
         #create checkbox
-        self.save_latent_cache_checkbox = ctk.CTkSwitch(self.training_frame_subframe, variable=self.save_latent_cache_var)
+        #self.save_latent_cache_checkbox = ctk.CTkSwitch(self.training_frame_subframe, variable=self.save_latent_cache_var)
         #self.save_latent_cache_checkbox.grid(row=13, column=1, sticky="nsew")
         #create regnerate latent cache checkbox
         self.regenerate_latent_cache_var = tk.IntVar()
@@ -2778,7 +2778,7 @@ class App(ctk.CTk):
         configure["warmup_steps"] = self.num_warmup_steps_entry.get()
         configure["learning_rate_scheduler"] = self.learning_rate_scheduler_var.get()
         configure["use_latent_cache"] = self.use_latent_cache_var.get()
-        configure["save_latent_cache"] = self.save_latent_cache_var.get()
+        #configure["save_latent_cache"] = self.save_latent_cache_var.get()
         configure["regenerate_latent_cache"] = self.regenerate_latent_cache_var.get()
         configure["train_text_encoder"] = self.train_text_encoder_var.get()
         configure["with_prior_loss_preservation"] = self.with_prior_loss_preservation_var.get()
@@ -2900,7 +2900,7 @@ class App(ctk.CTk):
         self.num_warmup_steps_entry.insert(0, configure["warmup_steps"])
         self.learning_rate_scheduler_var.set(configure["learning_rate_scheduler"])
         self.use_latent_cache_var.set(configure["use_latent_cache"])
-        self.save_latent_cache_var.set(configure["save_latent_cache"])
+        #self.save_latent_cache_var.set(configure["save_latent_cache"])
         self.regenerate_latent_cache_var.set(configure["regenerate_latent_cache"])
         self.train_text_encoder_var.set(configure["train_text_encoder"])
         self.with_prior_loss_preservation_var.set(configure["with_prior_loss_preservation"])
@@ -2982,7 +2982,7 @@ class App(ctk.CTk):
         self.warmup_steps = self.num_warmup_steps_entry.get()
         self.learning_rate_scheduler = self.learning_rate_scheduler_var.get()
         self.use_latent_cache = self.use_latent_cache_var.get()
-        self.save_latent_cache = self.save_latent_cache_var.get()
+        #self.save_latent_cache = self.save_latent_cache_var.get()
         self.regenerate_latent_cache = self.regenerate_latent_cache_var.get()
         self.train_text_encoder = self.train_text_encoder_var.get()
         self.with_prior_loss_preservation = self.with_prior_loss_preservation_var.get()
@@ -3181,11 +3181,6 @@ class App(ctk.CTk):
                 batBase += ' --not_cache_latents'
             else:
                 batBase += f' "--not_cache_latents" '
-        if self.save_latent_cache == True:
-            if export == 'Linux':
-                batBase += ' --save_latents_cache'
-            else:
-                batBase += f' "--save_latents_cache" '
         if self.regenerate_latent_cache == True:
             if export == 'Linux':
                 batBase += ' --regenerate_latent_cache'
