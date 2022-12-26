@@ -1620,6 +1620,7 @@ def main():
         for i in range(0,data_len-1):
             if not os.path.exists(os.path.join(latent_cache_dir, f"latents_cache_{i}.pt")):
                 gen_cache = True
+                break
         if args.regenerate_latent_cache == True:
                 files = os.listdir(latent_cache_dir)
                 gen_cache = True
