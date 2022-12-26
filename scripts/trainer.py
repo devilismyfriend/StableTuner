@@ -1617,7 +1617,6 @@ def main():
         if not os.path.exists(latent_cache_dir):
             os.makedirs(latent_cache_dir)
         for i in range(0,data_len-1):
-            print(i)
             if not os.path.exists(os.path.join(latent_cache_dir, f"latents_cache_{i}.pt")) or args.regenerate_latent_cache == True or args.save_latents_cache == False:
                 gen_cache = True
                 
