@@ -1198,9 +1198,22 @@ class PromptDataset(Dataset):
         example["index"] = index
         return example
 
-
+class CachedLatentsDataset(Dataset):
+    #stores paths and loads latents on the fly
+    def __init__(self, cache_paths=()):
+        self.cache_paths = cache_paths
+    def __len__(self):
+        return len(self.cache_paths)
+    def __getitem__(self, index):
+        self.cache = torch.load(self.cache_paths[index])
+        self.latents = self.cache.latents_cache[0]
+        self.text_encoder = self.cache.text_encoder_cache[0]
+        del self.cache
+        return self.latents, self.text_encoder
+    def add_pt_cache(self, cache_path):
+        self.cache_paths += (cache_path,)
 class LatentsDataset(Dataset):
-    def __init__(self, latents_cache, text_encoder_cache):
+    def __init__(self, latents_cache=None, text_encoder_cache=None):
         self.latents_cache = latents_cache
         self.text_encoder_cache = text_encoder_cache
     def add_latent(self, latent, text_encoder):
@@ -1208,11 +1221,12 @@ class LatentsDataset(Dataset):
         self.text_encoder_cache.append(text_encoder)
     def __len__(self):
         return len(self.latents_cache)
-
     def __getitem__(self, index):
         return self.latents_cache[index], self.text_encoder_cache[index]
-
-
+    def __add__(self, other):
+        latents_cache = self.latents_cache + other.latents_cache
+        text_encoder_cache = self.text_encoder_cache + other.text_encoder_cache
+        return LatentsDataset(latents_cache, text_encoder_cache)
 class AverageMeter:
     def __init__(self, name=None):
         self.name = name
@@ -1225,7 +1239,6 @@ class AverageMeter:
         self.sum += val * n
         self.count += n
         self.avg = self.sum / self.count
-
 
 def get_full_repo_name(model_id: str, organization: Optional[str] = None, token: Optional[str] = None):
     if token is None:
@@ -1596,21 +1609,42 @@ def main():
         text_encoder.to(accelerator.device, dtype=weight_dtype)
 
     if not args.not_cache_latents:
+        cached_dataset = CachedLatentsDataset()
+        gen_cache = False
+        data_len = len(train_dataloader)
         latent_cache_dir = Path(args.output_dir, "logs", "latent_cache")
         #check if latents_cache.pt exists in the output_dir
         if not os.path.exists(latent_cache_dir):
             os.makedirs(latent_cache_dir)
-        if not os.path.exists(os.path.join(latent_cache_dir, "latents_cache.pt")) or args.regenerate_latent_cache:
-            if os.path.exists(os.path.join(latent_cache_dir, "latents_cache.pt")):
-                #if it exists, delete it
-                os.remove(os.path.join(latent_cache_dir, "latents_cache.pt"))
+        for i in range(0,data_len-1):
+            print(i)
+            if not os.path.exists(os.path.join(latent_cache_dir, f"latents_cache_{i}.pt")) or args.regenerate_latent_cache == True or args.save_latents_cache == False:
+                gen_cache = True
+                
+        if gen_cache == False :
+            del vae
+            if not args.train_text_encoder:
+                del text_encoder
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            #load all the cached latents into a single dataset
+            train_dataset = LatentsDataset([], [])
+            for i in range(0,data_len-1):
+                cached_dataset.add_pt_cache(os.path.join(latent_cache_dir,f"latents_cache_{i}.pt"))
+                #train_dataset += torch.load(os.path.join(latent_cache_dir,f"latents_cache_{i}.pt"))
+                if not args.save_latents_cache:
+                    os.remove(os.path.join(latent_cache_dir,f"latents_cache_{i}.pt"))
+        if gen_cache == True:
+            #delete all the cached latents if they exist to avoid problems
+            if args.regenerate_latent_cache:
+                files = os.listdir(latent_cache_dir)
+                for file in files:
+                    os.remove(os.path.join(latent_cache_dir,file))
             print(f" {bcolors.WARNING}Generating latents cache...{bcolors.ENDC}") 
-
-
             train_dataset = LatentsDataset([], [])
             counter = 0
-            for batch in tqdm(train_dataloader, desc="Caching latents", bar_format='%s{l_bar}%s%s{bar}%s%s{r_bar}%s'%(bcolors.OKBLUE,bcolors.ENDC, bcolors.OKBLUE, bcolors.ENDC,bcolors.OKBLUE,bcolors.ENDC,)):
-                with torch.no_grad():
+            with torch.no_grad():
+                for batch in tqdm(train_dataloader, desc="Caching latents", bar_format='%s{l_bar}%s%s{bar}%s%s{r_bar}%s'%(bcolors.OKBLUE,bcolors.ENDC, bcolors.OKBLUE, bcolors.ENDC,bcolors.OKBLUE,bcolors.ENDC,)):
                     batch["pixel_values"] = batch["pixel_values"].to(accelerator.device, non_blocking=True, dtype=weight_dtype)
                     batch["input_ids"] = batch["input_ids"].to(accelerator.device, non_blocking=True)
                     
@@ -1623,25 +1657,36 @@ def main():
                     del batch
                     del cached_latent
                     del cached_text_enc
+                    torch.save(train_dataset, os.path.join(latent_cache_dir,f"latents_cache_{counter}.pt"))
+                    cached_dataset.add_pt_cache(os.path.join(latent_cache_dir,f"latents_cache_{counter}.pt"))
                     counter += 1
-                    if counter % 500 == 0:
-                        gc.collect()
-                        torch.cuda.empty_cache()
-                        accelerator.free_memory()
-            if args.save_latents_cache:
-                if not latent_cache_dir.exists():
-                    latent_cache_dir.mkdir(parents=True)
-                torch.save(train_dataset, os.path.join(latent_cache_dir,"latents_cache.pt"))
-        else:
-            print(f" {bcolors.WARNING}Loading latents cache from file...{bcolors.ENDC}") 
-
-            train_dataset = torch.load(os.path.join(latent_cache_dir,"latents_cache.pt"))
-        train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=1, collate_fn=lambda x: x, shuffle=False)
-
-        del vae
-        if not args.train_text_encoder:
-            del text_encoder
-        if torch.cuda.is_available():
+                    train_dataset = LatentsDataset([], [])
+                    #if counter % 300 == 0:
+                        #train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=1, collate_fn=lambda x: x, shuffle=False)
+                    #    gc.collect()
+                    #    torch.cuda.empty_cache()
+                    #    accelerator.free_memory()
+                        
+            #clear vram after caching latents
+            del vae
+            if not args.train_text_encoder:
+                del text_encoder
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            #load all the cached latents into a single dataset
+            #train_dataset = LatentsDataset([], [])
+            for i in range(0,counter):
+                #train_dataset += torch.load(os.path.join(latent_cache_dir,f"latents_cache_{i}.pt"))
+                cached_dataset.add_pt_cache(os.path.join(latent_cache_dir,f"latents_cache_{i}.pt"))
+                if not args.save_latents_cache:
+                    os.remove(os.path.join(latent_cache_dir,f"latents_cache_{i}.pt"))
+            if not args.save_latents_cache:
+                #remove all the cached latents
+                for i in range(0,counter):
+                    if os.path.exists(os.path.join(latent_cache_dir, f"latents_cache_{i}.pt")):
+                        os.remove(os.path.join(latent_cache_dir,f"latents_cache_{i}.pt"))
+    train_dataloader = torch.utils.data.DataLoader(cached_dataset, batch_size=1, collate_fn=lambda x: x, shuffle=False)
+    if torch.cuda.is_available():
             torch.cuda.empty_cache()
 
     # Scheduler and math around the number of training steps.
