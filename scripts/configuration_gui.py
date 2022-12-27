@@ -864,7 +864,7 @@ class App(ctk.CTk):
         self.play_cfg = 7.5
         self.play_steps = 25
         self.schedulers = ["DPMSolverMultistepScheduler", "PNDMScheduler", 'DDIMScheduler','EulerAncestralDiscreteScheduler','EulerDiscreteScheduler']
-        self.quick_select_models = ["Stable Diffusion 1.4", "Stable Diffusion 1.5", "Stable Diffusion 2 Base (512)", "Stable Diffusion 2 (768)", 'Stable Diffusion 2.1 Base (512)', "Stable Diffusion 2.1 (768)"]
+        self.quick_select_models = ["Stable Diffusion 1.4", "Stable Diffusion 1.5", "Stable Diffusion 1.5 Inpaint", "Stable Diffusion 2 Base (512)", "Stable Diffusion 2 (768)", 'Stable Diffusion 2.1 Base (512)', "Stable Diffusion 2.1 (768)"]
         self.play_scheduler = 'DPMSolverMultistepScheduler'
         self.pipe = None
         self.current_model = None
@@ -998,6 +998,8 @@ class App(ctk.CTk):
                 self.input_model_path_entry.insert(0,"CompVis/stable-diffusion-v1-4")
             elif val == 'Stable Diffusion 1.5':
                 self.input_model_path_entry.insert(0,"runwayml/stable-diffusion-v1-5")
+            elif val == 'Stable Diffusion 1.5 Inpaint':
+                self.input_model_path_entry.insert(0,"runwayml/stable-diffusion-inpainting")
             elif val == 'Stable Diffusion 2 Base (512)':
                 self.input_model_path_entry.insert(0,"stabilityai/stable-diffusion-2-base")
             elif val == 'Stable Diffusion 2 (768)':
