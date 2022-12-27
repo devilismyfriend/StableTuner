@@ -121,7 +121,22 @@ class ConceptWidget(ctk.CTkFrame):
         image = icon.resize((150, 150), Image.Resampling.LANCZOS)
         if path != "" and path != None:
             if os.path.exists(path):
-                files = os.listdir(path)
+                files = []
+                #if there are sub directories
+                if self.concept.process_sub_dirs:
+                    #get a list of all sub directories
+                    sub_dirs = [f.path for f in os.scandir(path) if f.is_dir()]
+                    #if there are sub directories
+                    if len(sub_dirs) != 0:
+                        #collect all images in sub directories
+                        for sub_dir in sub_dirs:
+                            #collect the full path of all files in the sub directory to files
+                            files += [os.path.join(sub_dir, f) for f in os.listdir(sub_dir)]
+                #if there are no sub directories
+                else:
+                    files = [os.path.join(path, f) for f in os.listdir(path)]
+                    #omit sub directories
+                    files = [f for f in files if not os.path.isdir(f)]
                 if len(files) != 0:
                     for i in range(4):
                         #get an image from the path
@@ -131,7 +146,7 @@ class ConceptWidget(ctk.CTkFrame):
                         files = [f for f in files if f.endswith(".jpg") or f.endswith(".png") or f.endswith(".jpeg")]
                         if len(files) != 0:
                             rand = random.choice(files)
-                            image_path = os.path.join(path,rand)
+                            image_path = rand
                             #remove image_path from files
                             if len(files) > 4:
                                 files.remove(rand)
@@ -348,7 +363,22 @@ class ConceptWindow(ctk.CTkToplevel):
         image = icon.resize((150, 150), Image.Resampling.LANCZOS)
         if path != "" and path != None:
             if os.path.exists(path):
-                files = os.listdir(path)
+                files = []
+                #if there are sub directories in the path
+                if self.concept.process_sub_dirs or self.process_sub_dirs_switch.get() == 1:
+                    #get a list of all sub directories
+                    sub_dirs = [f.path for f in os.scandir(path) if f.is_dir()]
+                    #if there are sub directories
+                    if len(sub_dirs) != 0:
+                        #collect all images in sub directories
+                        for sub_dir in sub_dirs:
+                            #collect the full path of all files in the sub directory to files
+                            files += [os.path.join(sub_dir, f) for f in os.listdir(sub_dir)]
+                #if there are no sub directories
+                else:
+                    files = [os.path.join(path, f) for f in os.listdir(path)]
+                    #omit sub directories
+                    files = [f for f in files if not os.path.isdir(f)]
                 if len(files) != 0:
                     for i in range(4):
                         #get an image from the path
@@ -1357,14 +1387,14 @@ class App(ctk.CTk):
         #self.num_warmup_steps_entry.grid(row=11, column=1, sticky="nsew")
         self.num_warmup_steps_entry.insert(0, self.learning_rate_warmup_steps)
         #create use latent cache checkbox
-        self.use_latent_cache_var = tk.IntVar()
-        self.use_latent_cache_var.set(self.do_not_use_latents_cache)
+        #self.use_latent_cache_var = tk.IntVar()
+        #self.use_latent_cache_var.set(self.do_not_use_latents_cache)
         #create label
-        self.use_latent_cache_label = ctk.CTkLabel(self.training_frame_subframe, text="Use Latent Cache")
-        use_latent_cache_label_ttp = CreateToolTip(self.use_latent_cache_label, "Cache the latents to speed up training.")
+        #self.use_latent_cache_label = ctk.CTkLabel(self.training_frame_subframe, text="Use Latent Cache")
+        #use_latent_cache_label_ttp = CreateToolTip(self.use_latent_cache_label, "Cache the latents to speed up training.")
         #self.use_latent_cache_label.grid(row=12, column=0, sticky="nsew")
         #create checkbox
-        self.use_latent_cache_checkbox = ctk.CTkSwitch(self.training_frame_subframe, variable=self.use_latent_cache_var)
+        #self.use_latent_cache_checkbox = ctk.CTkSwitch(self.training_frame_subframe, variable=self.use_latent_cache_var)
         #self.use_latent_cache_checkbox.grid(row=12, column=1, sticky="nsew")
         #create save latent cache checkbox
         #self.save_latent_cache_var = tk.IntVar()
@@ -2777,7 +2807,7 @@ class App(ctk.CTk):
         configure["learning_rate"] = self.learning_rate_entry.get()
         configure["warmup_steps"] = self.num_warmup_steps_entry.get()
         configure["learning_rate_scheduler"] = self.learning_rate_scheduler_var.get()
-        configure["use_latent_cache"] = self.use_latent_cache_var.get()
+        #configure["use_latent_cache"] = self.use_latent_cache_var.get()
         #configure["save_latent_cache"] = self.save_latent_cache_var.get()
         configure["regenerate_latent_cache"] = self.regenerate_latent_cache_var.get()
         configure["train_text_encoder"] = self.train_text_encoder_var.get()
@@ -2899,7 +2929,7 @@ class App(ctk.CTk):
         self.num_warmup_steps_entry.delete(0, tk.END)
         self.num_warmup_steps_entry.insert(0, configure["warmup_steps"])
         self.learning_rate_scheduler_var.set(configure["learning_rate_scheduler"])
-        self.use_latent_cache_var.set(configure["use_latent_cache"])
+        #self.use_latent_cache_var.set(configure["use_latent_cache"])
         #self.save_latent_cache_var.set(configure["save_latent_cache"])
         self.regenerate_latent_cache_var.set(configure["regenerate_latent_cache"])
         self.train_text_encoder_var.set(configure["train_text_encoder"])
@@ -2981,7 +3011,7 @@ class App(ctk.CTk):
         self.learning_rate = self.learning_rate_entry.get()
         self.warmup_steps = self.num_warmup_steps_entry.get()
         self.learning_rate_scheduler = self.learning_rate_scheduler_var.get()
-        self.use_latent_cache = self.use_latent_cache_var.get()
+        #self.use_latent_cache = self.use_latent_cache_var.get()
         #self.save_latent_cache = self.save_latent_cache_var.get()
         self.regenerate_latent_cache = self.regenerate_latent_cache_var.get()
         self.train_text_encoder = self.train_text_encoder_var.get()
@@ -3064,6 +3094,9 @@ class App(ctk.CTk):
                         except:
                             print("Error trying to see if regenerating latent cache is needed, this means it probably needs to be regenerated and ST was updated recently.")
                             pass
+                    else:
+                        messagebox.showinfo("StableTuner", "Configuration changed, regenerating latent cache")
+                        self.regenerate_latent_cache = True
             except Exception as e:
                 print(e)
                 print("Error checking last run, regenerating latent cache")
@@ -3176,11 +3209,6 @@ class App(ctk.CTk):
             batBase += f' "--learning_rate={self.learning_rate}" '
             batBase += f' "--lr_warmup_steps={self.warmup_steps}" '
             batBase += f' "--lr_scheduler={self.learning_rate_scheduler}" '
-        if self.use_latent_cache == False:
-            if export == 'Linux':
-                batBase += ' --not_cache_latents'
-            else:
-                batBase += f' "--not_cache_latents" '
         if self.regenerate_latent_cache == True:
             if export == 'Linux':
                 batBase += ' --regenerate_latent_cache'

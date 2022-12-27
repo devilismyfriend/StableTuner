@@ -333,7 +333,6 @@ def parse_args():
             "and an Nvidia Ampere GPU."
         ),
     )
-    parser.add_argument("--not_cache_latents", action="store_true", help="Do not precompute and cache latents from VAE.")
     parser.add_argument("--local_rank", type=int, default=-1, help="For distributed training: local_rank")
     parser.add_argument(
         "--concepts_list",
@@ -924,14 +923,14 @@ class DataLoaderMultiAspect():
                         #print(str(randomIndex))
                         buckets[bucket].append(shuffleBucket[randomIndex])
                         added+=1
-                    print(f"  ** Bucket {bucket} found {bucket_len} images, will duplicate {added} images due to batch size {batch_size}")
+                    print(f"  ** Bucket {bucket} found {bucket_len} images, will {bcolors.OKCYAN}duplicate {added} images{bcolors.ENDC} due to batch size {bcolors.WARNING}{batch_size}{bcolors.ENDC}")
                 else:
-                    print(f"  ** Bucket {bucket} found {bucket_len}, nice!")
+                    print(f"  ** Bucket {bucket} found {bucket_len}, {bcolors.OKGREEN}nice!{bcolors.ENDC}")
             elif action == 'truncate':
                 truncate_count = (bucket_len) % batch_size
                 current_bucket_size = bucket_len
                 buckets[bucket] = buckets[bucket][:current_bucket_size - truncate_count]
-                print(f"  ** Bucket {bucket} found {bucket_len} images, will drop {truncate_count} images due to batch size {batch_size}")
+                print(f"  ** Bucket {bucket} found {bucket_len} images, will {bcolors.FAIL}drop {truncate_count} images{bcolors.ENDC} due to batch size {bcolors.WARNING}{batch_size}{bcolors.ENDC}")
             
 
         # flatten the buckets
@@ -973,7 +972,7 @@ class DataLoaderMultiAspect():
             for dir in sub_dirs:
                 self.__recurse_data_root(self=self, recurse_root=dir)
 
-class DreamBoothDataset(Dataset):
+class NormalDataset(Dataset):
     """
     A dataset to prepare the instance and class images with the prompts for fine-tuning the model.
     It pre-processes the images and the tokenizes prompts.
@@ -1165,8 +1164,8 @@ class CachedLatentsDataset(Dataset):
             #conditional dropout is a percentage of images to drop from the total cache_paths
             if self.conditional_dropout != None:
                 if self.conditional_indexes == []:
-                    print(f"{bcolors.WARNING}Conditional dropout will drop {int(len(self.cache_paths) * self.conditional_dropout)} random batch's captions per epoch{bcolors.ENDC}")
-                    while len(self.conditional_indexes) < len(self.cache_paths) * self.conditional_dropout:
+                    print(f" {bcolors.WARNING}Conditional dropout will drop {int(math.ceil(len(self.cache_paths) * self.conditional_dropout))} random batch's captions per epoch{bcolors.ENDC}")
+                    while len(self.conditional_indexes) < math.ceil(len(self.cache_paths) * self.conditional_dropout):
                         picked_index = random.choice(possible_indexes)
                         self.conditional_indexes.append(picked_index)
                         possible_indexes.remove(picked_index)
@@ -1174,7 +1173,7 @@ class CachedLatentsDataset(Dataset):
                     past_indexes = self.conditional_indexes
                     self.conditional_indexes = []
                     #pick new indexes, but don't pick the same ones twice
-                    while len(self.conditional_indexes) < len(self.cache_paths) * self.conditional_dropout:
+                    while len(self.conditional_indexes) < math.ceil(len(self.cache_paths) * self.conditional_dropout):
                         picked_index = random.choice(possible_indexes)
                         if picked_index in past_indexes:
                             continue
@@ -1466,18 +1465,6 @@ def main():
     )
     noise_scheduler = DDPMScheduler.from_config(args.pretrained_model_name_or_path, subfolder="scheduler")
 
-    #noise_scheduler = EulerDiscreteScheduler.from_pretrained(args.pretrained_model_name_or_path, subfolder="scheduler", prediction_type="v_prediction")
-    '''
-    train_dataset = DreamBoothDataset(
-        concepts_list=args.concepts_list,
-        tokenizer=tokenizer,
-        with_prior_preservation=args.with_prior_preservation,
-        size=args.resolution,
-        center_crop=args.center_crop,
-        num_class_images=args.num_class_images,
-        use_image_names_as_captions=args.use_image_names_as_captions,
-    )
-    '''
     if args.use_bucketing:
         train_dataset = AutoBucketing(
             concepts_list=args.concepts_list,
@@ -1495,7 +1482,7 @@ def main():
             seed = args.seed
         )
     else:
-        train_dataset = DreamBoothDataset(
+        train_dataset = NormalDataset(
         concepts_list=args.concepts_list,
         tokenizer=tokenizer,
         with_prior_preservation=args.with_prior_preservation,
@@ -1591,72 +1578,69 @@ def main():
     if not args.train_text_encoder:
         text_encoder.to(accelerator.device, dtype=weight_dtype)
 
-    if not args.not_cache_latents:
-        cached_dataset = CachedLatentsDataset(batch_size=args.train_batch_size,tokenizer=tokenizer,conditional_dropout=args.conditional_dropout,accelerator=accelerator,dtype=weight_dtype)
-        gen_cache = False
-        data_len = len(train_dataloader)
-        latent_cache_dir = Path(args.output_dir, "logs", "latent_cache")
-        #check if latents_cache.pt exists in the output_dir
-        if not os.path.exists(latent_cache_dir):
-            os.makedirs(latent_cache_dir)
-        for i in range(0,data_len-1):
-            if not os.path.exists(os.path.join(latent_cache_dir, f"latents_cache_{i}.pt")):
-                gen_cache = True
-                break
-        if args.regenerate_latent_cache == True:
-                files = os.listdir(latent_cache_dir)
-                gen_cache = True
-                for file in files:
-                    os.remove(os.path.join(latent_cache_dir,file))     
-        if gen_cache == False :
-            print(f" {bcolors.OKGREEN}Loading Latent Cache from {latent_cache_dir}{bcolors.ENDC}")
-            del vae
-            if not args.train_text_encoder:
-                del text_encoder
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
-            #load all the cached latents into a single dataset
-            for i in range(0,data_len-1):
-                cached_dataset.add_pt_cache(os.path.join(latent_cache_dir,f"latents_cache_{i}.pt"))
-        if gen_cache == True:
-            #delete all the cached latents if they exist to avoid problems
-            print(f" {bcolors.WARNING}Generating latents cache...{bcolors.ENDC}") 
-            train_dataset = LatentsDataset([], [])
-            counter = 0
-            with torch.no_grad():
-                for batch in tqdm(train_dataloader, desc="Caching latents", bar_format='%s{l_bar}%s%s{bar}%s%s{r_bar}%s'%(bcolors.OKBLUE,bcolors.ENDC, bcolors.OKBLUE, bcolors.ENDC,bcolors.OKBLUE,bcolors.ENDC,)):
-                    batch["pixel_values"] = batch["pixel_values"].to(accelerator.device, non_blocking=True, dtype=weight_dtype)
-                    batch["input_ids"] = batch["input_ids"].to(accelerator.device, non_blocking=True)
-                    
-                    cached_latent = vae.encode(batch["pixel_values"]).latent_dist
-                    if args.train_text_encoder:
-                        cached_text_enc = batch["input_ids"]
-                    else:
-                        cached_text_enc = text_encoder(batch["input_ids"])[0]
-                    train_dataset.add_latent(cached_latent, cached_text_enc)
-                    del batch
-                    del cached_latent
-                    del cached_text_enc
-                    torch.save(train_dataset, os.path.join(latent_cache_dir,f"latents_cache_{counter}.pt"))
-                    cached_dataset.add_pt_cache(os.path.join(latent_cache_dir,f"latents_cache_{counter}.pt"))
-                    counter += 1
-                    train_dataset = LatentsDataset([], [])
-                    #if counter % 300 == 0:
-                        #train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=1, collate_fn=lambda x: x, shuffle=False)
-                    #    gc.collect()
-                    #    torch.cuda.empty_cache()
-                    #    accelerator.free_memory()
-                        
-            #clear vram after caching latents
-            del vae
-            if not args.train_text_encoder:
-                del text_encoder
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
-            #load all the cached latents into a single dataset
-    train_dataloader = torch.utils.data.DataLoader(cached_dataset, batch_size=1, collate_fn=lambda x: x, shuffle=False)
-    if torch.cuda.is_available():
+    cached_dataset = CachedLatentsDataset(batch_size=args.train_batch_size,tokenizer=tokenizer,conditional_dropout=args.conditional_dropout,accelerator=accelerator,dtype=weight_dtype)
+    gen_cache = False
+    data_len = len(train_dataloader)
+    latent_cache_dir = Path(args.output_dir, "logs", "latent_cache")
+    #check if latents_cache.pt exists in the output_dir
+    if not os.path.exists(latent_cache_dir):
+        os.makedirs(latent_cache_dir)
+    for i in range(0,data_len-1):
+        if not os.path.exists(os.path.join(latent_cache_dir, f"latents_cache_{i}.pt")):
+            gen_cache = True
+            break
+    if args.regenerate_latent_cache == True:
+            files = os.listdir(latent_cache_dir)
+            gen_cache = True
+            for file in files:
+                os.remove(os.path.join(latent_cache_dir,file))     
+    if gen_cache == False :
+        print(f" {bcolors.OKGREEN}Loading Latent Cache from {latent_cache_dir}{bcolors.ENDC}")
+        del vae
+        if not args.train_text_encoder:
+            del text_encoder
+        if torch.cuda.is_available():
             torch.cuda.empty_cache()
+        #load all the cached latents into a single dataset
+        for i in range(0,data_len-1):
+            cached_dataset.add_pt_cache(os.path.join(latent_cache_dir,f"latents_cache_{i}.pt"))
+    if gen_cache == True:
+        #delete all the cached latents if they exist to avoid problems
+        print(f" {bcolors.WARNING}Generating latents cache...{bcolors.ENDC}") 
+        train_dataset = LatentsDataset([], [])
+        counter = 0
+        with torch.no_grad():
+            for batch in tqdm(train_dataloader, desc="Caching latents", bar_format='%s{l_bar}%s%s{bar}%s%s{r_bar}%s'%(bcolors.OKBLUE,bcolors.ENDC, bcolors.OKBLUE, bcolors.ENDC,bcolors.OKBLUE,bcolors.ENDC,)):
+                batch["pixel_values"] = batch["pixel_values"].to(accelerator.device, non_blocking=True, dtype=weight_dtype)
+                batch["input_ids"] = batch["input_ids"].to(accelerator.device, non_blocking=True)
+                
+                cached_latent = vae.encode(batch["pixel_values"]).latent_dist
+                if args.train_text_encoder:
+                    cached_text_enc = batch["input_ids"]
+                else:
+                    cached_text_enc = text_encoder(batch["input_ids"])[0]
+                train_dataset.add_latent(cached_latent, cached_text_enc)
+                del batch
+                del cached_latent
+                del cached_text_enc
+                torch.save(train_dataset, os.path.join(latent_cache_dir,f"latents_cache_{counter}.pt"))
+                cached_dataset.add_pt_cache(os.path.join(latent_cache_dir,f"latents_cache_{counter}.pt"))
+                counter += 1
+                train_dataset = LatentsDataset([], [])
+                #if counter % 300 == 0:
+                    #train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=1, collate_fn=lambda x: x, shuffle=False)
+                #    gc.collect()
+                #    torch.cuda.empty_cache()
+                #    accelerator.free_memory()
+                    
+        #clear vram after caching latents
+        del vae
+        if not args.train_text_encoder:
+            del text_encoder
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        #load all the cached latents into a single dataset
+    train_dataloader = torch.utils.data.DataLoader(cached_dataset, batch_size=1, collate_fn=lambda x: x, shuffle=False)
     print(f" {bcolors.OKGREEN}Latents are ready.{bcolors.ENDC}")
     # Scheduler and math around the number of training steps.
     overrode_max_train_steps = False
@@ -1754,8 +1738,10 @@ def main():
         def inference(prompt, negative_prompt, num_samples, height=512, width=512, num_inference_steps=50,seed=-1,guidance_scale=7.5):
             with torch.autocast("cuda"), torch.inference_mode():
                 if seed != -1:
-                    g_cuda = torch.Generator(device='cuda')
-                    g_cuda.manual_seed(int(seed))
+                    if g_cuda is None:
+                        g_cuda = torch.Generator(device='cuda')
+                    else:
+                        g_cuda.manual_seed(int(seed))
                 else:
                     seed = random.randint(0, 100000)
                     g_cuda = torch.Generator(device='cuda')
@@ -1798,11 +1784,15 @@ def main():
         del pipeline
         return
     def print_instructions():
-                print(f"{bcolors.WARNING}Use 'CTRL+SHIFT+G' to open up a GUI to play around with the model (will pause training){bcolors.ENDC}")
-                print(f"{bcolors.WARNING}Use 'CTRL+SHIFT+S' to save a checkpoint of the current epoch{bcolors.ENDC}")
-                print(f"{bcolors.WARNING}Use 'CTRL+SHIFT+P' to generate samples for current epoch{bcolors.ENDC}")
-                print(f"{bcolors.WARNING}Use 'CTRL+SHIFT+ALT+S' to save a checkpoint of the current step{bcolors.ENDC}")
-                print(f"{bcolors.WARNING}Use 'CTRL+SHIFT+ALT+P' to generate samples for current step{bcolors.ENDC}")
+            print(f"{bcolors.WARNING}Use 'CTRL+SHIFT+G' to open up a GUI to play around with the model (will pause training){bcolors.ENDC}")
+            print(f"{bcolors.WARNING}Use 'CTRL+SHIFT+S' to save a checkpoint of the current epoch{bcolors.ENDC}")
+            print(f"{bcolors.WARNING}Use 'CTRL+SHIFT+P' to generate samples for current epoch{bcolors.ENDC}")
+            print(f"{bcolors.WARNING}Use 'CTRL+SHIFT+Q' to save and quit after the current epoch{bcolors.ENDC}")
+            print(f"{bcolors.WARNING}Use 'CTRL+SHIFT+ALT+S' to save a checkpoint of the current step{bcolors.ENDC}")
+            print(f"{bcolors.WARNING}Use 'CTRL+SHIFT+ALT+P' to generate samples for current step{bcolors.ENDC}")
+            print(f"{bcolors.WARNING}Use 'CTRL+SHIFT+ALT+Q' to save and quit after the current step{bcolors.ENDC}")
+            print('')
+            print(f"{bcolors.WARNING}Use 'CTRL+H' to print this message again.{bcolors.ENDC}")
     def save_and_sample_weights(step,context='checkpoint',save_model=True):
         #check how many folders are in the output dir
         #if there are more than 5, delete the oldest one
@@ -1835,7 +1825,7 @@ def main():
                     shutil.rmtree(oldest_folder_path)
         # Create the pipeline using using the trained modules and save it.
         if accelerator.is_main_process:
-            if context =='step':
+            if 'step' in context:
                 #what is the current epoch
                 epoch = step // num_update_steps_per_epoch
             else:
@@ -1941,17 +1931,18 @@ def main():
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()
             if save_model == True:
-                print(f" {bcolors.OKGREEN}[*] Weights saved to {save_dir}{bcolors.ENDC}")
+                print(f"{bcolors.OKGREEN}Weights saved to {save_dir}{bcolors.ENDC}")
             elif save_model == False and len(imgs) > 0:
                 del imgs
-                print(f" {bcolors.OKGREEN}[*] Samples saved to {sample_dir}{bcolors.ENDC}")
+                print(f"{bcolors.OKGREEN}Samples saved to {sample_dir}{bcolors.ENDC}")
 
     # Only show the progress bar once on each machine.
+    progress_bar_inter_epoch = tqdm(range(num_update_steps_per_epoch),bar_format='%s{l_bar}%s%s{bar}%s%s{r_bar}%s'%(bcolors.OKBLUE,bcolors.ENDC, bcolors.OKGREEN, bcolors.ENDC,bcolors.OKBLUE,bcolors.ENDC,), disable=not accelerator.is_local_main_process)
     progress_bar = tqdm(range(args.max_train_steps),bar_format='%s{l_bar}%s%s{bar}%s%s{r_bar}%s'%(bcolors.OKBLUE,bcolors.ENDC, bcolors.OKBLUE, bcolors.ENDC,bcolors.OKBLUE,bcolors.ENDC,), disable=not accelerator.is_local_main_process)
     progress_bar_e = tqdm(range(args.num_train_epochs),bar_format='%s{l_bar}%s%s{bar}%s%s{r_bar}%s'%(bcolors.OKBLUE,bcolors.ENDC, bcolors.OKGREEN, bcolors.ENDC,bcolors.OKBLUE,bcolors.ENDC,), disable=not accelerator.is_local_main_process)
 
-    progress_bar.set_description("Steps")
-    progress_bar_e.set_description("Epochs")
+    progress_bar.set_description("Overall Steps")
+    progress_bar_e.set_description("Overall Epochs")
     global_step = 0
     loss_avg = AverageMeter()
     text_enc_context = nullcontext() if args.train_text_encoder else torch.no_grad()
@@ -1967,35 +1958,79 @@ def main():
                 if keyboard.is_pressed("ctrl") and keyboard.is_pressed("shift") and keyboard.is_pressed("g"):
                     print(f" {bcolors.WARNING}GUI will boot as soon as the current step is done.{bcolors.ENDC}")
                     nonlocal mid_generation
-                    mid_generation = True
+                    if mid_generation == True:
+                        mid_generation = False
+                        print(f" {bcolors.WARNING}Cancelled GUI.{bcolors.ENDC}")
+                    else:
+                        mid_generation = True
 
             def toggle_checkpoint(event=None):
                 if keyboard.is_pressed("ctrl") and keyboard.is_pressed("shift") and keyboard.is_pressed("s") and not keyboard.is_pressed("alt"):
                     print(f" {bcolors.WARNING}Saving the model as soon as this epoch is done.{bcolors.ENDC}")
                     nonlocal mid_checkpoint
-                    mid_checkpoint = True
+                    if mid_checkpoint == True:
+                        mid_checkpoint = False
+                        print(f" {bcolors.WARNING}Cancelled Checkpointing.{bcolors.ENDC}")
+                    else:
+                        mid_checkpoint = True
 
             def toggle_sample(event=None):
                 if keyboard.is_pressed("ctrl") and keyboard.is_pressed("shift") and keyboard.is_pressed("p") and not keyboard.is_pressed("alt"):
                     print(f" {bcolors.WARNING}Sampling will begin as soon as this epoch is done.{bcolors.ENDC}")
                     nonlocal mid_sample
-                    mid_sample = True
+                    if mid_sample == True:
+                        mid_sample = False
+                        print(f" {bcolors.WARNING}Cancelled Sampling.{bcolors.ENDC}")
+                    else:
+                        mid_sample = True
             def toggle_checkpoint_step(event=None):
                 if keyboard.is_pressed("ctrl") and keyboard.is_pressed("shift") and keyboard.is_pressed("alt") and keyboard.is_pressed("s"):
                     print(f" {bcolors.WARNING}Saving the model as soon as this step is done.{bcolors.ENDC}")
                     nonlocal mid_checkpoint_step
-                    mid_checkpoint_step = True
+                    if mid_checkpoint_step == True:
+                        mid_checkpoint_step = False
+                        print(f" {bcolors.WARNING}Cancelled Checkpointing.{bcolors.ENDC}")
+                    else:
+                        mid_checkpoint_step = True
 
             def toggle_sample_step(event=None):
                 if keyboard.is_pressed("ctrl") and keyboard.is_pressed("shift") and keyboard.is_pressed("alt") and keyboard.is_pressed("p"):
                     print(f" {bcolors.WARNING}Sampling will begin as soon as this step is done.{bcolors.ENDC}")
                     nonlocal mid_sample_step
-                    mid_sample_step = True
+                    if mid_sample_step == True:
+                        mid_sample_step = False
+                        print(f" {bcolors.WARNING}Cancelled Sampling.{bcolors.ENDC}")
+                    else:
+                        mid_sample_step = True
+            def toggle_quit_and_save_epoch(event=None):
+                if keyboard.is_pressed("ctrl") and keyboard.is_pressed("shift") and keyboard.is_pressed("q") and not keyboard.is_pressed("alt"):
+                    print(f" {bcolors.WARNING}Quitting and saving the model as soon as this epoch is done.{bcolors.ENDC}")
+                    nonlocal mid_quit
+                    if mid_quit == True:
+                        mid_quit = False
+                        print(f" {bcolors.WARNING}Cancelled Quitting.{bcolors.ENDC}")
+                    else:
+                        mid_quit = True
+            def toggle_quit_and_save_step(event=None):
+                if keyboard.is_pressed("ctrl") and keyboard.is_pressed("shift") and keyboard.is_pressed("alt") and keyboard.is_pressed("q"):
+                    print(f" {bcolors.WARNING}Quitting and saving the model as soon as this step is done.{bcolors.ENDC}")
+                    nonlocal mid_quit_step
+                    if mid_quit_step == True:
+                        mid_quit_step = False
+                        print(f" {bcolors.WARNING}Cancelled Quitting.{bcolors.ENDC}")
+                    else:
+                        mid_quit_step = True
+            def help(event=None):
+                if keyboard.is_pressed("ctrl") and keyboard.is_pressed("h"):
+                    print_instructions()
             keyboard.on_press_key("g", toggle_gui)
             keyboard.on_press_key("s", toggle_checkpoint)
             keyboard.on_press_key("p", toggle_sample)
             keyboard.on_press_key("s", toggle_checkpoint_step)
             keyboard.on_press_key("p", toggle_sample_step)
+            keyboard.on_press_key("q", toggle_quit_and_save_epoch)
+            keyboard.on_press_key("q", toggle_quit_and_save_step)
+            keyboard.on_press_key("h", help)
             print_instructions()
         except:
             pass
@@ -2005,6 +2040,8 @@ def main():
         mid_sample = False
         mid_checkpoint_step = False
         mid_sample_step = False
+        mid_quit = False
+        mid_quit_step = False
         #lambda set mid_generation to true
         
         
@@ -2036,16 +2073,14 @@ def main():
                     os.mkdir(frozen_directory)
                     save_and_sample_weights(epoch,'epoch')
                     args.stop_text_encoder_training = epoch
-
+            progress_bar_inter_epoch.set_description("Steps To Epoch")
+            progress_bar_inter_epoch.reset(total=num_update_steps_per_epoch)
             for step, batch in enumerate(train_dataloader):
                 with accelerator.accumulate(unet):
                     # Convert images to latent space
                     with torch.no_grad():
-                        if not args.not_cache_latents:
                             latent_dist = batch[0][0]
-                        else:
-                            latent_dist = vae.encode(batch["pixel_values"].to(dtype=weight_dtype)).latent_dist
-                        latents = latent_dist.sample() * 0.18215
+                            latents = latent_dist.sample() * 0.18215
 
                     # Sample noise that we'll add to the latents
                     noise = torch.randn_like(latents)
@@ -2060,24 +2095,14 @@ def main():
 
                     # Get the text embedding for conditioning
                     with text_enc_context:
-                        if not args.not_cache_latents:
-                            if args.train_text_encoder:
-                                if args.clip_penultimate == True:
-                                    encoder_hidden_states = text_encoder(batch[0][1],output_hidden_states=True)
-                                    encoder_hidden_states = text_encoder.text_model.final_layer_norm(encoder_hidden_states['hidden_states'][-2])
-                                else:
-                                    encoder_hidden_states = text_encoder(batch[0][1])[0]
+                        if args.train_text_encoder:
+                            if args.clip_penultimate == True:
+                                encoder_hidden_states = text_encoder(batch[0][1],output_hidden_states=True)
+                                encoder_hidden_states = text_encoder.text_model.final_layer_norm(encoder_hidden_states['hidden_states'][-2])
                             else:
-                                encoder_hidden_states = batch[0][1]
+                                encoder_hidden_states = text_encoder(batch[0][1])[0]
                         else:
-                            if args.train_text_encoder:
-                                if args.clip_penultimate == True:
-                                    encoder_hidden_states = text_encoder(batch["input_ids"],output_hidden_states=True)
-                                    encoder_hidden_states = text_encoder.text_model.final_layer_norm(encoder_hidden_states['hidden_states'][-2])
-                                else:
-                                    encoder_hidden_states = text_encoder(batch["input_ids"])[0]
-                            else:
-                                encoder_hidden_states = text_encoder(batch["input_ids"])[0]
+                            encoder_hidden_states = batch[0][1]
 
                     # Predict the noise residual
                     #noise_pred = unet(noisy_latents, timesteps, encoder_hidden_states).sample
@@ -2140,6 +2165,7 @@ def main():
                     save_and_sample_weights(global_step,'step',save_model=False)
 
                 progress_bar.update(1)
+                progress_bar_inter_epoch.update(1)
                 progress_bar_e.refresh()
                 global_step += 1
 
@@ -2152,9 +2178,17 @@ def main():
                 if mid_sample_step == True:
                     save_and_sample_weights(global_step,'step',save_model=False)
                     mid_sample_step=False
+                if mid_quit_step==True:
+                    accelerator.wait_for_everyone()
+                    save_and_sample_weights(global_step,'quit_step')
+                    quit()
                 if global_step >= args.max_train_steps:
                     break
             progress_bar_e.update(1)
+            if mid_quit==True:
+                accelerator.wait_for_everyone()
+                save_and_sample_weights(epoch,'quit_epoch')
+                quit()
             if not epoch % args.save_every_n_epoch:
                     #print(epoch % args.save_every_n_epoch)
                     #print('test')
