@@ -1172,7 +1172,7 @@ class NormalDataset(Dataset):
                     self.variant_warning = True
                 size = instance_image.size
                 mask = Image.new('RGB', size, color="white").convert("L")
-                example["mask"] = self.mask_transforms(mask)
+            example["mask"] = self.mask_transforms(mask)
 
         if self.use_image_names_as_captions == True:
             instance_prompt = str(instance_path).split(os.sep)[-1].split('.')[0].split('_')[0]
