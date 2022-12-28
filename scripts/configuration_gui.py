@@ -203,6 +203,7 @@ class ConceptWindow(ctk.CTkToplevel):
         self.geometry("576x297")
         self.resizable(False, False)
         #self.protocol("WM_DELETE_WINDOW", self.on_close)
+        self.wait_visibility()
         self.grab_set()
         self.focus_set()
         self.default_image_preview = Image.open("resources/stableTuner_icon.png").resize((150, 150), Image.Resampling.LANCZOS)
