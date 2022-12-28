@@ -2394,3 +2394,4 @@ scripts/style.css
 scripts/streamlit_configurator.py
 data.zip
 export.zip
+*.webp
