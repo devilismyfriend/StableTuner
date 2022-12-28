@@ -60,6 +60,13 @@ logger = get_logger(__name__)
 def parse_args():
     parser = argparse.ArgumentParser(description="Simple example of a training script.")
     parser.add_argument(
+        "--model_variant",
+        type=str,
+        default='base',
+        required=False,
+        help="Train Base/Inpaint/Depth2Img",
+    )
+    parser.add_argument(
         "--aspect_mode",
         type=str,
         default='dynamic',
@@ -507,6 +514,7 @@ class AutoBucketing(Dataset):
                     aspect_mode='dynamic',
                     action_preference='dynamic',
                     seed=555,
+                    model_variant='base'
                     ):
         
         self.debug_level = debug_level
@@ -527,6 +535,7 @@ class AutoBucketing(Dataset):
         self.use_text_files_as_captions = use_text_files_as_captions
         self.aspect_mode = aspect_mode
         self.action_preference = action_preference
+        self.model_variant = model_variant
         self.image_transforms = transforms.Compose(
             [
                 transforms.ToTensor(),
@@ -542,7 +551,20 @@ class AutoBucketing(Dataset):
         #shared_dataloader = None
         print(f" {bcolors.WARNING}Creating Auto Bucketing Dataloader{bcolors.ENDC}")
 
-        shared_dataloader = DataLoaderMultiAspect(concepts_list, debug_level=debug_level,resolution=self.resolution,seed=self.seed, batch_size=self.batch_size, flip_p=flip_p,use_image_names_as_captions=self.use_image_names_as_captions,add_class_images_to_dataset=self.add_class_images_to_dataset,balance_datasets=self.balance_datasets,with_prior_loss=self.with_prior_loss,use_text_files_as_captions=self.use_text_files_as_captions,aspect_mode=self.aspect_mode,action_preference=self.action_preference)
+        shared_dataloader = DataLoaderMultiAspect(concepts_list,
+         debug_level=debug_level,
+         resolution=self.resolution,
+         seed=self.seed,
+         batch_size=self.batch_size, 
+         flip_p=flip_p,
+         use_image_names_as_captions=self.use_image_names_as_captions,
+         add_class_images_to_dataset=self.add_class_images_to_dataset,
+         balance_datasets=self.balance_datasets,
+         with_prior_loss=self.with_prior_loss,
+         use_text_files_as_captions=self.use_text_files_as_captions,
+         aspect_mode=self.aspect_mode,
+         action_preference=self.action_preference,
+         model_variant=self.model_variant)
         
         #print(self.image_train_items)
         if self.with_prior_loss and self.add_class_images_to_dataset == False:
@@ -596,9 +618,11 @@ class AutoBucketing(Dataset):
         if class_img==False:
             image_train_tmp = image_train_item.hydrate(crop=False, save=0, crop_jitter=self.crop_jitter)
             image_train_tmp_image = Image.fromarray(self.normalize8(image_train_tmp.image)).convert("RGB")
-            image_train_tmp_mask = Image.fromarray(self.normalize8(image_train_tmp.mask)).convert("L")
+            
             example["instance_images"] = self.image_transforms(image_train_tmp_image)
-            example["mask"] = self.mask_transforms(image_train_tmp_mask)
+            if self.model_variant == 'inpainting':
+                image_train_tmp_mask = Image.fromarray(self.normalize8(image_train_tmp.mask)).convert("L")
+                example["mask"] = self.mask_transforms(image_train_tmp_mask)
             #print(image_train_tmp.caption)
             example["instance_prompt_ids"] = self.tokenizer(
                 image_train_tmp.caption,
@@ -632,7 +656,7 @@ class ImageTrainItem():
     pathname: path to image file
     flip_p: probability of flipping image (0.0 to 1.0)
     """    
-    def __init__(self, image: Image, mask: Image, caption: str, target_wh: list, pathname: str, flip_p=0.0):
+    def __init__(self, image: Image, mask: Image, caption: str, target_wh: list, pathname: str, flip_p=0.0, model_variant='base'):
         self.caption = caption
         self.target_wh = target_wh
         self.pathname = pathname
@@ -640,7 +664,9 @@ class ImageTrainItem():
         self.flip_p = flip_p
         self.flip = transforms.RandomHorizontalFlip(p=flip_p)
         self.cropped_img = None
+        self.model_variant = model_variant
         self.is_dupe = []
+        self.variant_warning = False
 
         if image is None:
             self.image = []
@@ -725,10 +751,14 @@ class ImageTrainItem():
 
         if not hasattr(self, 'image') or len(self.image) == 0:
             self.image = self.load_image(self.pathname, crop, crop_jitter)
-            if os.path.exists(self.mask_pathname):
-                self.mask = self.load_image(self.mask_pathname, crop, crop_jitter)
-            else:
-                self.mask = Image.new('RGB', self.image.size, color="white")
+            if self.model_variant == "inpainting":
+                if os.path.exists(self.mask_pathname):
+                    self.mask = self.load_image(self.mask_pathname, crop, crop_jitter)
+                else:
+                    if self.variant_warning == False:
+                        print(f" {bcolors.FAIL} ** Warning: No mask found for an image, using an empty mask but make sure you're training the right model variant.{bcolors.ENDC}")
+                        self.variant_warning = True
+                    self.mask = Image.new('RGB', self.image.size, color="white")
 
         if type(self.image) is not np.ndarray:
             if save: 
@@ -740,11 +770,11 @@ class ImageTrainItem():
             self.image = np.array(self.image).astype(np.uint8)
 
             self.image = (self.image / 127.5 - 1.0).astype(np.float32)
+        if self.model_variant == "inpainting":
+            if type(self.mask) is not np.ndarray:
+                self.mask = np.array(self.mask).astype(np.uint8)
 
-        if type(self.mask) is not np.ndarray:
-            self.mask = np.array(self.mask).astype(np.uint8)
-
-            self.mask = (self.mask / 255.0).astype(np.float32)
+                self.mask = (self.mask / 255.0).astype(np.float32)
 
         #print(self.image.shape)
 
@@ -757,7 +787,7 @@ class DataLoaderMultiAspect():
     batch_size: number of images per batch
     flip_p: probability of flipping image horizontally (i.e. 0-0.5)
     """
-    def __init__(self,concept_list, seed=555, debug_level=0,resolution=512, batch_size=1, flip_p=0.0,use_image_names_as_captions=True,add_class_images_to_dataset=False,balance_datasets=False,with_prior_loss=False,use_text_files_as_captions=False,aspect_mode='dynamic',action_preference='add'):
+    def __init__(self,concept_list, seed=555, debug_level=0,resolution=512, batch_size=1, flip_p=0.0,use_image_names_as_captions=True,add_class_images_to_dataset=False,balance_datasets=False,with_prior_loss=False,use_text_files_as_captions=False,aspect_mode='dynamic',action_preference='add',model_variant='base'):
         self.resolution = resolution
         self.debug_level = debug_level
         self.flip_p = flip_p
@@ -769,6 +799,7 @@ class DataLoaderMultiAspect():
         self.aspect_mode = aspect_mode
         self.action_preference = action_preference
         self.seed = seed
+        self.model_variant = model_variant
         prepared_train_data = []
         
         self.aspects = get_aspect_buckets(resolution)
@@ -884,7 +915,7 @@ class DataLoaderMultiAspect():
 
             target_wh = min(self.aspects, key=lambda aspects:abs(aspects[0]/aspects[1] - image_aspect))
 
-            image_train_item = ImageTrainItem(image=None, mask=None, caption=identifier, target_wh=target_wh, pathname=pathname, flip_p=flip_p)
+            image_train_item = ImageTrainItem(image=None, mask=None, caption=identifier, target_wh=target_wh, pathname=pathname, flip_p=flip_p,model_variant='base' if self.model_variant == 'base' else 'inpainting')
 
             decorated_image_train_items.append(image_train_item)
         return decorated_image_train_items
@@ -1023,6 +1054,7 @@ class NormalDataset(Dataset):
         repeats=1,
         use_text_files_as_captions=False,
         seed=555,
+        model_variant='base'
     ):
         self.use_image_names_as_captions = use_image_names_as_captions
         self.size = size
@@ -1033,6 +1065,8 @@ class NormalDataset(Dataset):
         self.image_paths = []
         self.class_images_path = []
         self.seed = seed
+        self.model_variant = model_variant
+        self.variant_warning = False
         for concept in concepts_list:
             if 'use_sub_dirs' in concept:
                 if concept['use_sub_dirs'] == True:
@@ -1062,7 +1096,14 @@ class NormalDataset(Dataset):
                 transforms.ToTensor(),
                 transforms.Normalize([0.5], [0.5]),
             ]
+            
         )
+        self.mask_transforms = transforms.Compose(
+            [
+                transforms.Resize(size, interpolation=transforms.InterpolationMode.BILINEAR),
+                transforms.CenterCrop(size) if center_crop else transforms.RandomCrop(size),
+                transforms.ToTensor(),
+            ])
     @staticmethod
     def __recurse_data_root(self, recurse_root,use_sub_dirs=True,class_images=False):
         #if recurse root is a dict
@@ -1121,6 +1162,18 @@ class NormalDataset(Dataset):
         instance_path, instance_prompt = self.image_paths[index % self.num_instance_images]
         og_prompt = instance_prompt
         instance_image = Image.open(instance_path)
+        if self.model_variant == "inpainting":
+            mask_pathname = os.path.splitext(instance_path)[0] + "-masklabel.png"
+            if os.path.exists(mask_pathname):
+                mask = Image.open(mask_pathname).convert("L")
+            else:
+                if self.variant_warning == False:
+                    print(f" {bcolors.FAIL} ** Warning: No mask found for an image, using an empty mask but make sure you're training the right model variant.{bcolors.ENDC}")
+                    self.variant_warning = True
+                size = instance_image.size
+                mask = Image.new('RGB', size, color="white").convert("L")
+                example["mask"] = self.mask_transforms(mask)
+
         if self.use_image_names_as_captions == True:
             instance_prompt = str(instance_path).split(os.sep)[-1].split('.')[0].split('_')[0]
         #else if there's a txt file with the same name as the image, read the caption from there
@@ -1181,7 +1234,7 @@ class PromptDataset(Dataset):
 
 class CachedLatentsDataset(Dataset):
     #stores paths and loads latents on the fly
-    def __init__(self, cache_paths=(),batch_size=None,tokenizer=None,conditional_dropout=None,accelerator=None,dtype=None):
+    def __init__(self, cache_paths=(),batch_size=None,tokenizer=None,conditional_dropout=None,accelerator=None,dtype=None,model_variant='base'):
         self.cache_paths = cache_paths
         self.tokenizer = tokenizer
         self.empty_batch = [self.tokenizer('',padding="do_not_pad",truncation=True,max_length=self.tokenizer.model_max_length,).input_ids for i in range(batch_size)]
@@ -1189,6 +1242,7 @@ class CachedLatentsDataset(Dataset):
         self.empty_tokens.to(accelerator.device, dtype=dtype)
         self.conditional_dropout = conditional_dropout
         self.conditional_indexes = []
+        self.model_variant = model_variant
     def __len__(self):
         return len(self.cache_paths)
     def __getitem__(self, index):
@@ -1219,11 +1273,14 @@ class CachedLatentsDataset(Dataset):
             self.text_encoder = self.empty_tokens
         else:
             self.text_encoder = self.cache.text_encoder_cache[0]
-        self.conditioning_latent_cache = self.cache.conditioning_latent_cache[0]
-        self.mask_cache = self.cache.mask_cache[0]
-
-        del self.cache
-        return self.latents, self.text_encoder, self.conditioning_latent_cache, self.mask_cache
+        if self.model_variant == 'inpainting':
+            self.conditioning_latent_cache = self.cache.conditioning_latent_cache[0]
+            self.mask_cache = self.cache.mask_cache[0]
+            del self.cache
+            return self.latents, self.text_encoder, self.conditioning_latent_cache, self.mask_cache
+        elif self.model_variant == 'base':
+            del self.cache
+            return self.latents, self.text_encoder
     def add_pt_cache(self, cache_path):
         if len(self.cache_paths) == 0:
             self.cache_paths = (cache_path,)
@@ -1245,12 +1302,6 @@ class LatentsDataset(Dataset):
         return len(self.latents_cache)
     def __getitem__(self, index):
         return self.latents_cache[index], self.text_encoder_cache[index], self.conditioning_latent_cache[index], self.mask_cache[index]
-    def __add__(self, other):
-        latents_cache = self.latents_cache + other.latents_cache
-        text_encoder_cache = self.text_encoder_cache + other.text_encoder_cache
-        conditioning_latent_cache = self.conditioning_latent_cache + other.conditioning_latent_cache
-        mask_cache = self.mask_cache + other.mask_cache
-        return LatentsDataset(latents_cache, text_encoder_cache, conditioning_latent_cache, mask_cache)
 class AverageMeter:
     def __init__(self, name=None):
         self.name = name
@@ -1520,7 +1571,8 @@ def main():
             use_text_files_as_captions=args.use_text_files_as_captions,
             aspect_mode=args.aspect_mode,
             action_preference=args.aspect_mode_action_preference,
-            seed = args.seed
+            seed = args.seed,
+            model_variant=args.model_variant,
         )
     else:
         train_dataset = NormalDataset(
@@ -1533,21 +1585,24 @@ def main():
         use_image_names_as_captions=args.use_image_names_as_captions,
         repeats=args.dataset_repeats,
         use_text_files_as_captions=args.use_text_files_as_captions,
-        seed = args.seed
+        seed = args.seed,
+        model_variant=args.model_variant,
     )
     def collate_fn(examples):
         #print(examples)
         #print('test')
         input_ids = [example["instance_prompt_ids"] for example in examples]
         pixel_values = [example["instance_images"] for example in examples]
-        mask = [example["mask"] for example in examples]
+        if args.model_variant == 'inpainting':
+            mask = [example["mask"] for example in examples]
         #print('test')
         # Concat class and instance examples for prior preservation.
         # We do this to avoid doing two forward passes.
         if args.with_prior_preservation:
             input_ids += [example["class_prompt_ids"] for example in examples]
             pixel_values += [example["class_images"] for example in examples]
-            mask += [example["mask"] for example in examples]
+            if args.model_variant == 'inpainting':
+                mask += [example["mask"] for example in examples]
         ### no need to do it now when it's loaded by the multiAspectsDataset
         #if args.with_prior_preservation:
         #    input_ids += [example["class_prompt_ids"] for example in examples]
@@ -1566,12 +1621,18 @@ def main():
             max_length=tokenizer.model_max_length,
             return_tensors="pt",\
             ).input_ids
-        mask = torch.stack(mask)
-        batch = {
-            "input_ids": input_ids,
-            "pixel_values": pixel_values,
-            "mask": mask,
-        }
+        if args.model_variant == 'inpainting':
+            mask = torch.stack(mask)
+            batch = {
+                "input_ids": input_ids,
+                "pixel_values": pixel_values,
+                "mask": mask,
+            }
+        if args.model_variant == 'base':
+            batch = {
+                "input_ids": input_ids,
+                "pixel_values": pixel_values,
+            }
         return batch
 
     train_dataloader = torch.utils.data.DataLoader(
@@ -1622,10 +1683,19 @@ def main():
     if not args.train_text_encoder:
         text_encoder.to(accelerator.device, dtype=weight_dtype)
 
-    buckets_wh = set([tuple(x.target_wh) for x in train_dataset.image_train_items])
-    mask_latent = {shape: vae.encode(torch.zeros(1, 3, shape[1], shape[0]).to(accelerator.device, dtype=weight_dtype)).latent_dist.mean * 0.18215 for shape in buckets_wh}
+    if args.model_variant == 'inpainting':
+        if args.use_bucketing:
+            wh = set([tuple(x.target_wh) for x in train_dataset.image_train_items])
+        else:
+            wh = set([tuple([args.resolution, args.resolution]) for x in train_dataset.image_paths])
+        mask_latent = {shape: vae.encode(torch.zeros(1, 3, shape[1], shape[0]).to(accelerator.device, dtype=weight_dtype)).latent_dist.mean * 0.18215 for shape in wh}
 
-    cached_dataset = CachedLatentsDataset(batch_size=args.train_batch_size,tokenizer=tokenizer,conditional_dropout=args.conditional_dropout,accelerator=accelerator,dtype=weight_dtype)
+    cached_dataset = CachedLatentsDataset(batch_size=args.train_batch_size,
+    tokenizer=tokenizer,
+    conditional_dropout=args.conditional_dropout,
+    accelerator=accelerator,dtype=weight_dtype,
+    model_variant=args.model_variant)
+
     gen_cache = False
     data_len = len(train_dataloader)
     latent_cache_dir = Path(args.output_dir, "logs", "latent_cache")
@@ -1658,17 +1728,21 @@ def main():
         counter = 0
         with torch.no_grad():
             for batch in tqdm(train_dataloader, desc="Caching latents", bar_format='%s{l_bar}%s%s{bar}%s%s{r_bar}%s'%(bcolors.OKBLUE,bcolors.ENDC, bcolors.OKBLUE, bcolors.ENDC,bcolors.OKBLUE,bcolors.ENDC,)):
+                cached_conditioning_latent = None
+                cached_mask = None
                 batch["pixel_values"] = batch["pixel_values"].to(accelerator.device, non_blocking=True, dtype=weight_dtype)
                 batch["input_ids"] = batch["input_ids"].to(accelerator.device, non_blocking=True)
-                batch["mask"] = batch["mask"].to(accelerator.device, non_blocking=True, dtype=weight_dtype)
-
+                if args.model_variant == "inpainting":
+                    batch["mask"] = batch["mask"].to(accelerator.device, non_blocking=True, dtype=weight_dtype)
+                    cached_conditioning_latent = vae.encode(batch["pixel_values"] * (1 - batch["mask"])).latent_dist
+                    cached_mask = functional.resize(batch["mask"], size=cached_conditioning_latent.mean.shape[2:])
+                
                 cached_latent = vae.encode(batch["pixel_values"]).latent_dist
                 if args.train_text_encoder:
                     cached_text_enc = batch["input_ids"]
                 else:
                     cached_text_enc = text_encoder(batch["input_ids"])[0]
-                cached_conditioning_latent = vae.encode(batch["pixel_values"] * (1 - batch["mask"])).latent_dist
-                cached_mask = functional.resize(batch["mask"], size=cached_conditioning_latent.mean.shape[2:])
+                
                 train_dataset.add_latent(cached_latent, cached_text_enc, cached_conditioning_latent, cached_mask)
                 del batch
                 del cached_latent
@@ -1955,17 +2029,24 @@ def main():
                         #convert sampleIndex to number in words
                         sampleName = f"prompt_{sampleIndex+1}"
                         os.makedirs(os.path.join(sample_dir,sampleName), exist_ok=True)
-                        conditioning_image = torch.zeros(1, 3, width, height)
-                        mask = torch.ones(1, 1, width, height)
+                        if args.model_variant == 'inpainting':
+                            conditioning_image = torch.zeros(1, 3, width, height)
+                            mask = torch.ones(1, 1, width, height)
                         for i in tqdm(range(args.n_save_sample) if not args.save_sample_controlled_seed else range(args.n_save_sample+len(args.save_sample_controlled_seed)), desc="Generating samples"):
                             #check if the sample is controlled by a seed
                             if i != args.n_save_sample:
-                                images = pipeline(samplePrompt, conditioning_image, mask, height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps).images
+                                if args.model_variant == 'inpainting':
+                                    images = pipeline(samplePrompt, conditioning_image, mask, height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps).images
+                                elif args.model_variant == 'base':
+                                    images = pipeline(samplePrompt,height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps).images
                                 images[0].save(os.path.join(sample_dir,sampleName, f"{sampleName}_{i}.png"))
                             else:
                                 for seed in args.save_sample_controlled_seed:
                                     generator = torch.Generator("cuda").manual_seed(seed)
-                                    images = pipeline(samplePrompt,conditioning_image, mask,height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps, generator=generator).images
+                                    if args.model_variant == 'inpainting':
+                                        images = pipeline(samplePrompt,conditioning_image, mask,height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps, generator=generator).images
+                                    elif args.model_variant == 'base':
+                                        images = pipeline(samplePrompt,height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps, generator=generator).images
                                     images[0].save(os.path.join(sample_dir,sampleName, f"{sampleName}_controlled_seed_{str(seed)}.png"))
                         if args.send_telegram_updates:
                             imgs = []
@@ -2134,10 +2215,11 @@ def main():
                     # Convert images to latent space
                     with torch.no_grad():
                         latent_dist = batch[0][0]
-                        conditioning_latent_dist = batch[0][2]
-                        mask = batch[0][3]
                         latents = latent_dist.sample() * 0.18215
-                        conditioning_latents = conditioning_latent_dist.sample() * 0.18215
+                        if args.model_variant == "inpainting":
+                            conditioning_latent_dist = batch[0][2]
+                            mask = batch[0][3]
+                            conditioning_latents = conditioning_latent_dist.sample() * 0.18215
 
                     # Sample noise that we'll add to the latents
                     noise = torch.randn_like(latents)
@@ -2162,14 +2244,17 @@ def main():
                             encoder_hidden_states = batch[0][1]
 
                     # Predict the noise residual
+                    if args.model_variant == "inpainting":
+                        if random.uniform(0, 1) < 0.25:
+                            # for some steps, predict the unmasked image
+                            conditioning_latents = torch.stack([mask_latent[tuple([latents.shape[3]*8, latents.shape[2]*8])].squeeze()] * bsz)
+                            mask = torch.ones(bsz, 1, latents.shape[2], latents.shape[3]).to(accelerator.device, dtype=weight_dtype)
 
-                    if random.uniform(0, 1) < 0.25:
-                        # for some steps, predict the unmasked image
-                        conditioning_latents = torch.stack([mask_latent[tuple([latents.shape[3]*8, latents.shape[2]*8])].squeeze()] * bsz)
-                        mask = torch.ones(bsz, 1, latents.shape[2], latents.shape[3]).to(accelerator.device, dtype=weight_dtype)
-
-                    noisy_inpaint_latents = torch.concat([noisy_latents, mask, conditioning_latents], 1)
-                    model_pred = unet(noisy_inpaint_latents, timesteps, encoder_hidden_states).sample
+                        noisy_inpaint_latents = torch.concat([noisy_latents, mask, conditioning_latents], 1)
+                        model_pred = unet(noisy_inpaint_latents, timesteps, encoder_hidden_states).sample
+                    elif args.model_variant == "base":
+                        model_pred = unet(noisy_latents, timesteps, encoder_hidden_states).sample
+                    
 
                     # Get the target for loss depending on the prediction type
                     if noise_scheduler.config.prediction_type == "epsilon":
@@ -2178,7 +2263,10 @@ def main():
                         target = noise_scheduler.get_velocity(latents, noise, timesteps)
                     else:
                         raise ValueError(f"Unknown prediction type {noise_scheduler.config.prediction_type}")
-                    del timesteps, noise, latents, noisy_latents, encoder_hidden_states
+                    if args.model_variant == "inpainting":
+                        del timesteps, noise, latents, noisy_latents,noisy_inpaint_latents, encoder_hidden_states
+                    elif args.model_variant == "base":
+                        del timesteps, noise, latents, noisy_latents, encoder_hidden_states
                     if args.with_prior_preservation:
                         # Chunk the noise and noise_pred into two parts and compute the loss on each part separately.
                         """

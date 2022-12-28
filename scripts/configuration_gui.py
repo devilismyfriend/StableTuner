@@ -800,6 +800,8 @@ class App(ctk.CTk):
             pass
 
     def create_default_variables(self):
+        self.model_variant = 'Regular'
+        self.model_variants = ['Regular', 'Inpaint']
         self.required_folders = ["vae", "unet", "tokenizer", "text_encoder"]
         self.aspect_ratio_bucketing_mode = 'Dynamic Fill'
         self.dynamic_bucketing_mode = 'Duplicate'
@@ -864,7 +866,7 @@ class App(ctk.CTk):
         self.play_cfg = 7.5
         self.play_steps = 25
         self.schedulers = ["DPMSolverMultistepScheduler", "PNDMScheduler", 'DDIMScheduler','EulerAncestralDiscreteScheduler','EulerDiscreteScheduler']
-        self.quick_select_models = ["Stable Diffusion 1.4", "Stable Diffusion 1.5", "Stable Diffusion 1.5 Inpaint", "Stable Diffusion 2 Base (512)", "Stable Diffusion 2 (768)", 'Stable Diffusion 2.1 Base (512)', "Stable Diffusion 2.1 (768)"]
+        self.quick_select_models = ["Stable Diffusion 1.4", "Stable Diffusion 1.5", "Stable Diffusion 1.5 Inpaint", "Stable Diffusion 2 Base (512)", "Stable Diffusion 2 (768)", 'Stable Diffusion 2 Inpaint', 'Stable Diffusion 2.1 Base (512)', "Stable Diffusion 2.1 (768)"]
         self.play_scheduler = 'DPMSolverMultistepScheduler'
         self.pipe = None
         self.current_model = None
@@ -996,12 +998,16 @@ class App(ctk.CTk):
             self.input_model_path_entry.delete(0, tk.END)
             if val == 'Stable Diffusion 1.4':
                 self.input_model_path_entry.insert(0,"CompVis/stable-diffusion-v1-4")
+                self.model_variant_var.set("Regular")
             elif val == 'Stable Diffusion 1.5':
                 self.input_model_path_entry.insert(0,"runwayml/stable-diffusion-v1-5")
+                self.model_variant_var.set("Regular")
             elif val == 'Stable Diffusion 1.5 Inpaint':
                 self.input_model_path_entry.insert(0,"runwayml/stable-diffusion-inpainting")
+                self.model_variant_var.set("Inpaint")
             elif val == 'Stable Diffusion 2 Base (512)':
                 self.input_model_path_entry.insert(0,"stabilityai/stable-diffusion-2-base")
+                self.model_variant_var.set("Regular")
             elif val == 'Stable Diffusion 2 (768)':
                 self.input_model_path_entry.insert(0,"stabilityai/stable-diffusion-2")
                 self.resolution_var.set("768")
@@ -1009,8 +1015,13 @@ class App(ctk.CTk):
                 self.sample_height_entry.insert(0,"768")
                 self.sample_width_entry.delete(0, tk.END)
                 self.sample_width_entry.insert(0,"768")
+                self.model_variant_var.set("Regular")
+            elif val == 'Stable Diffusion 2 Inpaint':
+                self.input_model_path_entry.insert(0,"stabilityai/stable-diffusion-2-inpainting")
+                self.model_variant_var.set("Inpaint")
             elif val == 'Stable Diffusion 2.1 Base (512)':
                 self.input_model_path_entry.insert(0,"stabilityai/stable-diffusion-2-1-base")
+                self.model_variant_var.set("Regular")
             elif val == 'Stable Diffusion 2.1 (768)':
                 self.input_model_path_entry.insert(0,"stabilityai/stable-diffusion-2-1")
                 self.resolution_var.set("768")
@@ -1018,6 +1029,7 @@ class App(ctk.CTk):
                 self.sample_height_entry.insert(0,"768")
                 self.sample_width_entry.delete(0, tk.END)
                 self.sample_width_entry.insert(0,"768")
+                self.model_variant_var.set("Regular")
     def override_training_style_widgets(self):
         for i in self.training_frame_subframe.children.values():
             if 'ctkbutton' in str(i):
@@ -1294,6 +1306,16 @@ class App(ctk.CTk):
     def create_trainer_settings_widgets(self):
         self.training_frame_title = ctk.CTkLabel(self.training_frame, text="Training Settings", font=ctk.CTkFont(size=20, weight="bold"))
         self.training_frame_title.grid(row=0, column=0, padx=20, pady=20)   
+        
+        #add a model variant dropdown
+        self.model_variant_label = ctk.CTkLabel(self.training_frame_subframe, text="Model Variant")
+        model_variant_label_ttp = CreateToolTip(self.model_variant_label, "The model type you're training.")
+        self.model_variant_label.grid(row=0, column=0, sticky="nsew")
+        self.model_variant_var = tk.StringVar()
+        self.model_variant_var.set(self.model_variant)
+        self.model_variant_dropdown = ctk.CTkOptionMenu(self.training_frame_subframe, values=self.model_variants, variable=self.model_variant_var)
+    
+        
         #add a seed entry
         self.seed_label = ctk.CTkLabel(self.training_frame_subframe, text="Seed")
         seed_label_ttp = CreateToolTip(self.seed_label, "The seed to use for training.")
@@ -2841,6 +2863,7 @@ class App(ctk.CTk):
         configure['use_ema'] = self.use_ema_var.get()
         configure['aspect_ratio_bucketing_mode'] = self.aspect_ratio_bucketing_mode_var.get()
         configure['dynamic_bucketing_mode'] = self.dynamic_bucketing_mode_var.get()
+        configure['model_variant'] = self.model_variant_var.get()
         #save the configure file
         #if the file exists, delete it
         if os.path.exists(file_name):
@@ -2873,7 +2896,6 @@ class App(ctk.CTk):
                 class_data_dir = configure["concepts"][i]["class_data_dir"]
                 if 'flip_p' not in configure["concepts"][i]:
                     print(configure["concepts"][i].keys())
-                    print('test')
                     configure["concepts"][i]['flip_p'] = ''
                 flip_p = configure["concepts"][i]["flip_p"]
                 balance_dataset = configure["concepts"][i]["do_not_balance"]
@@ -2982,6 +3004,7 @@ class App(ctk.CTk):
             self.aspect_ratio_bucketing_mode_option_menu.configure(state='disabled')
             self.dynamic_bucketing_mode_label.configure(state='disabled')
             self.dynamic_bucketing_mode_option_menu.configure(state='disabled')
+        self.model_variant_var.set(configure["model_variant"])
         self.aspect_ratio_bucketing_mode_var.set(configure["aspect_ratio_bucketing_mode"])
         self.dynamic_bucketing_mode_var.set(configure["dynamic_bucketing_mode"])
         self.update()
@@ -3044,6 +3067,7 @@ class App(ctk.CTk):
         self.use_ema = self.use_ema_var.get()
         self.aspect_ratio_bucketing_mode = self.aspect_ratio_bucketing_mode_var.get()
         self.dynamic_bucketing_mode = self.dynamic_bucketing_mode_var.get()
+        self.model_variant = self.model_variant_var.get()
         mode = 'normal'
         if self.cloud_mode == False and export == None:
             #check if output path exists
@@ -3114,6 +3138,18 @@ class App(ctk.CTk):
             batBase = 'accelerate "launch" "--mixed_precision=no" "scripts/trainer.py"'
             if export == 'Linux':
                 batBase = f'accelerate launch --mixed_precision="no" scripts/trainer.py'
+        
+        if self.model_variant == 'Regular':
+            if export == 'Linux':
+                batBase += ' --model_variant="base"'
+            else:
+                batBase += ' "--model_variant=base" '
+        elif self.model_variant == 'Inpaint':
+            if export == 'Linux':
+                batBase += ' --model_variant="inpainting"'
+            else:
+                batBase += ' "--model_variant=inpainting" '
+
         if self.disable_cudnn_benchmark == True:
             if export == 'Linux':
                 batBase += ' --disable_cudnn_benchmark'
