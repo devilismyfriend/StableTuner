@@ -18,7 +18,7 @@ import random
 import customtkinter as ctk
 from customtkinter import ThemeManager
 
-from scripts.clip_segmentation import ClipSeg
+from clip_segmentation import ClipSeg
 
 #main class
 ctk.set_appearance_mode("dark")
@@ -536,6 +536,7 @@ class ImageBrowser(ctk.CTkToplevel):
         self.output_folder = self.folder
         self.load_image()
         self.caption_entry.focus_set()
+
     def load_image(self):
         try:
             self.PILimage = Image.open(self.image_list[self.image_index]).convert('RGB')

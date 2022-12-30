@@ -46,7 +46,7 @@ from PIL import Image
 from diffusers.utils.import_utils import is_xformers_available
 import trainer_util as tu
 
-from scripts.clip_segmentation import ClipSeg
+from clip_segmentation import ClipSeg
 import gc
 class bcolors:
     HEADER = '\033[95m'
