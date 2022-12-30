@@ -45,6 +45,8 @@ from typing import Dict, List, Generator, Tuple
 from PIL import Image
 from diffusers.utils.import_utils import is_xformers_available
 import trainer_util as tu
+
+from scripts.clip_segmentation import ClipSeg
 import gc
 class bcolors:
     HEADER = '\033[95m'
@@ -357,6 +359,7 @@ def parse_args():
     parser.add_argument('--append_sample_controlled_seed_action', action='append')
     parser.add_argument('--add_sample_prompt', type=str, action='append')
     parser.add_argument('--use_image_names_as_captions', default=False, action="store_true")
+    parser.add_argument('--add_mask_prompt', type=str, default=None, action="append", dest="mask_prompts")
     args = parser.parse_args()
     env_local_rank = int(os.environ.get("LOCAL_RANK", -1))
     if env_local_rank != -1 and env_local_rank != args.local_rank:
@@ -515,7 +518,8 @@ class AutoBucketing(Dataset):
                     action_preference='dynamic',
                     seed=555,
                     model_variant='base',
-                    extra_module=None
+                    extra_module=None,
+                    mask_prompts=None,
                     ):
         
         self.debug_level = debug_level
@@ -572,9 +576,10 @@ class AutoBucketing(Dataset):
          aspect_mode=self.aspect_mode,
          action_preference=self.action_preference,
          model_variant=self.model_variant,
-         extra_module=self.extra_module
-         )
-        
+         extra_module=self.extra_module,
+         mask_prompts=mask_prompts,
+        )
+
         #print(self.image_train_items)
         if self.with_prior_loss and self.add_class_images_to_dataset == False:
             self.image_train_items, self.class_train_items = shared_dataloader.get_all_images()
@@ -798,7 +803,7 @@ class ImageTrainItem():
                 self.extra = np.array(self.extra).astype(np.uint8)
 
                 self.extra = (self.extra / 255.0).astype(np.float32)
-        
+
         #print(self.image.shape)
 
         return self
@@ -810,7 +815,25 @@ class DataLoaderMultiAspect():
     batch_size: number of images per batch
     flip_p: probability of flipping image horizontally (i.e. 0-0.5)
     """
-    def __init__(self,concept_list, seed=555, debug_level=0,resolution=512, batch_size=1, flip_p=0.0,use_image_names_as_captions=True,add_class_images_to_dataset=False,balance_datasets=False,with_prior_loss=False,use_text_files_as_captions=False,aspect_mode='dynamic',action_preference='add',model_variant='base',extra_module=None):
+    def __init__(
+            self,
+            concept_list,
+            seed=555,
+            debug_level=0,
+            resolution=512,
+            batch_size=1,
+            flip_p=0.0,
+            use_image_names_as_captions=True,
+            add_class_images_to_dataset=False,
+            balance_datasets=False,
+            with_prior_loss=False,
+            use_text_files_as_captions=False,
+            aspect_mode='dynamic',
+            action_preference='add',
+            model_variant='base',
+            extra_module=None,
+            mask_prompts=None,
+    ):
         self.resolution = resolution
         self.debug_level = debug_level
         self.flip_p = flip_p
@@ -831,7 +854,7 @@ class DataLoaderMultiAspect():
         #process sub directories flag
             
         print(f" {bcolors.WARNING} Preloading images...{bcolors.ENDC}")   
-        
+
         if balance_datasets:
             print(f" {bcolors.WARNING} Balancing datasets...{bcolors.ENDC}") 
             #get the concept with the least number of images in instance_data_dir
@@ -901,6 +924,11 @@ class DataLoaderMultiAspect():
                 use_image_names_as_captions = False
                 self.class_image_caption_pairs.extend(self.__prescan_images(debug_level, self.class_images_path, flip_p,use_image_names_as_captions,concept_class_prompt,use_text_files_as_captions=self.use_text_files_as_captions))
             self.class_image_caption_pairs = self.__bucketize_images(self.class_image_caption_pairs, batch_size=batch_size, debug_level=debug_level,aspect_mode=self.aspect_mode,action_preference=self.action_preference)
+        if self.model_variant == "inpainting" and mask_prompts is not None:
+            print(f" {bcolors.WARNING} Checking and generating missing masks...{bcolors.ENDC}")
+            clip_seg = ClipSeg()
+            clip_seg.mask_images(self.image_paths, mask_prompts)
+            del clip_seg
         if debug_level > 0: print(f" * DLMA Example: {self.image_caption_pairs[0]} images")
         #print the length of image_caption_pairs
         print(f" {bcolors.WARNING} Number of image-caption pairs: {len(self.image_caption_pairs)}{bcolors.ENDC}") 
@@ -1088,7 +1116,8 @@ class NormalDataset(Dataset):
         use_text_files_as_captions=False,
         seed=555,
         model_variant='base',
-        extra_module=None
+        extra_module=None,
+        mask_prompts=None,
     ):
         self.use_image_names_as_captions = use_image_names_as_captions
         self.size = size
@@ -1117,6 +1146,12 @@ class NormalDataset(Dataset):
             if with_prior_preservation:
                 for i in range(repeats):
                     self.__recurse_data_root(self, concept,use_sub_dirs=False,class_images=True)
+        if self.model_variant == "inpainting" and mask_prompts is not None:
+            print(f" {bcolors.WARNING} Checking and generating missing masks{bcolors.ENDC}")
+            clip_seg = ClipSeg()
+            clip_seg.mask_images(self.image_paths, mask_prompts)
+            del clip_seg
+
         random.Random(seed).shuffle(self.image_paths)
         self.num_instance_images = len(self.image_paths)
         self._length = self.num_instance_images
@@ -1128,7 +1163,7 @@ class NormalDataset(Dataset):
             if self.with_prior_preservation:
                 print(f" {bcolors.WARNING} ** Loading Depth2Img Class Processing{bcolors.ENDC}")
                 extra_module.depth_images(self.class_images_path)
-        print(f" {bcolors.WARNING} ** Dataset length: {self._length}, {int(self.num_instance_images / repeats)} images using {repeats} repeats{bcolors.ENDC}") 
+        print(f" {bcolors.WARNING} ** Dataset length: {self._length}, {int(self.num_instance_images / repeats)} images using {repeats} repeats{bcolors.ENDC}")
 
         self.image_transforms = transforms.Compose(
             [
@@ -1145,7 +1180,7 @@ class NormalDataset(Dataset):
                 transforms.CenterCrop(size) if center_crop else transforms.RandomCrop(size),
                 transforms.ToTensor(),
             ])
-        
+
         self.depth_image_transforms = transforms.Compose(
             [
                 transforms.Resize(size, interpolation=transforms.InterpolationMode.BILINEAR),
@@ -1153,7 +1188,7 @@ class NormalDataset(Dataset):
                 transforms.ToTensor(),
             ]
         )
-    
+
     @staticmethod
     def __recurse_data_root(self, recurse_root,use_sub_dirs=True,class_images=False):
         #if recurse root is a dict
@@ -1178,7 +1213,7 @@ class NormalDataset(Dataset):
                 if '-depth' in f or '-masklabel' in f:
                     continue
                 ext = os.path.splitext(f)[1].lower()
-                if ext in ['.jpg', '.jpeg', '.png', '.bmp', '.webp']:
+                if ext in ['.jpg', '.jpeg', '.png', '.bmp', '.webp'] and '-masklabel.png' not in f:
                     try:
                         img = Image.open(current)
                     except:
@@ -1214,7 +1249,7 @@ class NormalDataset(Dataset):
         og_prompt = instance_prompt
         instance_image = Image.open(instance_path)
         if self.model_variant == "inpainting":
-            
+
             mask_pathname = os.path.splitext(instance_path)[0] + "-masklabel.png"
             if os.path.exists(mask_pathname):
                 mask = Image.open(mask_pathname).convert("L")
@@ -1268,7 +1303,7 @@ class NormalDataset(Dataset):
             class_image = Image.open(class_path)
             if not class_image.mode == "RGB":
                 class_image = class_image.convert("RGB")
-            
+
             if self.model_variant == "inpainting":
                 mask_pathname = os.path.splitext(class_path)[0] + "-masklabel.png"
                 if os.path.exists(mask_pathname):
@@ -1660,9 +1695,10 @@ def main():
             use_text_files_as_captions=args.use_text_files_as_captions,
             aspect_mode=args.aspect_mode,
             action_preference=args.aspect_mode_action_preference,
-            seed = args.seed,
+            seed=args.seed,
             model_variant=args.model_variant,
             extra_module=None if args.model_variant != "depth2img" else d2i,
+            mask_prompts=args.mask_prompts,
         )
     else:
         train_dataset = NormalDataset(
@@ -1678,7 +1714,7 @@ def main():
         seed = args.seed,
         model_variant=args.model_variant,
         extra_module=None if args.model_variant != "depth2img" else d2i,
-
+        mask_prompts=args.mask_prompts,
     )
     def collate_fn(examples):
         #print(examples)
@@ -1723,7 +1759,7 @@ def main():
             max_length=tokenizer.model_max_length,
             return_tensors="pt",\
             ).input_ids
-        
+
         if args.model_variant == 'base':
             batch = {
                 "input_ids": input_ids,

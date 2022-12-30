@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk, Menu
+from tkinter import ttk, Menu, simpledialog
 import os
 import subprocess
 from PIL import Image, ImageTk
@@ -17,6 +17,9 @@ import requests
 import random
 import customtkinter as ctk
 from customtkinter import ThemeManager
+
+from scripts.clip_segmentation import ClipSeg
+
 #main class
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
@@ -35,6 +38,7 @@ class ImageBrowser(ctk.CTkToplevel):
         #sys.path.append(clip_path)
         self.mainProcess = mainProcess
         self.captioner_folder = os.path.dirname(os.path.realpath(__file__))
+        self.clip_seg = None
         #self = master
         #self.overrideredirect(True)
         #self.title_bar = TitleBar(self)
@@ -133,9 +137,11 @@ class ImageBrowser(ctk.CTkToplevel):
         #self.open_button.grid(row=0, column=1)
         self.open_button.pack(side="left", fill="x",expand=True,padx=10)
         #add a batch folder button
-        self.batch_folder_button = ctk.CTkButton(self.top_frame,text="Batch Folder", fg_color=("gray75", "gray25"),command=self.batch_folder,width=50)
-        self.batch_folder_button.pack(side="left", fill="x",expand=True,padx=10)
-        
+        self.batch_folder_caption_button = ctk.CTkButton(self.top_frame, text="Batch Folder Caption", fg_color=("gray75", "gray25"), command=self.batch_folder_caption, width=50)
+        self.batch_folder_caption_button.pack(side="left", fill="x", expand=True, padx=10)
+        self.batch_folder_mask_button = ctk.CTkButton(self.top_frame, text="Batch Folder Mask", fg_color=("gray75", "gray25"), command=self.batch_folder_mask, width=50)
+        self.batch_folder_mask_button.pack(side="left", fill="x", expand=True, padx=10)
+
         #add an options button to the same row as the open button
         self.options_button = ctk.CTkButton(self.top_frame, text="Options",fg_color=("gray75", "gray25"), command=self.open_options,width=50)
         self.options_button.pack(side="left", fill="x",expand=True,padx=10)
@@ -207,7 +213,7 @@ class ImageBrowser(ctk.CTkToplevel):
         #bind right click menu to all entries
         for entry in self.all_entries:
             entry.bind("<Button-3>", self.create_right_click_menu)
-    def batch_folder(self):
+    def batch_folder_caption(self):
         #show imgs in folder askdirectory
         #ask user if to batch current folder or select folder
         #if bad_files.txt exists, delete it
@@ -241,7 +247,7 @@ class ImageBrowser(ctk.CTkToplevel):
         self.caption_file_name = os.path.basename(batch_input_dir)
         self.image_list = []
         for file in os.listdir(batch_input_dir):
-            if file.endswith(".jpg") or file.endswith(".png") or file.endswith(".jpeg"):
+            if (file.endswith(".jpg") or file.endswith(".png") or file.endswith(".jpeg")) and not file.endswith('-masklabel.png'):
                 self.image_list.append(os.path.join(batch_input_dir, file))
         self.image_index = 0
         #use progress bar class
@@ -388,7 +394,43 @@ class ImageBrowser(ctk.CTkToplevel):
         blip_decoder = models.blip.blip_decoder(pretrained=model_path, image_size=self.blipSize, vit='base', med_config=config_path)
         blip_decoder.eval()
         self.blip_decoder = blip_decoder.to(torch.device("cuda"))
-        
+
+    def batch_folder_mask(self):
+        # show imgs in folder askdirectory
+        # ask user if to batch current folder or select folder
+        # if bad_files.txt exists, delete it
+        self.bad_files = []
+        if os.path.exists('bad_files.txt'):
+            os.remove('bad_files.txt')
+        try:
+            # check if self.folder is set
+            self.folder
+        except AttributeError:
+            self.folder = ''
+        if self.folder == '':
+            self.folder = fd.askdirectory(title="Select Folder to Batch Process", initialdir=os.getcwd())
+            batch_input_dir = self.folder
+        else:
+            ask = tk.messagebox.askquestion("Batch Folder", "Batch current folder?")
+            if ask == 'yes':
+                batch_input_dir = self.folder
+            else:
+                batch_input_dir = fd.askdirectory(title="Select Folder to Batch Process", initialdir=os.getcwd())
+
+        prompt = simpledialog.askstring("Set Prompt", "AAAA")
+
+        self.load_clip_seg_model()
+        self.clip_seg.mask_folder(
+            sample_dir=batch_input_dir,
+            prompts=[prompt],
+            mode='replace',
+        )
+        self.load_image()
+
+    def load_clip_seg_model(self):
+        if self.clip_seg is None:
+            self.clip_seg = ClipSeg()
+
     def open_folder(self,folder=None):
         if folder is None:
             self.folder = fd.askdirectory()
@@ -397,7 +439,7 @@ class ImageBrowser(ctk.CTkToplevel):
         if self.folder == '':
             return
         self.output_folder = self.folder
-        self.image_list = [os.path.join(self.folder, f) for f in os.listdir(self.folder) if f.endswith('.jpg') or f.endswith('.png') or f.endswith('.jpeg')]
+        self.image_list = [os.path.join(self.folder, f) for f in os.listdir(self.folder) if (f.endswith('.jpg') or f.endswith('.png') or f.endswith('.jpeg')) and not f.endswith('-masklabel.png')]
         #self.image_list.sort()
         #sort the image list alphabetically so that the images are in the same order every time
         self.image_list.sort(key=lambda x: x.lower())
@@ -427,17 +469,41 @@ class ImageBrowser(ctk.CTkToplevel):
                 with open('bad_files.txt', 'a') as f:
                     f.write(self.image_list[self.image_index]+'\n')
             return
+
+        self.image = self.PILimage.copy()
+
+        try:
+            mask_filename = os.path.splitext(self.image_list[self.image_index])[0] + '-masklabel.png'
+            if os.path.exists(mask_filename):
+                mask = Image.open(mask_filename).convert('RGB')
+                np_image = np.array(self.image).astype(np.float32)/255.0
+                np_mask = np.array(mask).astype(np.float32)/255.0
+                np_mask = np.clip(np_mask, 0.4, 1.0)
+                np_masked_image = (np_image * np_mask * 255.0).astype(np.uint8)
+                self.image = Image.fromarray(np_masked_image, mode='RGB')
+        except Exception as e:
+            print(f'Error opening mask for {self.image_list[self.image_index]}')
+            print('Logged path to bad_files.txt')
+            #if bad_files.txt doesn't exist, create it
+            if not os.path.exists('bad_files.txt'):
+                with open('bad_files.txt', 'w') as f:
+                    f.write(self.image_list[self.image_index]+'\n')
+            else:
+                with open('bad_files.txt', 'a') as f:
+                    f.write(self.image_list[self.image_index]+'\n')
+            return
+
         #print(self.image_list[self.image_index])
         #self.image = self.image.resize((600, 600), Image.ANTIALIAS)
         #resize to fit 600x600 while maintaining aspect ratio
-        width, height = self.PILimage.size
+        width, height = self.image.size
         if width > height:
             new_width = 600
             new_height = int(600 * height / width)
         else:
             new_height = 600
             new_width = int(600 * width / height)
-        self.image = self.PILimage.resize((new_width, new_height), Image.Resampling.LANCZOS)
+        self.image = self.image.resize((new_width, new_height), Image.Resampling.LANCZOS)
         self.image = ctk.CTkImage(self.image, size=(new_width, new_height))
         #print(self.image)
         self.image_label.configure(image=self.image)

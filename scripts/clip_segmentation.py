@@ -181,6 +181,22 @@ class ClipSeg:
         return mask
 
     def mask_image(self, filename: str, prompts: [str], mode: str = 'fill', threshold: float = 0.3, smooth_pixels: int = 5, expand_pixels: int = 10):
+        """
+        Masks a sample
+
+        Parameters:
+            filename (`str`): a sample filename
+            prompts (`[str]`): a list of prompts used to create a mask
+            mode (`str`): can be one of
+                - replace: creates new masks for all samples, even if a mask already exists
+                - fill: creates new masks for all samples without a mask
+                - add: adds the new region to existing masks
+                - subtract: subtracts the new region from existing masks
+            threshold (`float`): threshold for including pixels in the mask
+            smooth_pixels (`int`): radius of a smoothing operation applied to the generated mask
+            expand_pixels (`int`): amount of expansion of the generated mask in all directions
+        """
+
         mask_sample = MaskSample(filename)
 
         if mode == 'fill' and mask_sample.get_mask_tensor() is not None:
@@ -211,7 +227,7 @@ class ClipSeg:
 
     def mask_folder(self, sample_dir: str, prompts: [str], mode: str = 'fill', threshold: float = 0.3, smooth_pixels: int = 5, expand_pixels: int = 10):
         """
-        Masks all samples in a folder.
+        Masks all samples in a folder
 
         Parameters:
             sample_dir (`str`): directory where samples are located
@@ -226,6 +242,26 @@ class ClipSeg:
             expand_pixels (`int`): amount of expansion of the generated mask in all directions
         """
         filenames = self.__get_sample_filenames(sample_dir)
+
+        for filename in tqdm(filenames):
+            self.mask_image(filename, prompts, mode, threshold, smooth_pixels, expand_pixels)
+
+    def mask_images(self, filenames: [str], prompts: [str], mode: str = 'fill', threshold: float = 0.3, smooth_pixels: int = 5, expand_pixels: int = 10):
+        """
+        Masks all samples in a list
+
+        Parameters:
+            filenames (`[str]`): a list of sample filenames
+            prompts (`[str]`): a list of prompts used to create a mask
+            mode (`str`): can be one of
+                - replace: creates new masks for all samples, even if a mask already exists
+                - fill: creates new masks for all samples without a mask
+                - add: adds the new region to existing masks
+                - subtract: subtracts the new region from existing masks
+            threshold (`float`): threshold for including pixels in the mask
+            smooth_pixels (`int`): radius of a smoothing operation applied to the generated mask
+            expand_pixels (`int`): amount of expansion of the generated mask in all directions
+        """
 
         for filename in tqdm(filenames):
             self.mask_image(filename, prompts, mode, threshold, smooth_pixels, expand_pixels)
