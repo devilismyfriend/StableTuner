@@ -42,13 +42,11 @@ class Depth2Img:
         image_objects = []
         for image_path in non_depth_image_files:
             image_instance = Image.open(image_path)
-            print(image_instance.size)
             if not image_instance.mode == "RGB":
                 image_instance = image_instance.convert("RGB")
             image_instance = self.pipeline.feature_extractor(
                 image_instance, return_tensors="pt"
             ).pixel_values
-            print(image_instance.shape)
             
             image_instance = image_instance.to(self.accelerator.device)
             image_objects.append((image_path, image_instance))
