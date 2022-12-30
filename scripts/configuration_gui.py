@@ -803,6 +803,7 @@ class App(ctk.CTk):
     def create_default_variables(self):
         self.model_variant = 'Regular'
         self.model_variants = ['Regular', 'Inpaint','Depth2Img']
+        self.fallback_mask_prompt = ''
         self.required_folders = ["vae", "unet", "tokenizer", "text_encoder"]
         self.aspect_ratio_bucketing_mode = 'Dynamic Fill'
         self.dynamic_bucketing_mode = 'Duplicate'
@@ -1318,8 +1319,13 @@ class App(ctk.CTk):
         self.model_variant_var = tk.StringVar()
         self.model_variant_var.set(self.model_variant)
         self.model_variant_dropdown = ctk.CTkOptionMenu(self.training_frame_subframe, values=self.model_variants, variable=self.model_variant_var)
-    
-        
+
+        #add entry for a fallback mask prompt
+        self.fallback_mask_prompt_label = ctk.CTkLabel(self.training_frame_subframe, text="Fallback Mask Prompt")
+        fallback_mask_prompt_label_ttp = CreateToolTip(self.fallback_mask_prompt_label, "A prompt used for masking images without a mask. Only used when training inpainting models.")
+        self.fallback_mask_prompt_entry = ctk.CTkEntry(self.training_frame_subframe)
+        self.fallback_mask_prompt_entry.insert(0, self.fallback_mask_prompt)
+
         #add a seed entry
         self.seed_label = ctk.CTkLabel(self.training_frame_subframe, text="Seed")
         seed_label_ttp = CreateToolTip(self.seed_label, "The seed to use for training.")
@@ -2868,6 +2874,7 @@ class App(ctk.CTk):
         configure['aspect_ratio_bucketing_mode'] = self.aspect_ratio_bucketing_mode_var.get()
         configure['dynamic_bucketing_mode'] = self.dynamic_bucketing_mode_var.get()
         configure['model_variant'] = self.model_variant_var.get()
+        configure['fallback_mask_prompt'] = self.fallback_mask_prompt_entry.get()
         #save the configure file
         #if the file exists, delete it
         if os.path.exists(file_name):
@@ -3009,6 +3016,8 @@ class App(ctk.CTk):
             self.dynamic_bucketing_mode_label.configure(state='disabled')
             self.dynamic_bucketing_mode_option_menu.configure(state='disabled')
         self.model_variant_var.set(configure["model_variant"])
+        self.fallback_mask_prompt_entry.delete(0, tk.END)
+        self.fallback_mask_prompt_entry.insert(0, configure["fallback_mask_prompt"])
         self.aspect_ratio_bucketing_mode_var.set(configure["aspect_ratio_bucketing_mode"])
         self.dynamic_bucketing_mode_var.set(configure["dynamic_bucketing_mode"])
         self.update()
@@ -3072,6 +3081,7 @@ class App(ctk.CTk):
         self.aspect_ratio_bucketing_mode = self.aspect_ratio_bucketing_mode_var.get()
         self.dynamic_bucketing_mode = self.dynamic_bucketing_mode_var.get()
         self.model_variant = self.model_variant_var.get()
+        self.fallback_mask_prompt = self.fallback_mask_prompt_entry.get()
         mode = 'normal'
         if self.cloud_mode == False and export == None:
             #check if output path exists
@@ -3158,6 +3168,13 @@ class App(ctk.CTk):
                 batBase += ' --model_variant="depth2img"'
             else:
                 batBase += ' "--model_variant=depth2img" '
+
+        if self.fallback_mask_prompt != '':
+            if export == 'Linux':
+                batBase += f' --add_mask_prompt="{self.fallback_mask_prompt}"'
+            else:
+                batBase += f' "--add_mask_prompt={self.fallback_mask_prompt}" '
+
         if self.disable_cudnn_benchmark == True:
             if export == 'Linux':
                 batBase += ' --disable_cudnn_benchmark'

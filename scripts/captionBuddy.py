@@ -17,9 +17,114 @@ import requests
 import random
 import customtkinter as ctk
 from customtkinter import ThemeManager
+
+from clip_segmentation import ClipSeg
+
 #main class
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
+
+class BatchMaskWindow(ctk.CTkToplevel):
+    def __init__(self, parent, path, *args, **kwargs):
+        ctk.CTkToplevel.__init__(self, parent, *args, **kwargs)
+        self.parent = parent
+
+        self.title("Batch process masks")
+        self.geometry("320x310")
+        self.resizable(False, False)
+        self.wait_visibility()
+        self.grab_set()
+        self.focus_set()
+
+        self.mode_var = tk.StringVar(self, "Create if absent")
+        self.modes = ["Replace all masks", "Create if absent", "Add to existing", "Subtract from existing"]
+
+        self.frame = ctk.CTkFrame(self, width=600, height=300)
+        self.frame.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
+
+        self.path_label = ctk.CTkLabel(self.frame, text="Folder", width=100)
+        self.path_label.grid(row=0, column=0, sticky="w",padx=5, pady=5)
+        self.path_entry = ctk.CTkEntry(self.frame, width=150)
+        self.path_entry.insert(0, path)
+        self.path_entry.grid(row=0, column=1, sticky="w", padx=5, pady=5)
+        self.path_button = ctk.CTkButton(self.frame, width=30, text="...", command=lambda: self.browse_for_path(self.path_entry))
+        self.path_button.grid(row=0, column=1, sticky="e", padx=5, pady=5)
+
+        self.prompt_label = ctk.CTkLabel(self.frame, text="Prompt", width=100)
+        self.prompt_label.grid(row=1, column=0, sticky="w",padx=5, pady=5)
+        self.prompt_entry = ctk.CTkEntry(self.frame, width=200)
+        self.prompt_entry.grid(row=1, column=1, sticky="w", padx=5, pady=5)
+
+        self.mode_label = ctk.CTkLabel(self.frame, text="Mode", width=100)
+        self.mode_label.grid(row=2, column=0, sticky="w", padx=5, pady=5)
+        self.mode_dropdown = ctk.CTkOptionMenu(self.frame, variable=self.mode_var, values=self.modes, dynamic_resizing=False, width=200)
+        self.mode_dropdown.grid(row=2, column=1, sticky="w", padx=5, pady=5)
+
+        self.threshold_label = ctk.CTkLabel(self.frame, text="Threshold", width=100)
+        self.threshold_label.grid(row=3, column=0, sticky="w", padx=5, pady=5)
+        self.threshold_entry = ctk.CTkEntry(self.frame, width=200, placeholder_text="0.0 - 1.0")
+        self.threshold_entry.insert(0, "0.3")
+        self.threshold_entry.grid(row=3, column=1, sticky="w", padx=5, pady=5)
+
+        self.smooth_label = ctk.CTkLabel(self.frame, text="Smooth", width=100)
+        self.smooth_label.grid(row=4, column=0, sticky="w", padx=5, pady=5)
+        self.smooth_entry = ctk.CTkEntry(self.frame, width=200, placeholder_text="5")
+        self.smooth_entry.insert(0, 5)
+        self.smooth_entry.grid(row=4, column=1, sticky="w", padx=5, pady=5)
+
+        self.expand_label = ctk.CTkLabel(self.frame, text="Expand", width=100)
+        self.expand_label.grid(row=5, column=0, sticky="w", padx=5, pady=5)
+        self.expand_entry = ctk.CTkEntry(self.frame, width=200, placeholder_text="10")
+        self.expand_entry.insert(0, 10)
+        self.expand_entry.grid(row=5, column=1, sticky="w", padx=5, pady=5)
+
+        self.progress_label = ctk.CTkLabel(self.frame, text="Progress: 0/0", width=100)
+        self.progress_label.grid(row=6, column=0, sticky="w", padx=5, pady=5)
+        self.progress = ctk.CTkProgressBar(self.frame, orientation="horizontal", mode="determinate", width=200)
+        self.progress.grid(row=6, column=1, sticky="w", padx=5, pady=5)
+
+        self.create_masks_button = ctk.CTkButton(self.frame, text="Create Masks", width=310, command=self.create_masks)
+        self.create_masks_button.grid(row=7, column=0, columnspan=2, sticky="w", padx=5, pady=5)
+
+        self.frame.pack(fill="both", expand=True)
+
+    def browse_for_path(self, entry_box):
+        # get the path from the user
+        path = fd.askdirectory()
+        # set the path to the entry box
+        # delete entry box text
+        entry_box.focus_set()
+        entry_box.delete(0, tk.END)
+        entry_box.insert(0, path)
+        self.focus_set()
+
+    def set_progress(self, value, max_value):
+        progress = value / max_value
+        self.progress.set(progress)
+        self.progress_label.configure(text="{0}/{1}".format(value, max_value))
+        self.progress.update()
+
+    def create_masks(self):
+        self.parent.load_clip_seg_model()
+
+        mode = {
+            "Replace all masks": "replace",
+            "Create if absent": "fill",
+            "Add to existing": "add",
+            "Subtract from existing": "subtract"
+        }[self.mode_var.get()]
+
+        self.parent.clip_seg.mask_folder(
+            sample_dir=self.path_entry.get(),
+            prompts=[self.prompt_entry.get()],
+            mode=mode,
+            threshold=float(self.threshold_entry.get()),
+            smooth_pixels=int(self.smooth_entry.get()),
+            expand_pixels=int(self.expand_entry.get()),
+            progress_callback=self.set_progress,
+        )
+        self.parent.load_image()
+
 class ImageBrowser(ctk.CTkToplevel):
     def __init__(self,mainProcess=None):
         super().__init__()
@@ -35,6 +140,7 @@ class ImageBrowser(ctk.CTkToplevel):
         #sys.path.append(clip_path)
         self.mainProcess = mainProcess
         self.captioner_folder = os.path.dirname(os.path.realpath(__file__))
+        self.clip_seg = None
         #self = master
         #self.overrideredirect(True)
         #self.title_bar = TitleBar(self)
@@ -133,9 +239,11 @@ class ImageBrowser(ctk.CTkToplevel):
         #self.open_button.grid(row=0, column=1)
         self.open_button.pack(side="left", fill="x",expand=True,padx=10)
         #add a batch folder button
-        self.batch_folder_button = ctk.CTkButton(self.top_frame,text="Batch Folder", fg_color=("gray75", "gray25"),command=self.batch_folder,width=50)
-        self.batch_folder_button.pack(side="left", fill="x",expand=True,padx=10)
-        
+        self.batch_folder_caption_button = ctk.CTkButton(self.top_frame, text="Batch Folder Caption", fg_color=("gray75", "gray25"), command=self.batch_folder_caption, width=50)
+        self.batch_folder_caption_button.pack(side="left", fill="x", expand=True, padx=10)
+        self.batch_folder_mask_button = ctk.CTkButton(self.top_frame, text="Batch Folder Mask", fg_color=("gray75", "gray25"), command=self.batch_folder_mask, width=50)
+        self.batch_folder_mask_button.pack(side="left", fill="x", expand=True, padx=10)
+
         #add an options button to the same row as the open button
         self.options_button = ctk.CTkButton(self.top_frame, text="Options",fg_color=("gray75", "gray25"), command=self.open_options,width=50)
         self.options_button.pack(side="left", fill="x",expand=True,padx=10)
@@ -207,7 +315,7 @@ class ImageBrowser(ctk.CTkToplevel):
         #bind right click menu to all entries
         for entry in self.all_entries:
             entry.bind("<Button-3>", self.create_right_click_menu)
-    def batch_folder(self):
+    def batch_folder_caption(self):
         #show imgs in folder askdirectory
         #ask user if to batch current folder or select folder
         #if bad_files.txt exists, delete it
@@ -241,7 +349,7 @@ class ImageBrowser(ctk.CTkToplevel):
         self.caption_file_name = os.path.basename(batch_input_dir)
         self.image_list = []
         for file in os.listdir(batch_input_dir):
-            if file.endswith(".jpg") or file.endswith(".png") or file.endswith(".jpeg"):
+            if (file.endswith(".jpg") or file.endswith(".png") or file.endswith(".jpeg")) and not file.endswith('-masklabel.png'):
                 self.image_list.append(os.path.join(batch_input_dir, file))
         self.image_index = 0
         #use progress bar class
@@ -388,7 +496,22 @@ class ImageBrowser(ctk.CTkToplevel):
         blip_decoder = models.blip.blip_decoder(pretrained=model_path, image_size=self.blipSize, vit='base', med_config=config_path)
         blip_decoder.eval()
         self.blip_decoder = blip_decoder.to(torch.device("cuda"))
-        
+
+    def batch_folder_mask(self):
+        folder = ''
+        try:
+            # check if self.folder is set
+            folder = self.folder
+        except:
+            pass
+
+        dialog = BatchMaskWindow(self, folder)
+        dialog.mainloop()
+
+    def load_clip_seg_model(self):
+        if self.clip_seg is None:
+            self.clip_seg = ClipSeg()
+
     def open_folder(self,folder=None):
         if folder is None:
             self.folder = fd.askdirectory()
@@ -397,7 +520,7 @@ class ImageBrowser(ctk.CTkToplevel):
         if self.folder == '':
             return
         self.output_folder = self.folder
-        self.image_list = [os.path.join(self.folder, f) for f in os.listdir(self.folder) if f.endswith('.jpg') or f.endswith('.png') or f.endswith('.jpeg')]
+        self.image_list = [os.path.join(self.folder, f) for f in os.listdir(self.folder) if (f.endswith('.jpg') or f.endswith('.png') or f.endswith('.jpeg')) and not f.endswith('-masklabel.png')]
         #self.image_list.sort()
         #sort the image list alphabetically so that the images are in the same order every time
         self.image_list.sort(key=lambda x: x.lower())
@@ -413,6 +536,7 @@ class ImageBrowser(ctk.CTkToplevel):
         self.output_folder = self.folder
         self.load_image()
         self.caption_entry.focus_set()
+
     def load_image(self):
         try:
             self.PILimage = Image.open(self.image_list[self.image_index]).convert('RGB')
@@ -427,17 +551,41 @@ class ImageBrowser(ctk.CTkToplevel):
                 with open('bad_files.txt', 'a') as f:
                     f.write(self.image_list[self.image_index]+'\n')
             return
+
+        self.image = self.PILimage.copy()
+
+        try:
+            mask_filename = os.path.splitext(self.image_list[self.image_index])[0] + '-masklabel.png'
+            if os.path.exists(mask_filename):
+                mask = Image.open(mask_filename).convert('RGB')
+                np_image = np.array(self.image).astype(np.float32)/255.0
+                np_mask = np.array(mask).astype(np.float32)/255.0
+                np_mask = np.clip(np_mask, 0.4, 1.0)
+                np_masked_image = (np_image * np_mask * 255.0).astype(np.uint8)
+                self.image = Image.fromarray(np_masked_image, mode='RGB')
+        except Exception as e:
+            print(f'Error opening mask for {self.image_list[self.image_index]}')
+            print('Logged path to bad_files.txt')
+            #if bad_files.txt doesn't exist, create it
+            if not os.path.exists('bad_files.txt'):
+                with open('bad_files.txt', 'w') as f:
+                    f.write(self.image_list[self.image_index]+'\n')
+            else:
+                with open('bad_files.txt', 'a') as f:
+                    f.write(self.image_list[self.image_index]+'\n')
+            return
+
         #print(self.image_list[self.image_index])
         #self.image = self.image.resize((600, 600), Image.ANTIALIAS)
         #resize to fit 600x600 while maintaining aspect ratio
-        width, height = self.PILimage.size
+        width, height = self.image.size
         if width > height:
             new_width = 600
             new_height = int(600 * height / width)
         else:
             new_height = 600
             new_width = int(600 * width / height)
-        self.image = self.PILimage.resize((new_width, new_height), Image.Resampling.LANCZOS)
+        self.image = self.image.resize((new_width, new_height), Image.Resampling.LANCZOS)
         self.image = ctk.CTkImage(self.image, size=(new_width, new_height))
         #print(self.image)
         self.image_label.configure(image=self.image)
