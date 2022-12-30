@@ -802,7 +802,7 @@ class App(ctk.CTk):
 
     def create_default_variables(self):
         self.model_variant = 'Regular'
-        self.model_variants = ['Regular', 'Inpaint']
+        self.model_variants = ['Regular', 'Inpaint','Depth2Img']
         self.required_folders = ["vae", "unet", "tokenizer", "text_encoder"]
         self.aspect_ratio_bucketing_mode = 'Dynamic Fill'
         self.dynamic_bucketing_mode = 'Duplicate'
@@ -867,7 +867,7 @@ class App(ctk.CTk):
         self.play_cfg = 7.5
         self.play_steps = 25
         self.schedulers = ["DPMSolverMultistepScheduler", "PNDMScheduler", 'DDIMScheduler','EulerAncestralDiscreteScheduler','EulerDiscreteScheduler']
-        self.quick_select_models = ["Stable Diffusion 1.4", "Stable Diffusion 1.5", "Stable Diffusion 1.5 Inpaint", "Stable Diffusion 2 Base (512)", "Stable Diffusion 2 (768)", 'Stable Diffusion 2 Inpaint', 'Stable Diffusion 2.1 Base (512)', "Stable Diffusion 2.1 (768)"]
+        self.quick_select_models = ["Stable Diffusion 1.4", "Stable Diffusion 1.5", "Stable Diffusion 1.5 Inpaint", "Stable Diffusion 2 Base (512)", "Stable Diffusion 2 (768)", 'Stable Diffusion 2 Inpaint','Stable Diffusion 2 Depth2Img', 'Stable Diffusion 2.1 Base (512)', "Stable Diffusion 2.1 (768)"]
         self.play_scheduler = 'DPMSolverMultistepScheduler'
         self.pipe = None
         self.current_model = None
@@ -1020,6 +1020,9 @@ class App(ctk.CTk):
             elif val == 'Stable Diffusion 2 Inpaint':
                 self.input_model_path_entry.insert(0,"stabilityai/stable-diffusion-2-inpainting")
                 self.model_variant_var.set("Inpaint")
+            elif val == 'Stable Diffusion 2 Depth2Img':
+                self.input_model_path_entry.insert(0,"stabilityai/stable-diffusion-2-depth")
+                self.model_variant_var.set("Depth2Img")
             elif val == 'Stable Diffusion 2.1 Base (512)':
                 self.input_model_path_entry.insert(0,"stabilityai/stable-diffusion-2-1-base")
                 self.model_variant_var.set("Regular")
@@ -3150,7 +3153,11 @@ class App(ctk.CTk):
                 batBase += ' --model_variant="inpainting"'
             else:
                 batBase += ' "--model_variant=inpainting" '
-
+        elif self.model_variant == 'Depth2Img':
+            if export == 'Linux':
+                batBase += ' --model_variant="depth2img"'
+            else:
+                batBase += ' "--model_variant=depth2img" '
         if self.disable_cudnn_benchmark == True:
             if export == 'Linux':
                 batBase += ' --disable_cudnn_benchmark'
