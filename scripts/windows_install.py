@@ -198,8 +198,12 @@ if os.name == "nt":
                 print("Copied CUDNN 8.6 files to destination")
     d_commit = '0ca1724'
     diffusers_cmd = f"git+https://github.com/huggingface/diffusers.git@{d_commit}#egg=diffusers --force-reinstall"
-    run(f'"{python}" -m pip install {diffusers_cmd}', f"Installing diffusers {d_commit} commit", "Couldn't install diffusers")
+    run(f'"{python}" -m pip install {diffusers_cmd}', f"Installing Diffusers {d_commit} commit", "Couldn't install diffusers")
     #install requirements file
+    t_commit = '491a33d'
+    trasn_cmd = f"git+https://github.com/huggingface/transformers.git@{t_commit}#egg=transformers --force-reinstall"
+    run(f'"{python}" -m pip install {trasn_cmd}', f"Installing Transformers {t_commit} commit", "Couldn't install transformers")
+
     req_file = os.path.join(os.getcwd(), "requirements.txt")
     run(f'"{python}" -m pip install -r "{req_file}"', "Updating requirements", "Couldn't install requirements")
-            
+    
