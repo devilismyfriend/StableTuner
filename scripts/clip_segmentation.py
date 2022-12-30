@@ -1,6 +1,6 @@
 import argparse
 import os
-from typing import Optional
+from typing import Optional, Callable
 
 import torch
 from PIL import Image
@@ -225,7 +225,17 @@ class ClipSeg:
 
         mask_sample.save_mask()
 
-    def mask_folder(self, sample_dir: str, prompts: [str], mode: str = 'fill', threshold: float = 0.3, smooth_pixels: int = 5, expand_pixels: int = 10):
+    def mask_folder(
+            self,
+            sample_dir: str,
+            prompts: [str],
+            mode: str = 'fill',
+            threshold: float = 0.3,
+            smooth_pixels: int = 5,
+            expand_pixels: int = 10,
+            progress_callback: Callable[[int, int], None] = None,
+            error_callback: Callable[[str], None] = None,
+    ):
         """
         Masks all samples in a folder
 
@@ -240,13 +250,33 @@ class ClipSeg:
             threshold (`float`): threshold for including pixels in the mask
             smooth_pixels (`int`): radius of a smoothing operation applied to the generated mask
             expand_pixels (`int`): amount of expansion of the generated mask in all directions
+            progress_callback (`Callable[[int, int], None]`): called after every processed image
+            error_callback (`Callable[[str], None]`): called for every exception
         """
+
         filenames = self.__get_sample_filenames(sample_dir)
+        self.mask_images(
+            filenames=filenames,
+            prompts=prompts,
+            mode=mode,
+            threshold=threshold,
+            smooth_pixels=smooth_pixels,
+            expand_pixels=expand_pixels,
+            progress_callback=progress_callback,
+            error_callback=error_callback,
+        )
 
-        for filename in tqdm(filenames):
-            self.mask_image(filename, prompts, mode, threshold, smooth_pixels, expand_pixels)
-
-    def mask_images(self, filenames: [str], prompts: [str], mode: str = 'fill', threshold: float = 0.3, smooth_pixels: int = 5, expand_pixels: int = 10):
+    def mask_images(
+            self,
+            filenames: [str],
+            prompts: [str],
+            mode: str = 'fill',
+            threshold: float = 0.3,
+            smooth_pixels: int = 5,
+            expand_pixels: int = 10,
+            progress_callback: Callable[[int, int], None] = None,
+            error_callback: Callable[[str], None] = None,
+    ):
         """
         Masks all samples in a list
 
@@ -261,16 +291,34 @@ class ClipSeg:
             threshold (`float`): threshold for including pixels in the mask
             smooth_pixels (`int`): radius of a smoothing operation applied to the generated mask
             expand_pixels (`int`): amount of expansion of the generated mask in all directions
+            progress_callback (`Callable[[int, int], None]`): called after every processed image
+            error_callback (`Callable[[str], None]`): called for every exception
         """
 
-        for filename in tqdm(filenames):
-            self.mask_image(filename, prompts, mode, threshold, smooth_pixels, expand_pixels)
+        if progress_callback is not None:
+            progress_callback(0, len(filenames))
+        for i, filename in enumerate(tqdm(filenames)):
+            try:
+                self.mask_image(filename, prompts, mode, threshold, smooth_pixels, expand_pixels)
+            except Exception as e:
+                if error_callback is not None:
+                    error_callback(filename)
+            if progress_callback is not None:
+                progress_callback(i + 1, len(filenames))
 
 
 def main():
     args = parse_args()
     clip_seg = ClipSeg()
-    clip_seg.mask_folder(args.sample_dir, args.prompts, args.mode, args.threshold, args.smooth_pixels, args.expand_pixels)
+    clip_seg.mask_folder(
+        sample_dir=args.sample_dir,
+        prompts=args.prompts,
+        mode=args.mode,
+        threshold=args.threshold,
+        smooth_pixels=args.smooth_pixels,
+        expand_pixels=args.expand_pixels,
+        error_callback=lambda filename: print("Error while processing image " + filename)
+    )
 
 
 if __name__ == "__main__":
