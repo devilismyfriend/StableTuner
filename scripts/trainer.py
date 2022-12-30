@@ -2338,7 +2338,7 @@ def main():
         mid_quit = False
         mid_quit_step = False
         #lambda set mid_generation to true
-        
+        frozen_directory=args.output_dir + "/frozen_text_encoder"
         
         for epoch in range(args.num_train_epochs):
             #every 10 epochs print instructions
@@ -2361,7 +2361,6 @@ def main():
                         send_telegram_message(f"Text encoder training stopped at epoch {epoch} which is {current_percentage}% of training. Freezing weights and saving.", args.telegram_chat_id, args.telegram_token)   
                     except:
                         pass        
-                    frozen_directory=args.output_dir + "/frozen_text_encoder"
                     if os.path.exists(frozen_directory):
                         #delete the folder if it already exists
                         shutil.rmtree(frozen_directory)
