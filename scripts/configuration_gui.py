@@ -801,6 +801,7 @@ class App(ctk.CTk):
             pass
 
     def create_default_variables(self):
+        self.save_safetensors = False
         self.attention = 'xformers'
         self.attention_types = ['xformers','Flash Attention']
         self.model_variant = 'Regular'

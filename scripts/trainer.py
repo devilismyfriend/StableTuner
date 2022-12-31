@@ -358,7 +358,7 @@ def parse_args():
         help="Path to json containing multiple concepts, will overwrite parameters like instance_prompt, class_prompt, etc.",
     )
     parser.add_argument("--save_sample_controlled_seed", type=int, action='append', help="Set a seed for an extra sample image to be constantly saved.")
-    parser.add_argument("--delete_checkpoints_when_full_drive", default=False, action="store_true", help="Delete checkpoints when the drive is full.")
+    parser.add_argument("--detect_full_drive", default=True, action="store_true", help="Delete checkpoints when the drive is full.")
     parser.add_argument("--send_telegram_updates", default=False, action="store_true", help="Send Telegram updates.")
     parser.add_argument("--telegram_chat_id", type=str, default="0", help="Telegram chat ID.")
     parser.add_argument("--telegram_token", type=str, default="0", help="Telegram token.")
@@ -2091,21 +2091,34 @@ def main():
             height = aspect_ratio[0]
             width = aspect_ratio[1]
         if os.path.exists(args.output_dir):
-            if args.delete_checkpoints_when_full_drive==True:
+            if args.detect_full_drive==True:
                 folders = os.listdir(args.output_dir)
                 #check how much space is left on the drive
                 total, used, free = shutil.disk_usage("/")
                 if (free // (2**30)) < 4:
                     #folders.remove("0")
                     #get the folder with the lowest number
-                    oldest_folder = min(folder for folder in folders if folder.isdigit())
+                    #oldest_folder = min(folder for folder in folders if folder.isdigit())
+                    print(f"{bcolors.FAIL}Drive is almost full, Please make some space to continue training.{bcolors.ENDC}")
                     if args.send_telegram_updates:
                         try:
-                            send_telegram_message(f"Deleting folder <b>{oldest_folder}</b> because the drive is full", args.telegram_chat_id, args.telegram_token)
+                            send_telegram_message(f"Drive is almost full, Please make some space to continue training.", args.telegram_chat_id, args.telegram_token)
                         except:
                             pass
-                    oldest_folder_path = os.path.join(args.output_dir, oldest_folder)
-                    shutil.rmtree(oldest_folder_path)
+                    #count time
+                    import time
+                    start_time = time.time()
+                    import platform
+                    while input("Press Enter to continue... if you're on linux we'll wait 5 minutes for you to make space and continue"):
+                        #check if five minutes have passed
+                        #check if os is linux
+                        if 'Linux' in platform.platform():
+                            if time.time() - start_time > 300:
+                                break
+
+                    
+                    #oldest_folder_path = os.path.join(args.output_dir, oldest_folder)
+                    #shutil.rmtree(oldest_folder_path)
         # Create the pipeline using using the trained modules and save it.
         if accelerator.is_main_process:
             if 'step' in context:
