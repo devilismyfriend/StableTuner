@@ -2052,7 +2052,8 @@ class App(ctk.CTk):
         shutil.copy('scripts' + os.sep + 'converters.py', self.full_export_path + os.sep + 'scripts' + os.sep + 'converters.py')
         #copy model_util.py to the scripts folder
         shutil.copy('scripts' + os.sep + 'model_util.py', self.full_export_path + os.sep + 'scripts' + os.sep + 'model_util.py')
-        
+        #copy clip_seg to the scripts folder
+        shutil.copy('scripts' + os.sep + 'clip_segmentation.py', self.full_export_path + os.sep + 'scripts' + os.sep + 'clip_segmentation.py')
     def caption_buddy(self):
         import captionBuddy
         #self.master.overrideredirect(False)
