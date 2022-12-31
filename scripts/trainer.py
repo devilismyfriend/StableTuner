@@ -62,6 +62,13 @@ logger = get_logger(__name__)
 def parse_args():
     parser = argparse.ArgumentParser(description="Simple example of a training script.")
     parser.add_argument(
+        "--attention",
+        type=str,
+        choices=["xformers", "flash_attention"],
+        default="xformers",
+        help="Type of attention to use."
+    )
+    parser.add_argument(
         "--model_variant",
         type=str,
         default='base',
@@ -1619,8 +1626,7 @@ def main():
     text_encoder = CLIPTextModel.from_pretrained(args.pretrained_model_name_or_path, subfolder="text_encoder" )
     vae = AutoencoderKL.from_pretrained(args.pretrained_model_name_or_path, subfolder="vae" )
     unet = UNet2DConditionModel.from_pretrained(args.pretrained_model_name_or_path, subfolder="unet" )
-    
-    if is_xformers_available():
+    if is_xformers_available() and args.attention=='xformers':
         try:
             unet.enable_xformers_memory_efficient_attention()
             vae.enable_xformers_memory_efficient_attention()
@@ -1629,6 +1635,8 @@ def main():
                 "Could not enable memory efficient attention. Make sure xformers is installed"
                 f" correctly and a GPU is available: {e}"
             )
+    elif args.attention=='flash_attention':
+        tu.replace_unet_cross_attn_to_flash_attention()
     if args.use_ema == True:
         ema_unet = tu.EMAModel(unet.parameters())
     if args.model_variant == "depth2img":
@@ -1999,14 +2007,16 @@ def main():
             local_files_only=True,
         )
         pipeline.scheduler = scheduler
-        if is_xformers_available():
-                try:
-                    pipeline.enable_xformers_memory_efficient_attention()
-                except Exception as e:
-                    logger.warning(
-                        "Could not enable memory efficient attention. Make sure xformers is installed"
-                        f" correctly and a GPU is available: {e}"
-                    )
+        if is_xformers_available() and args.attention=='xformers':
+            try:
+                unet.enable_xformers_memory_efficient_attention()
+            except Exception as e:
+                logger.warning(
+                    "Could not enable memory efficient attention. Make sure xformers is installed"
+                    f" correctly and a GPU is available: {e}"
+                )
+        elif args.attention=='flash_attention':
+            tu.replace_unet_cross_attn_to_flash_attention()
         pipeline = pipeline.to(accelerator.device)
         def inference(prompt, negative_prompt, num_samples, height=512, width=512, num_inference_steps=50,seed=-1,guidance_scale=7.5):
             with torch.autocast("cuda"), torch.inference_mode():
@@ -2132,14 +2142,16 @@ def main():
                 local_files_only=True,
             )
             pipeline.scheduler = scheduler
-            if is_xformers_available():
+            if is_xformers_available() and args.attention=='xformers':
                 try:
-                    pipeline.enable_xformers_memory_efficient_attention()
+                    unet.enable_xformers_memory_efficient_attention()
                 except Exception as e:
                     logger.warning(
                         "Could not enable memory efficient attention. Make sure xformers is installed"
                         f" correctly and a GPU is available: {e}"
                     )
+            elif args.attention=='flash_attention':
+                tu.replace_unet_cross_attn_to_flash_attention()
             save_dir = os.path.join(args.output_dir, f"{context}_{step}")
             sample_dir = os.path.join(args.output_dir, f"samples/{context}_{step}")
             #if sample dir path does not exist, create it
@@ -2327,7 +2339,7 @@ def main():
             keyboard.on_press_key("q", toggle_quit_and_save_step)
             keyboard.on_press_key("h", help)
             print_instructions()
-        except:
+        except Exception as e:
             pass
 
         mid_generation = False
