@@ -275,7 +275,7 @@ class ImageBrowser(ctk.CTkToplevel):
         self.canvas.bind("<Return>", self.save_caption)
         self.caption_entry.bind("<Alt-Right>", self.next_image)
         self.caption_entry.bind("<Alt-Left>", self.prev_image)
-        #self.caption_entry.bind("<Control-BackSpace>", self.delete_word)
+        self.caption_entry.bind("<Control-BackSpace>", self.delete_word)
         #next button
 
         self.next_button = ctk.CTkButton(self.frame,text='Next', command= lambda event=None: self.next_image(event),width=50)
@@ -678,17 +678,11 @@ class ImageBrowser(ctk.CTkToplevel):
         self.caption_entry.configure(fg_color='green')
 
         self.caption_entry.focus_force()
-    def delete_word(self, event):
-        self.caption = self.caption_entry.get()
-        #get text cursor position
-        self.cursor_pos = self.caption_entry.index(tk.INSERT)
-        #split the caption into a list
-        #find the word that the cursor is in
-        self.caption = self.caption.split(' ')
-        self.caption = ' '.join(self.caption[:-1])+' '
-        self.caption_entry.delete(0, tk.END)
-        self.caption_entry.insert(0, self.caption)
-        self.caption_entry.focus_force()
+    def delete_word(self,event):
+        ent = event.widget
+        end_idx = ent.index(tk.INSERT)
+        start_idx = ent.get().rfind(" ", None, end_idx)
+        ent.selection_range(start_idx, end_idx)
     def prev_image(self, event):
         if self.image_index > 0:
             self.image_index -= 1
