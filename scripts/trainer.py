@@ -1376,26 +1376,31 @@ class CachedLatentsDataset(Dataset):
     def __getitem__(self, index):
         if index == 0:
             if len(self.cache_paths) > 1:
-                possible_indexes = list(range(0,len(self.cache_paths)-1))
+                possible_indexes_extension = None
+                possible_indexes = list(range(0,len(self.cache_paths)))
                 #conditional dropout is a percentage of images to drop from the total cache_paths
                 if self.conditional_dropout != None:
-                    if self.conditional_indexes == []:
-                        print(f" {bcolors.WARNING}Conditional dropout will drop {int(math.ceil(len(self.cache_paths) * self.conditional_dropout))} random batch's captions per epoch{bcolors.ENDC}")
-                        while len(self.conditional_indexes) < math.ceil(len(self.cache_paths) * self.conditional_dropout):
-                            picked_index = random.choice(possible_indexes)
-                            self.conditional_indexes.append(picked_index)
-                            possible_indexes.remove(picked_index)
+                    if len(self.conditional_indexes) == 0:
+                        self.conditional_indexes = random.sample(possible_indexes, k=int(math.ceil(len(possible_indexes)*self.conditional_dropout)))
                     else:
-                        past_indexes = self.conditional_indexes
-                        self.conditional_indexes = []
-                        #pick new indexes, but don't pick the same ones twice
-                        while len(self.conditional_indexes) < math.ceil(len(self.cache_paths) * self.conditional_dropout):
-                            picked_index = random.choice(possible_indexes)
-                            if picked_index in past_indexes:
-                                continue
-                            self.conditional_indexes.append(picked_index)
-                            possible_indexes.remove(picked_index)
-
+                        #pick indexes from the remaining possible indexes
+                        possible_indexes_extension = [i for i in possible_indexes if i not in self.conditional_indexes]
+                        #duplicate all values in possible_indexes_extension
+                        possible_indexes_extension = possible_indexes_extension + possible_indexes_extension
+                        possible_indexes_extension = possible_indexes_extension + self.conditional_indexes
+                        self.conditional_indexes = random.sample(possible_indexes_extension, k=int(math.ceil(len(possible_indexes)*self.conditional_dropout)))
+                        #check for duplicates in conditional_indexes values
+                        if len(self.conditional_indexes) != len(set(self.conditional_indexes)):
+                            #remove duplicates
+                            self.conditional_indexes_non_dupe = list(set(self.conditional_indexes))
+                            #add a random value from possible_indexes_extension for each duplicate
+                            for i in range(len(self.conditional_indexes) - len(self.conditional_indexes_non_dupe)):
+                                while True:
+                                    random_value = random.choice(possible_indexes_extension)
+                                    if random_value not in self.conditional_indexes_non_dupe:
+                                        self.conditional_indexes_non_dupe.append(random_value)
+                                        break
+                            self.conditional_indexes = self.conditional_indexes_non_dupe
         self.cache = torch.load(self.cache_paths[index])
         self.latents = self.cache.latents_cache[0]
         if index in self.conditional_indexes:
