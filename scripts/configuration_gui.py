@@ -3148,6 +3148,8 @@ class App(ctk.CTk):
                     else:
                         messagebox.showinfo("StableTuner", "Configuration changed, regenerating latent cache")
                         self.regenerate_latent_cache = True
+                else:
+                    messagebox.showinfo("StableTuner", "Warning: Regenerating latent cache is enabled, will regenerate latent cache")
             except Exception as e:
                 print(e)
                 print("Error checking last run, regenerating latent cache")
@@ -3385,7 +3387,12 @@ class App(ctk.CTk):
             else:
                 #check if float
                 try:
-                    self.conditional_dropout = float(self.conditional_dropout)
+                    #check if value is above 1.0
+                    if float(self.conditional_dropout) > 1.0:
+                        #divide by 100
+                        self.conditional_dropout = float(self.conditional_dropout) / 100
+                    else:
+                        self.conditional_dropout = float(self.conditional_dropout)
                 except:
                     print('Error: Conditional Dropout must be a percent between 0 and 100, or a decimal between 0 and 1.')
             #print(self.conditional_dropout)
