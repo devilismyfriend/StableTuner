@@ -801,6 +801,7 @@ class App(ctk.CTk):
             pass
 
     def create_default_variables(self):
+        self.batch_prompt_sampling_num_prompts = '0'
         self.save_safetensors = False
         self.attention = 'xformers'
         self.attention_types = ['xformers','Flash Attention']
@@ -1698,6 +1699,17 @@ class App(ctk.CTk):
         #create checkbox
         self.sample_random_aspect_ratio_checkbox = ctk.CTkSwitch(self.sampling_frame_subframe, variable=self.sample_random_aspect_ratio_var)
         self.sample_random_aspect_ratio_checkbox.grid(row=7, column=1, sticky="nsew")
+        
+        #create an optionmenu to select a number of desired prompts to sample from the batch
+        self.batch_prompt_sampling_optionmenu_var = tk.StringVar()
+        self.batch_prompt_sampling_optionmenu_var.set(self.batch_prompt_sampling_num_prompts)
+        self.batch_prompt_sampling_label = ctk.CTkLabel(self.sampling_frame_subframe, text="Batch Prompt Sampling")
+        self.batch_prompt_sampling_label.grid(row=8, column=0, sticky="nsew")
+        self.batch_prompt_sampling_optionmenu = ctk.CTkOptionMenu(self.sampling_frame_subframe, variable=self.batch_prompt_sampling_optionmenu_var, values=['0','1','2','3','4','5','6','7','8','9','10'])
+        self.batch_prompt_sampling_optionmenu_ttp = CreateToolTip(self.batch_prompt_sampling_label, "Will try to sample prompts/tokens from the batch to use as prompts for the samples.")
+        self.batch_prompt_sampling_optionmenu.grid(row=8, column=1, sticky="nsew")
+        
+        
         #create add sample prompt button
         self.add_sample_prompt_button = ctk.CTkButton(self.sampling_frame_subframe, text="Add Sample Prompt",  command=self.add_sample_prompt)
         add_sample_prompt_button_ttp = CreateToolTip(self.add_sample_prompt_button, "Add a sample prompt to the list.")
@@ -2887,6 +2899,7 @@ class App(ctk.CTk):
         configure['model_variant'] = self.model_variant_var.get()
         configure['fallback_mask_prompt'] = self.fallback_mask_prompt_entry.get()
         configure['attention'] = self.attention_var.get()
+        configure['batch_prompt_sampling'] = int(self.batch_prompt_sampling_optionmenu_var.get())
         #save the configure file
         #if the file exists, delete it
         if os.path.exists(file_name):
@@ -3033,6 +3046,7 @@ class App(ctk.CTk):
         self.aspect_ratio_bucketing_mode_var.set(configure["aspect_ratio_bucketing_mode"])
         self.dynamic_bucketing_mode_var.set(configure["dynamic_bucketing_mode"])
         self.attention_var.set(configure["attention"])
+        self.batch_prompt_sampling_optionmenu_var.set(str(configure['batch_prompt_sampling']))
         self.update()
     
     def process_inputs(self,export=None):
@@ -3096,6 +3110,7 @@ class App(ctk.CTk):
         self.model_variant = self.model_variant_var.get()
         self.fallback_mask_prompt = self.fallback_mask_prompt_entry.get()
         self.attention = self.attention_var.get()
+        self.batch_prompt_sampling = int(self.batch_prompt_sampling_optionmenu_var.get())
         mode = 'normal'
         if self.cloud_mode == False and export == None:
             #check if output path exists
@@ -3168,6 +3183,11 @@ class App(ctk.CTk):
             batBase = 'accelerate "launch" "--mixed_precision=no" "scripts/trainer.py"'
             if export == 'Linux':
                 batBase = f'accelerate launch --mixed_precision="no" scripts/trainer.py'
+        if self.batch_prompt_sampling != 0:
+            if export == 'Linux':
+                batBase += f' --sample_from_batch={self.batch_prompt_sampling}'
+            else:
+                batBase += f' "--sample_from_batch={self.batch_prompt_sampling}"'
         if self.attention == 'xformers':
             if export == 'Linux':
                 batBase += ' --attention="xformers"'

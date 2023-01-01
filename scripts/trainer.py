@@ -94,6 +94,13 @@ def parse_args():
     parser.add_argument("--conditional_dropout", type=float, default=None,required=False, help="Conditional dropout probability")
     parser.add_argument('--disable_cudnn_benchmark', default=False, action="store_true")
     parser.add_argument('--use_text_files_as_captions', default=False, action="store_true")
+    
+    parser.add_argument(
+            "--sample_from_batch",
+            type=int,
+            default=0,
+            help=("Number of prompts to sample from the batch for inference"),
+        )
     parser.add_argument(
             "--stop_text_encoder_training",
             type=int,
@@ -1403,6 +1410,9 @@ class CachedLatentsDataset(Dataset):
                             self.conditional_indexes = self.conditional_indexes_non_dupe
         self.cache = torch.load(self.cache_paths[index])
         self.latents = self.cache.latents_cache[0]
+        self.tokens = self.cache.tokens_cache[0]
+        self.conditioning_latent_cache = None
+        self.extra_cache = None
         if index in self.conditional_indexes:
             self.text_encoder = self.empty_tokens
         else:
@@ -1410,11 +1420,9 @@ class CachedLatentsDataset(Dataset):
         if self.model_variant != 'base':
             self.conditioning_latent_cache = self.cache.conditioning_latent_cache[0]
             self.extra_cache = self.cache.extra_cache[0]
-            del self.cache
-            return self.latents, self.text_encoder, self.conditioning_latent_cache, self.extra_cache
-        elif self.model_variant == 'base':
-            del self.cache
-            return self.latents, self.text_encoder
+        del self.cache
+        return self.latents, self.text_encoder, self.conditioning_latent_cache, self.extra_cache, self.tokens
+
     def add_pt_cache(self, cache_path):
         if len(self.cache_paths) == 0:
             self.cache_paths = (cache_path,)
@@ -1422,20 +1430,22 @@ class CachedLatentsDataset(Dataset):
             self.cache_paths += (cache_path,)
 
 class LatentsDataset(Dataset):
-    def __init__(self, latents_cache=None, text_encoder_cache=None, conditioning_latent_cache=None, extra_cache=None):
+    def __init__(self, latents_cache=None, text_encoder_cache=None, conditioning_latent_cache=None, extra_cache=None,tokens_cache=None):
         self.latents_cache = latents_cache
         self.text_encoder_cache = text_encoder_cache
         self.conditioning_latent_cache = conditioning_latent_cache
         self.extra_cache = extra_cache
-    def add_latent(self, latent, text_encoder, cached_conditioning_latent, cached_extra):
+        self.tokens_cache = tokens_cache
+    def add_latent(self, latent, text_encoder, cached_conditioning_latent, cached_extra, tokens_cache):
         self.latents_cache.append(latent)
         self.text_encoder_cache.append(text_encoder)
         self.conditioning_latent_cache.append(cached_conditioning_latent)
         self.extra_cache.append(cached_extra)
+        self.tokens_cache.append(tokens_cache)
     def __len__(self):
         return len(self.latents_cache)
     def __getitem__(self, index):
-        return self.latents_cache[index], self.text_encoder_cache[index], self.conditioning_latent_cache[index], self.extra_cache[index]
+        return self.latents_cache[index], self.text_encoder_cache[index], self.conditioning_latent_cache[index], self.extra_cache[index], self.tokens_cache[index]
 class AverageMeter:
     def __init__(self, name=None):
         self.name = name
@@ -1517,6 +1527,8 @@ def main():
     print(f" {bcolors.OKBLUE}Please wait a moment as we load up some stuff...{bcolors.ENDC}") 
     #torch.cuda.set_per_process_memory_fraction(0.5)
     args = parse_args()
+    #temp arg
+    args.batch_tokens = None
     if args.disable_cudnn_benchmark:
         torch.backends.cudnn.benchmark = False
     else:
@@ -1735,6 +1747,7 @@ def main():
         #print(examples)
         #print('test')
         input_ids = [example["instance_prompt_ids"] for example in examples]
+        tokens = input_ids
         pixel_values = [example["instance_images"] for example in examples]
         if args.model_variant == 'inpainting':
             mask = [example["mask"] for example in examples]
@@ -1779,7 +1792,8 @@ def main():
             batch = {
                 "input_ids": input_ids,
                 "pixel_values": pixel_values,
-                "extra_values": None
+                "extra_values": None,
+                "tokens" : tokens
             }
         else:
             if args.model_variant == 'depth2img':
@@ -1789,7 +1803,8 @@ def main():
             batch = {
                 "input_ids": input_ids,
                 "pixel_values": pixel_values,
-                "extra_values": extra_values
+                "extra_values": extra_values,
+                "tokens" : tokens
             }
         return batch
 
@@ -1882,7 +1897,7 @@ def main():
     if gen_cache == True:
         #delete all the cached latents if they exist to avoid problems
         print(f" {bcolors.WARNING}Generating latents cache...{bcolors.ENDC}")
-        train_dataset = LatentsDataset([], [], [], [])
+        train_dataset = LatentsDataset([], [], [], [], [])
         counter = 0
         with torch.no_grad():
             for batch in tqdm(train_dataloader, desc="Caching latents", bar_format='%s{l_bar}%s%s{bar}%s%s{r_bar}%s'%(bcolors.OKBLUE,bcolors.ENDC, bcolors.OKBLUE, bcolors.ENDC,bcolors.OKBLUE,bcolors.ENDC,)):
@@ -1903,8 +1918,7 @@ def main():
                     cached_text_enc = batch["input_ids"]
                 else:
                     cached_text_enc = text_encoder(batch["input_ids"])[0]
-                
-                train_dataset.add_latent(cached_latent, cached_text_enc, cached_conditioning_latent, cached_extra)
+                train_dataset.add_latent(cached_latent, cached_text_enc, cached_conditioning_latent, cached_extra, batch["tokens"])
                 del batch
                 del cached_latent
                 del cached_text_enc
@@ -1913,7 +1927,7 @@ def main():
                 torch.save(train_dataset, os.path.join(latent_cache_dir,f"latents_cache_{counter}.pt"))
                 cached_dataset.add_pt_cache(os.path.join(latent_cache_dir,f"latents_cache_{counter}.pt"))
                 counter += 1
-                train_dataset = LatentsDataset([], [], [], [])
+                train_dataset = LatentsDataset([], [], [], [], [])
                 #if counter % 300 == 0:
                     #train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=1, collate_fn=lambda x: x, shuffle=False)
                 #    gc.collect()
@@ -2092,6 +2106,18 @@ def main():
         #save the args
         height = args.sample_height
         width = args.sample_width
+        batch_prompts = []
+        if args.sample_from_batch > 0:
+            num_samples = args.sample_from_batch if args.sample_from_batch < args.train_batch_size else args.train_batch_size
+            batch_prompts = []
+            tokens = args.batch_tokens
+            if tokens != None:
+                allPrompts = list(set([tokenizer.decode(p).replace('<|endoftext|>','').replace('<|startoftext|>', '') for p in tokens]))
+                if len(allPrompts) < num_samples:
+                    num_samples = len(allPrompts)
+                batch_prompts = random.sample(allPrompts, num_samples)
+                    
+
         if args.sample_aspect_ratios:
             #choose random aspect ratio from ASPECTS    
             aspect_ratio = random.choice(ASPECTS)
@@ -2189,8 +2215,15 @@ def main():
                         if folder != "text_encoder" and os.path.isdir(os.path.join(save_dir, folder)):
                             shutil.rmtree(os.path.join(save_dir, folder))
             imgs = []
-            if args.add_sample_prompt is not None and args.stop_text_encoder_training != True:
-                
+            if args.add_sample_prompt is not None or batch_prompts != [] and args.stop_text_encoder_training != True:
+                prompts = []
+                if args.add_sample_prompt is not None:
+                    for prompt in args.add_sample_prompt:
+                        prompts.append(prompt)
+                if batch_prompts != []:
+                    for prompt in batch_prompts:
+                        prompts.append(prompt)
+
                 pipeline = pipeline.to(accelerator.device)
                 pipeline.set_progress_bar_config(disable=True)
                 #sample_dir = os.path.join(save_dir, "samples")
@@ -2204,8 +2237,8 @@ def main():
                             send_telegram_message(f"Generating samples for <b>{step}</b> {context}", args.telegram_chat_id, args.telegram_token)
                         except:
                             pass
-                    for samplePrompt in args.add_sample_prompt:
-                        sampleIndex = args.add_sample_prompt.index(samplePrompt)
+                    for samplePrompt in prompts:
+                        sampleIndex = prompts.index(samplePrompt)
                         #convert sampleIndex to number in words
                         sampleName = f"prompt_{sampleIndex+1}"
                         os.makedirs(os.path.join(sample_dir,sampleName), exist_ok=True)
@@ -2402,9 +2435,10 @@ def main():
             progress_bar_inter_epoch.set_description("Steps To Epoch")
             progress_bar_inter_epoch.reset(total=num_update_steps_per_epoch)
             for step, batch in enumerate(train_dataloader):
-                with accelerator.accumulate(unet):
+                with accelerator.accumulate(unet), accelerator.accumulate(text_encoder):
                     # Convert images to latent space
                     with torch.no_grad():
+
                         latent_dist = batch[0][0]
                         latents = latent_dist.sample() * 0.18215
                         if args.model_variant == 'inpainting':
@@ -2413,7 +2447,8 @@ def main():
                             conditioning_latents = conditioning_latent_dist.sample() * 0.18215
                         if args.model_variant == 'depth2img':
                             depth = batch[0][3]
-
+                    if args.sample_from_batch > 0:
+                        args.batch_tokens = batch[0][4]
                     # Sample noise that we'll add to the latents
                     noise = torch.randn_like(latents)
                     bsz = latents.shape[0]
