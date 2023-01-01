@@ -2220,7 +2220,7 @@ def main():
                             depth = torch.from_numpy(depth)
                         for i in tqdm(range(args.n_save_sample) if not args.save_sample_controlled_seed else range(args.n_save_sample+len(args.save_sample_controlled_seed)), desc="Generating samples"):
                             #check if the sample is controlled by a seed
-                            if i != args.n_save_sample:
+                            if i < args.n_save_sample:
                                 if args.model_variant == 'inpainting':
                                     images = pipeline(samplePrompt, conditioning_image, mask, height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps).images
                                 if args.model_variant == 'depth2img':
@@ -2229,15 +2229,15 @@ def main():
                                     images = pipeline(samplePrompt,height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps).images
                                 images[0].save(os.path.join(sample_dir,sampleName, f"{sampleName}_{i}.png"))
                             else:
-                                for seed in args.save_sample_controlled_seed:
-                                    generator = torch.Generator("cuda").manual_seed(seed)
-                                    if args.model_variant == 'inpainting':
-                                        images = pipeline(samplePrompt,conditioning_image, mask,height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps, generator=generator).images
-                                    if args.model_variant == 'depth2img':
-                                        images = pipeline(samplePrompt,image=test_image, height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps,generator=generator,strength=1.0).images
-                                    elif args.model_variant == 'base':
-                                        images = pipeline(samplePrompt,height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps, generator=generator).images
-                                    images[0].save(os.path.join(sample_dir,sampleName, f"{sampleName}_controlled_seed_{str(seed)}.png"))
+                                seed = args.save_sample_controlled_seed[i - args.n_save_sample]
+                                generator = torch.Generator("cuda").manual_seed(seed)
+                                if args.model_variant == 'inpainting':
+                                    images = pipeline(samplePrompt,conditioning_image, mask,height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps, generator=generator).images
+                                if args.model_variant == 'depth2img':
+                                    images = pipeline(samplePrompt,image=test_image, height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps,generator=generator,strength=1.0).images
+                                elif args.model_variant == 'base':
+                                    images = pipeline(samplePrompt,height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps, generator=generator).images
+                                images[0].save(os.path.join(sample_dir,sampleName, f"{sampleName}_controlled_seed_{str(seed)}.png"))
                         if args.send_telegram_updates:
                             imgs = []
                             #get all the images from the sample folder
