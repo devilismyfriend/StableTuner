@@ -2229,20 +2229,21 @@ class App(ctk.CTk):
             #file dialog to save diffusers model
             output_path = fd.askdirectory(initialdir=os.getcwd(), title="Select where to save Diffusers Model Directory")
         version, prediction = self.get_sd_version(ckpt_path)
-        self.convert_model_dialog = tk.Toplevel(self)
-        self.convert_model_dialog.title("Converting model")
+        #self.convert_model_dialog = ctk.CTkToplevel(self, takefocus=True)
+        #self.convert_model_dialog.title("Converting model")
         #label
-        empty_label = ctk.CTkLabel(self.convert_model_dialog, text="")
-        empty_label.pack()
-        label = ctk.CTkLabel(self.convert_model_dialog, text="Converting CKPT to Diffusers. Please wait...")
-        label.pack()
-        self.convert_model_dialog.geometry("300x70")
-        self.convert_model_dialog.resizable(False, False)
-        self.convert_model_dialog.grab_set()
-        self.convert_model_dialog.focus_set()
-        self.update()
+        #empty_label = ctk.CTkLabel(self.convert_model_dialog, text="")
+        #empty_label.pack()
+        #label = ctk.CTkLabel(self.convert_model_dialog, text="Converting CKPT to Diffusers. Please wait...")
+        #label.pack()
+        #self.convert_model_dialog.geometry("300x70")
+        #self.convert_model_dialog.resizable(False, False)
+        #self.convert_model_dialog.grab_set()
+        #self.convert_model_dialog.focus_set()
+        #self.update()
         convert = converters.Convert_SD_to_Diffusers(ckpt_path,output_path,prediction_type=prediction,version=version)
-        self.convert_model_dialog.destroy()
+        
+        #self.convert_model_dialog.destroy()
 
     def convert_to_ckpt(self,model_path=None, output_path=None,name=None):
         if model_path is None:
@@ -2262,7 +2263,7 @@ class App(ctk.CTk):
         if not output_path or output_path == "":
             return
 
-        self.convert_model_dialog = tk.Toplevel(self)
+        self.convert_model_dialog = ctk.CTkToplevel(self)
         self.convert_model_dialog.title("Converting model")
         #label
         empty_label = ctk.CTkLabel(self.convert_model_dialog, text="")
@@ -2595,7 +2596,7 @@ class App(ctk.CTk):
                 os.mkdir(model_path)
                 #converter
                 #show a dialog to inform the user that the model is being converted
-                self.convert_model_dialog = tk.Toplevel(self)
+                self.convert_model_dialog = ctk.CTkToplevel(self)
                 self.convert_model_dialog.title("Converting model")
                 #label
                 empty_label = ctk.CTkLabel(self.convert_model_dialog, text="")
