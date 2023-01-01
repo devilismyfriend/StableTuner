@@ -2206,7 +2206,7 @@ def main():
                 save_dir = frozen_directory
             if step != 0:
                 if save_model:
-                    pipeline.save_pretrained(save_dir)
+                    pipeline.save_pretrained(save_dir,safe_serialization=True)
                     with open(os.path.join(save_dir, "args.json"), "w") as f:
                             json.dump(args.__dict__, f, indent=2)
                 if args.stop_text_encoder_training == True:

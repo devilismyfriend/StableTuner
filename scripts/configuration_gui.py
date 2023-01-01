@@ -1866,6 +1866,8 @@ class App(ctk.CTk):
         #add convert to ckpt button
         self.play_convert_to_ckpt_button = ctk.CTkButton(self.playground_frame_subframe, text="Convert To CKPT", command=lambda:self.convert_to_ckpt(model_path=self.play_model_entry.get()))
         #add interative generation button to act as a toggle
+        #convert to safetensors button
+        
         #self.play_interactive_generation_button_bool = tk.BooleanVar()
         #self.play_interactive_generation_button = ctk.CTkButton(self.playground_frame_subframe, text="Interactive Generation", command=self.interactive_generation_button)
         #self.play_interactive_generation_button_bool.set(False)#add play model entry with button to open file dialog
@@ -1885,9 +1887,13 @@ class App(ctk.CTk):
         #add a button to convert to ckpt
         self.convert_to_ckpt_button = ctk.CTkButton(self.toolbox_frame_subframe, text="Convert Diffusers To CKPT", command=lambda:self.convert_to_ckpt())
         self.convert_to_ckpt_button.grid(row=4, column=0, columnspan=1, sticky="nsew")
+        #convert to safetensors button
+        self.convert_to_safetensors_button = ctk.CTkButton(self.toolbox_frame_subframe, text="Convert Diffusers To SafeTensors", command=lambda:self.convert_to_safetensors())
+        self.convert_to_safetensors_button.grid(row=4, column=1, columnspan=1, sticky="nsew")
+        
         #add a button to convert ckpt to diffusers
         self.convert_ckpt_to_diffusers_button = ctk.CTkButton(self.toolbox_frame_subframe, text="Convert CKPT To Diffusers", command=lambda:self.convert_ckpt_to_diffusers())
-        self.convert_ckpt_to_diffusers_button.grid(row=4, column=1, columnspan=1, sticky="nsew")
+        self.convert_ckpt_to_diffusers_button.grid(row=4, column=2, columnspan=1, sticky="nsew")
         #empty row
         self.empty_row = ctk.CTkLabel(self.toolbox_frame_subframe, text="")
         self.empty_row.grid(row=6, column=0, sticky="nsew")
@@ -2290,7 +2296,39 @@ class App(ctk.CTk):
         converters.Convert_Diffusers_to_SD(model_path, output_path)
         self.convert_model_dialog.destroy()
         #messagebox.showinfo("Conversion Complete", "Conversion Complete")
-    
+    def convert_to_safetensors(self,model_path=None, output_path=None,name=None):
+        if model_path is None:
+            model_path = fd.askdirectory(initialdir=self.output_path_entry.get(), title="Select Diffusers Model Directory")
+        #check if model path has vae,unet,text_encoder,tokenizer,scheduler and args.json and model_index.json
+        if output_path is None:
+            output_path = fd.asksaveasfilename(initialdir=os.getcwd(),title = "Save Safetensors file",filetypes = (("safetensors files","*.safetensors"),("all files","*.*")))
+        if not os.path.exists(model_path) and not os.path.exists(os.path.join(model_path,"vae")) and not os.path.exists(os.path.join(model_path,"unet")) and not os.path.exists(os.path.join(model_path,"text_encoder")) and not os.path.exists(os.path.join(model_path,"tokenizer")) and not os.path.exists(os.path.join(model_path,"scheduler")) and not os.path.exists(os.path.join(model_path,"args.json")) and not os.path.exists(os.path.join(model_path,"model_index.json")):
+            messagebox.showerror("Error", "Couldn't find model structure in path")
+            return
+            #check if ckpt in output path
+        if name != None:
+            output_path = os.path.join(output_path,name+".safetensors")
+        if not output_path.endswith(".safetensors") and output_path != "":
+            #add ckpt to output path
+            output_path = output_path + ".safetensors"
+        if not output_path or output_path == "":
+            return
+
+        self.convert_model_dialog = ctk.CTkToplevel(self)
+        self.convert_model_dialog.title("Converting model")
+        #label
+        empty_label = ctk.CTkLabel(self.convert_model_dialog, text="")
+        empty_label.pack()
+        label = ctk.CTkLabel(self.convert_model_dialog, text="Converting Diffusers to CKPT. Please wait...")
+        label.pack()
+        self.convert_model_dialog.geometry("300x70")
+        self.convert_model_dialog.resizable(False, False)
+        self.convert_model_dialog.grab_set()
+        self.convert_model_dialog.focus_set()
+        self.update()
+        converters.Convert_Diffusers_to_SD(model_path, output_path)
+        self.convert_model_dialog.destroy()
+        #messagebox.showinfo("Conversion Complete", "Conversion Complete")
     #function to act as a callback when the user adds a new concept data path to generate a new preview image
     def update_preview_image(self, event):
         #check if entry has changed
