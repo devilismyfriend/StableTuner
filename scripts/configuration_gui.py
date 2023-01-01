@@ -1372,7 +1372,7 @@ class App(ctk.CTk):
         #self.mixed_precision_label.grid(row=5, column=0, sticky="nsew")
         self.mixed_precision_var = tk.StringVar()
         self.mixed_precision_var.set(self.mixed_precision)
-        self.mixed_precision_dropdown = ctk.CTkOptionMenu(self.training_frame_subframe, variable=self.mixed_precision_var,values=["fp16", "fp32"])
+        self.mixed_precision_dropdown = ctk.CTkOptionMenu(self.training_frame_subframe, variable=self.mixed_precision_var,values=["bf16","fp16", "fp32"])
         #self.mixed_precision_dropdown.grid(row=5, column=1, sticky="nsew")
 
         #create use 8bit adam checkbox
