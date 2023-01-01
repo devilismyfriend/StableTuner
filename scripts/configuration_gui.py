@@ -2543,7 +2543,8 @@ class App(ctk.CTk):
             else:
                 prediction = "epsilon"
             key_name = "model.diffusion_model.input_blocks.2.1.transformer_blocks.0.attn2.to_k.weight"
-            checkpoint = checkpoint["state_dict"]
+            if "state_dict" in checkpoint.keys():
+                checkpoint = checkpoint["state_dict"]
             if key_name in checkpoint and checkpoint[key_name].shape[-1] == 1024:
                 version = "v2"
             else:
