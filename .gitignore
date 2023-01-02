@@ -2395,3 +2395,4 @@ scripts/streamlit_configurator.py
 data.zip
 export.zip
 *.webp
+*.safetensors

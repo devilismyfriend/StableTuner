@@ -2435,7 +2435,7 @@ def main():
             progress_bar_inter_epoch.set_description("Steps To Epoch")
             progress_bar_inter_epoch.reset(total=num_update_steps_per_epoch)
             for step, batch in enumerate(train_dataloader):
-                with accelerator.accumulate(unet), accelerator.accumulate(text_encoder):
+                with accelerator.accumulate(unet):
                     # Convert images to latent space
                     with torch.no_grad():
 
@@ -2543,7 +2543,7 @@ def main():
                 
                 
 
-                if global_step > 0 and not global_step % args.sample_step_interval:
+                if global_step > 0 and not global_step % args.sample_step_interval and epoch != 0:
                     save_and_sample_weights(global_step,'step',save_model=False)
 
                 progress_bar.update(1)
@@ -2577,7 +2577,8 @@ def main():
                     if epoch != 0:
                         save_and_sample_weights(epoch,'epoch')
                     else:
-                        save_and_sample_weights(epoch,'epoch',False)
+                        pass
+                        #save_and_sample_weights(epoch,'epoch',False)
                     print_instructions()
             if epoch % args.save_every_n_epoch and mid_checkpoint==True or mid_sample==True:
                 if mid_checkpoint==True:
