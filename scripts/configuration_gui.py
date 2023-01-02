@@ -801,6 +801,7 @@ class App(ctk.CTk):
             pass
 
     def create_default_variables(self):
+        self.shuffle_dataset_per_epoch = False
         self.batch_prompt_sampling_num_prompts = '0'
         self.save_safetensors = False
         self.attention = 'xformers'
@@ -1619,13 +1620,24 @@ class App(ctk.CTk):
         self.dynamic_bucketing_mode_label.grid(row=9, column=0, sticky="nsew")
         self.dynamic_bucketing_mode_option_menu = ctk.CTkOptionMenu(self.dataset_frame_subframe, variable=self.dynamic_bucketing_mode_var, values=['Duplicate', 'Drop'])
         self.dynamic_bucketing_mode_option_menu.grid(row=9, column=1, sticky="nsew")
+        #add shuffle dataset per epoch checkbox
+        self.shuffle_dataset_per_epoch_var = tk.IntVar()
+        self.shuffle_dataset_per_epoch_var.set(self.shuffle_dataset_per_epoch)
+        #create label
+        self.shuffle_dataset_per_epoch_label = ctk.CTkLabel(self.dataset_frame_subframe, text="Shuffle Dataset Per Epoch")
+        shuffle_dataset_per_epoch_label_ttp = CreateToolTip(self.shuffle_dataset_per_epoch_label, "Will shuffle the dataset per epoch, may improve training.")
+        self.shuffle_dataset_per_epoch_label.grid(row=1, column=2, sticky="nsew")
+        #create checkbox
+        self.shuffle_dataset_per_epoch_checkbox = ctk.CTkSwitch(self.dataset_frame_subframe, variable=self.shuffle_dataset_per_epoch_var)
+        self.shuffle_dataset_per_epoch_checkbox.grid(row=1, column=3, sticky="nsew")
+
         #option menu to select dynamic bucketing mode (if enabled)
         self.fallback_mask_prompt_label = ctk.CTkLabel(self.dataset_frame_subframe, text="Fallback Mask Prompt")
         fallback_mask_prompt_label_ttp = CreateToolTip(self.fallback_mask_prompt_label, "A prompt used for masking images without a mask. Only used when training inpainting models.")
         self.fallback_mask_prompt_entry = ctk.CTkEntry(self.dataset_frame_subframe)
         self.fallback_mask_prompt_entry.insert(0, self.fallback_mask_prompt)
-        self.fallback_mask_prompt_label.grid(row=10, column=0, sticky="nsew")
-        self.fallback_mask_prompt_entry.grid(row=10, column=1, sticky="nsew")
+        self.fallback_mask_prompt_label.grid(row=2, column=2, sticky="nsew")
+        self.fallback_mask_prompt_entry.grid(row=2, column=3, sticky="nsew")
         #add download dataset entry
         #add a switch to duplicate fill bucket
         #self.duplicate_fill_buckets_var = tk.IntVar()
@@ -1890,7 +1902,7 @@ class App(ctk.CTk):
         #convert to safetensors button
         self.convert_to_safetensors_button = ctk.CTkButton(self.toolbox_frame_subframe, text="Convert Diffusers To SafeTensors", command=lambda:self.convert_to_safetensors())
         self.convert_to_safetensors_button.grid(row=4, column=1, columnspan=1, sticky="nsew")
-        
+
         #add a button to convert ckpt to diffusers
         self.convert_ckpt_to_diffusers_button = ctk.CTkButton(self.toolbox_frame_subframe, text="Convert CKPT To Diffusers", command=lambda:self.convert_ckpt_to_diffusers())
         self.convert_ckpt_to_diffusers_button.grid(row=4, column=2, columnspan=1, sticky="nsew")
@@ -2938,6 +2950,7 @@ class App(ctk.CTk):
         configure['fallback_mask_prompt'] = self.fallback_mask_prompt_entry.get()
         configure['attention'] = self.attention_var.get()
         configure['batch_prompt_sampling'] = int(self.batch_prompt_sampling_optionmenu_var.get())
+        configure['shuffle_dataset_per_epoch'] = self.shuffle_dataset_per_epoch_var.get()
         #save the configure file
         #if the file exists, delete it
         if os.path.exists(file_name):
@@ -3085,6 +3098,7 @@ class App(ctk.CTk):
         self.dynamic_bucketing_mode_var.set(configure["dynamic_bucketing_mode"])
         self.attention_var.set(configure["attention"])
         self.batch_prompt_sampling_optionmenu_var.set(str(configure['batch_prompt_sampling']))
+        self.shuffle_dataset_per_epoch_var.set(configure["shuffle_dataset_per_epoch"])
         self.update()
     
     def process_inputs(self,export=None):
@@ -3149,6 +3163,7 @@ class App(ctk.CTk):
         self.fallback_mask_prompt = self.fallback_mask_prompt_entry.get()
         self.attention = self.attention_var.get()
         self.batch_prompt_sampling = int(self.batch_prompt_sampling_optionmenu_var.get())
+        self.shuffle_dataset_per_epoch = self.shuffle_dataset_per_epoch_var.get()
         mode = 'normal'
         if self.cloud_mode == False and export == None:
             #check if output path exists
@@ -3221,6 +3236,13 @@ class App(ctk.CTk):
             batBase = 'accelerate "launch" "--mixed_precision=no" "scripts/trainer.py"'
             if export == 'Linux':
                 batBase = f'accelerate launch --mixed_precision="no" scripts/trainer.py'
+        
+        if self.shuffle_dataset_per_epoch == True:
+            if export == 'Linux':
+                batBase += ' --shuffle_per_epoch'
+            else:
+                batBase += ' "--shuffle_per_epoch"'
+        
         if self.batch_prompt_sampling != 0:
             if export == 'Linux':
                 batBase += f' --sample_from_batch={self.batch_prompt_sampling}'
@@ -3477,6 +3499,16 @@ class App(ctk.CTk):
                 batBase += f' "--use_ema" '
         
         self.save_config('stabletune_last_run.json')
+        #check if output folder exists
+        if os.path.exists(self.output_path) == False:
+            #create everything leading up to output folder
+            os.makedirs(self.output_path)
+        #get unique name for config file
+        now = datetime.now()
+        dt_string = now.strftime("%m-%d-%H-%M")
+        #construct name
+        config_log_name = 'stabletuner'+'_'+str(self.resolution)+"_e"+str(self.train_epocs)+"_"+dt_string+'.json'
+        self.save_config(os.path.join(self.output_path, config_log_name))
         
         if export == False:
             #save the bat file
