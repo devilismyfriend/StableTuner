@@ -1850,11 +1850,15 @@ def main():
         with open(logging_dir / "last_run.json", "w") as f:
             json.dump(last_run, f)
 
-    weight_dtype = torch.float32
+    
     if args.mixed_precision == "fp16":
         weight_dtype = torch.float16
     elif args.mixed_precision == "bf16":
         weight_dtype = torch.bfloat16
+    elif args.mixed_precision == "no":
+        weight_dtype = torch.float32
+        torch.backends.cuda.matmul.allow_tf32 = True
+        #torch.set_float32_matmul_precision("medium")
 
     # Move text_encode and vae to gpu.
     # For mixed precision training we cast the text_encoder and vae weights to half-precision
@@ -2035,7 +2039,7 @@ def main():
             vae=AutoencoderKL.from_pretrained(args.pretrained_vae_name_or_path or args.pretrained_model_name_or_path,subfolder=None if args.pretrained_vae_name_or_path else "vae" ),
             safety_checker=None,
             torch_dtype=weight_dtype,
-            local_files_only=True,
+            local_files_only=False,
         )
         pipeline.scheduler = scheduler
         if is_xformers_available() and args.attention=='xformers':
@@ -2194,8 +2198,8 @@ def main():
                 text_encoder=text_enc_model,
                 vae=AutoencoderKL.from_pretrained(args.pretrained_vae_name_or_path or args.pretrained_model_name_or_path,subfolder=None if args.pretrained_vae_name_or_path else "vae" ),
                 safety_checker=None,
-                torch_dtype=torch.float16,
-                local_files_only=True,
+                torch_dtype=weight_dtype,
+                local_files_only=False,
             )
             pipeline.scheduler = scheduler
             if is_xformers_available() and args.attention=='xformers':
