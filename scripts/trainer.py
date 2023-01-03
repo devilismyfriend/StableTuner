@@ -1375,13 +1375,24 @@ class PromptDataset(Dataset):
 
 class CachedLatentsDataset(Dataset):
     #stores paths and loads latents on the fly
-    def __init__(self, cache_paths=(),batch_size=None,tokenizer=None,conditional_dropout=None,accelerator=None,dtype=None,model_variant='base',shuffle_per_epoch=False):
+    def __init__(self, cache_paths=(),batch_size=None,tokenizer=None,text_encoder=None,dtype=None,model_variant='base',shuffle_per_epoch=False,args=None):
         self.cache_paths = cache_paths
         self.tokenizer = tokenizer
+        self.args = args
+        self.text_encoder = text_encoder
+        #get text encoder device
+        text_encoder_device = next(self.text_encoder.parameters()).device
         self.empty_batch = [self.tokenizer('',padding="do_not_pad",truncation=True,max_length=self.tokenizer.model_max_length,).input_ids for i in range(batch_size)]
-        self.empty_tokens = tokenizer.pad({"input_ids": self.empty_batch},padding="max_length",max_length=tokenizer.model_max_length,return_tensors="pt",).input_ids
-        self.empty_tokens.to(accelerator.device, dtype=dtype)
-        self.conditional_dropout = conditional_dropout
+        #handle text encoder for empty tokens
+        if self.args.train_text_encoder != True:
+            self.empty_tokens = tokenizer.pad({"input_ids": self.empty_batch},padding="max_length",max_length=tokenizer.model_max_length,return_tensors="pt",).to(text_encoder_device).input_ids
+            self.empty_tokens.to(text_encoder_device, dtype=dtype)
+            self.empty_tokens = self.text_encoder(self.empty_tokens)[0]
+        else:
+            self.empty_tokens = tokenizer.pad({"input_ids": self.empty_batch},padding="max_length",max_length=tokenizer.model_max_length,return_tensors="pt",).input_ids
+            self.empty_tokens.to(text_encoder_device, dtype=dtype)
+
+        self.conditional_dropout = args.conditional_dropout
         self.conditional_indexes = []
         self.model_variant = model_variant
         self.shuffle_per_epoch = shuffle_per_epoch
@@ -1877,11 +1888,12 @@ def main():
         extra_latent = {shape: vae.encode(torch.zeros(1, 3, shape[1], shape[0]).to(accelerator.device, dtype=weight_dtype)).latent_dist.mean * 0.18215 for shape in wh}
 
     cached_dataset = CachedLatentsDataset(batch_size=args.train_batch_size,
+    text_encoder=text_encoder,
     tokenizer=tokenizer,
-    conditional_dropout=args.conditional_dropout,
-    accelerator=accelerator,dtype=weight_dtype,
+    dtype=weight_dtype,
     model_variant=args.model_variant,
-    shuffle_per_epoch=args.shuffle_per_epoch,)
+    shuffle_per_epoch=args.shuffle_per_epoch,
+    args = args,)
 
     gen_cache = False
     data_len = len(train_dataloader)
