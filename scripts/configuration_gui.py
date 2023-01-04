@@ -3238,9 +3238,9 @@ class App(ctk.CTk):
                 if export == 'Linux':
                     batBase = f'accelerate launch --mixed_precision="no" scripts/trainer.py'
             elif self.mixed_precision == 'tf32':
-                batBase = 'accelerate "launch" "--mixed_precision=tf32" "scripts/trainer.py"'
+                batBase = 'accelerate "launch" "--mixed_precision=no" "scripts/trainer.py"'
                 if export == 'Linux':
-                    batBase = f'accelerate launch --mixed_precision="tf32" scripts/trainer.py'
+                    batBase = f'accelerate launch --mixed_precision="no" scripts/trainer.py'
         
         if self.shuffle_dataset_per_epoch == True:
             if export == 'Linux':
@@ -3333,7 +3333,7 @@ class App(ctk.CTk):
             batBase += f' "--train_batch_size={self.batch_size}" '
             batBase += f' "--num_train_epochs={self.train_epocs}" '
 
-        if self.mixed_precision == 'fp16' or self.mixed_precision == 'bf16':
+        if self.mixed_precision == 'fp16' or self.mixed_precision == 'bf16' or self.mixed_precision == 'tf32':
             if export == 'Linux':
                 batBase += f' --mixed_precision="{self.mixed_precision}"'
             else:
