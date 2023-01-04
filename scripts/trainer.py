@@ -1868,6 +1868,8 @@ def main():
         weight_dtype = torch.bfloat16
     elif args.mixed_precision == "no":
         weight_dtype = torch.float32
+    elif args.mixed_precision == "tf32":
+        weight_dtype = torch.float32
         torch.backends.cuda.matmul.allow_tf32 = True
         #torch.set_float32_matmul_precision("medium")
 

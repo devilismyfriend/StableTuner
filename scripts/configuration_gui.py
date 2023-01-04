@@ -1370,11 +1370,11 @@ class App(ctk.CTk):
         
         #create mixed precision dark mode dropdown
         self.mixed_precision_label = ctk.CTkLabel(self.training_frame_subframe, text="Mixed Precision")
-        mixed_precision_label_ttp = CreateToolTip(self.mixed_precision_label, "Use mixed precision training to speed up training, FP16 is recommended but requires a GPU with Tensor Cores.")
+        mixed_precision_label_ttp = CreateToolTip(self.mixed_precision_label, "Use mixed precision training to speed up training, FP16 is recommended but requires a GPU with Tensor Cores. TF32 is recommended for RTX 30 series GPUs and newer.")
         #self.mixed_precision_label.grid(row=5, column=0, sticky="nsew")
         self.mixed_precision_var = tk.StringVar()
         self.mixed_precision_var.set(self.mixed_precision)
-        self.mixed_precision_dropdown = ctk.CTkOptionMenu(self.training_frame_subframe, variable=self.mixed_precision_var,values=["bf16","fp16", "fp32"])
+        self.mixed_precision_dropdown = ctk.CTkOptionMenu(self.training_frame_subframe, variable=self.mixed_precision_var,values=["bf16","fp16","fp32","tf32"])
         #self.mixed_precision_dropdown.grid(row=5, column=1, sticky="nsew")
 
         #create use 8bit adam checkbox
@@ -3233,9 +3233,14 @@ class App(ctk.CTk):
             if export == 'Linux':
                 batBase = f'accelerate launch --mixed_precision="{self.mixed_precision}" scripts/trainer.py'
         else:
-            batBase = 'accelerate "launch" "--mixed_precision=no" "scripts/trainer.py"'
-            if export == 'Linux':
-                batBase = f'accelerate launch --mixed_precision="no" scripts/trainer.py'
+            if self.mixed_precision == 'fp32':
+                batBase = 'accelerate "launch" "--mixed_precision=no" "scripts/trainer.py"'
+                if export == 'Linux':
+                    batBase = f'accelerate launch --mixed_precision="no" scripts/trainer.py'
+            elif self.mixed_precision == 'tf32':
+                batBase = 'accelerate "launch" "--mixed_precision=tf32" "scripts/trainer.py"'
+                if export == 'Linux':
+                    batBase = f'accelerate launch --mixed_precision="tf32" scripts/trainer.py'
         
         if self.shuffle_dataset_per_epoch == True:
             if export == 'Linux':
