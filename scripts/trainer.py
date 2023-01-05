@@ -2332,7 +2332,7 @@ def main():
                     print(f"{bcolors.OKGREEN}Samples saved to {sample_dir}{bcolors.ENDC}")
         except e as Exception:
             print(e)
-            print(f"{bcolors.FAIL}Error occured during sampling, skipping.{bcolors.ENDC}")
+            print(f"{bcolors.FAIL} Error occured during sampling, skipping.{bcolors.ENDC}")
             pass
 
     # Only show the progress bar once on each machine.
