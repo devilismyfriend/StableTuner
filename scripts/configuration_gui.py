@@ -17,6 +17,8 @@ import pyperclip
 import random
 import customtkinter as ctk
 import random
+import subprocess
+from pathlib import Path
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 #work in progress code, not finished, credits will be added at a later date.
@@ -648,6 +650,13 @@ class CreateToolTip(object):
 class App(ctk.CTk):    
     def __init__(self):
         super().__init__()
+
+        latest_git_hash = subprocess.check_output(["git", "describe", "--always"], cwd=Path(__file__).resolve().parent).strip().decode()
+        #check if configs folder exists
+        print("Latest git hash: " + latest_git_hash)
+        if not os.path.exists("configs"):
+            os.makedirs("configs")
+        
         self.grid_columnconfigure(1, weight=1)
         self.grid_columnconfigure((2, 3), weight=0)
         self.grid_rowconfigure((0, 1, 2), weight=1)
@@ -665,6 +674,19 @@ class App(ctk.CTk):
         #resizable window
         self.resizable(True, True)
         self.create_default_variables()
+        #check if stableTuner.cfg exists
+        if not os.path.exists("configs/stableTuner_hash.cfg"):
+            #create stableTuner.cfg and write the latest git hash
+            with open("configs/stableTuner_hash.cfg", "w") as f:
+                f.write(latest_git_hash)
+        else:
+            #read stableTuner.cfg
+            with open("configs/stableTuner_hash.cfg", "r") as f:
+                old_git_hash = f.read()
+            #check if the latest git hash is the same as the one in stableTuner.cfg
+            if latest_git_hash != old_git_hash:
+                #if not the same, delete the old stableTuner.cfg and create a new one with the latest git hash
+                self.update_available = True
         self.sidebar_frame = ctk.CTkFrame(self, width=140, corner_radius=0)
         self.sidebar_frame.grid(row=0, column=0, rowspan=10, sticky="nsew")
         self.logo_img = ctk.CTkImage(Image.open("resources/stableTuner_logo.png").resize((300, 300), Image.Resampling.LANCZOS),size=(80,80))
@@ -692,11 +714,16 @@ class App(ctk.CTk):
         self.empty_label = ctk.CTkLabel(self.sidebar_frame, text="", font=ctk.CTkFont(size=20, weight="bold"))
         self.empty_label.grid(row=9, column=0, padx=0, pady=0)
         #empty label
-        self.empty_label = ctk.CTkLabel(self.sidebar_frame, text="", font=ctk.CTkFont(size=20, weight="bold"))
-        self.empty_label.grid(row=10, column=0, padx=0, pady=0)
-        #empty label
-        self.empty_label = ctk.CTkLabel(self.sidebar_frame, text="", font=ctk.CTkFont(size=20, weight="bold"))
-        self.empty_label.grid(row=11, column=0, padx=0, pady=0)
+        
+        if self.update_available:
+            self.sidebar_button_11 = ctk.CTkButton(self.sidebar_frame,text='Update Available',fg_color='red',command=self.update_ST)
+            self.sidebar_button_11.grid(row=12, column=0, padx=20, pady=5)
+        else:
+            self.empty_label = ctk.CTkLabel(self.sidebar_frame, text="", font=ctk.CTkFont(size=20, weight="bold"))
+            self.empty_label.grid(row=10, column=0, padx=0, pady=0)
+            #empty label
+            self.empty_label = ctk.CTkLabel(self.sidebar_frame, text="", font=ctk.CTkFont(size=20, weight="bold"))
+            self.empty_label.grid(row=11, column=0, padx=0, pady=0)
         self.sidebar_button_11 = ctk.CTkButton(self.sidebar_frame,text='Caption Buddy',command=self.caption_buddy)
         self.sidebar_button_11.grid(row=13, column=0, padx=20, pady=5)
         self.sidebar_button_12 = ctk.CTkButton(self.sidebar_frame,text='Start Training!', command=lambda : self.process_inputs(export=False))
@@ -801,6 +828,7 @@ class App(ctk.CTk):
             pass
 
     def create_default_variables(self):
+        self.update_available = False
         self.shuffle_dataset_per_epoch = False
         self.batch_prompt_sampling_num_prompts = '0'
         self.save_safetensors = False
@@ -1195,10 +1223,12 @@ class App(ctk.CTk):
 
         #self.prior_loss_preservation_weight_entry.set(1.0)
         pass
+    '''
     def lora_mode(self):
         self.lora_mode_selected = ctk.CTkLabel(self.general_frame_subframe_side_guide,fg_color='transparent', text="Lora it is!\n I disabled irrelevant features for you.", font=ctk.CTkFont(size=14))
         self.lora_mode_selected.pack(side="top", fill="x", expand=False, padx=10, pady=10)
         pass
+    '''
     def create_general_settings_widgets(self):
 
 
@@ -1220,8 +1250,8 @@ class App(ctk.CTk):
         self.fine_tune_button = ctk.CTkButton(self.general_frame_subframe_side_guide, text="Fine-Tune", command=self.fine_tune_mode)
         self.fine_tune_button.pack(side="top", fill="x", expand=False, padx=10, pady=10)
         #add LORA button with disabled state
-        self.lora_button = ctk.CTkButton(self.general_frame_subframe_side_guide, text="LORA", command=self.lora_mode, state="disabled")
-        self.lora_button.pack(side="top", fill="x", expand=False, padx=10, pady=10)
+        #self.lora_button = ctk.CTkButton(self.general_frame_subframe_side_guide, text="LORA", command=self.lora_mode, state="disabled")
+        #self.lora_button.pack(side="top", fill="x", expand=False, padx=10, pady=10)
         self.quick_select_var = tk.StringVar(self.master)
         self.quick_select_var.set('Quick Select Base Model')
         self.quick_select_dropdown = ctk.CTkOptionMenu(self.general_frame_subframe, variable=self.quick_select_var, values=self.quick_select_models, command=self.quick_select_model,dynamic_resizing=False, width=200)
@@ -1769,6 +1799,7 @@ class App(ctk.CTk):
             self.controlled_seed_sample_entries[i].insert(0, self.add_controlled_seed_to_sample[i])
         for i in self.controlled_seed_sample_entries:
             i.bind("<Button-3>", self.create_right_click_menu)
+    
     def create_data_settings_widgets(self):
         #add concept settings label
         self.data_frame_title = ctk.CTkLabel(self.data_frame, text='Data Settings', font=ctk.CTkFont(size=20, weight="bold"))
@@ -1803,6 +1834,7 @@ class App(ctk.CTk):
         #self.concept_entries = []
         #self.concept_labels = []
         #self.concept_file_dialog_buttons = []
+    
     def next_concept_page(self):
         self.concept_page += 1
         self.update_concept_page()
@@ -1976,7 +2008,20 @@ class App(ctk.CTk):
                 return
         else:
             return
-
+    def update_ST(self):
+        #git
+        new_version = subprocess.check_output(["git", "describe", "--always"], cwd=Path(__file__).resolve().parent).strip().decode()
+        #open the stabletuner_hash.cfg file
+        #update the stabletuner_hash.cfg file
+        with open("configs/stabletuner_hash.cfg", "w") as f:
+            f.write(new_version)
+        #update the stabletuner
+        #self.update_stabletuner()
+        #git pull and wait for it to finish
+        subprocess.run(["git", "fetch"], cwd=Path(__file__).resolve().parent)
+        print('feteched')
+        #restart the app
+        restart(self)
     def packageForCloud(self):
         #check if there's an export folder in the cwd and if not create one
         if not os.path.exists("exports"):
@@ -3613,7 +3658,12 @@ class App(ctk.CTk):
         
 
 
-        
+
+def restart(instance):
+    instance.destroy()
+    #os.startfile(os.getcwd()+'/scripts/configuration_gui.py')
+    app = App()
+    app.mainloop()
 #root = ctk.CTk()
 app = App()
 app.mainloop()
