@@ -1433,7 +1433,7 @@ class App(ctk.CTk):
         #self.gradient_accumulation_steps_label.grid(row=8, column=0, sticky="nsew")
         self.gradient_accumulation_steps_var = tk.StringVar()
         self.gradient_accumulation_steps_var.set(self.accumulation_steps)
-        self.gradient_accumulation_steps_dropdown = ctk.CTkOptionMenu(self.training_frame_subframe, variable=self.gradient_accumulation_steps_var, values=['0','1','2','3','4','5','6','7','8','9','10'])
+        self.gradient_accumulation_steps_dropdown = ctk.CTkOptionMenu(self.training_frame_subframe, variable=self.gradient_accumulation_steps_var, values=['1','2','3','4','5','6','7','8','9','10'])
         #self.gradient_accumulation_steps_dropdown.grid(row=8, column=1, sticky="nsew")
         #create learning rate dark mode entry
         self.learning_rate_label = ctk.CTkLabel(self.training_frame_subframe, text="Learning Rate")

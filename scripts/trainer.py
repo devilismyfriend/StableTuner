@@ -1651,7 +1651,7 @@ def main():
         del pipeline
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
-
+            torch.cuda.ipc_collect()
     # Load the tokenizer
     if args.tokenizer_name:
         tokenizer = CLIPTokenizer.from_pretrained(args.tokenizer_name )
@@ -1919,6 +1919,7 @@ def main():
             del text_encoder
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
+            torch.cuda.ipc_collect()
         #load all the cached latents into a single dataset
         for i in range(0,data_len-1):
             cached_dataset.add_pt_cache(os.path.join(latent_cache_dir,f"latents_cache_{i}.pt"))
@@ -1968,6 +1969,7 @@ def main():
             del text_encoder
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
+            torch.cuda.ipc_collect()
         #load all the cached latents into a single dataset
     train_dataloader = torch.utils.data.DataLoader(cached_dataset, batch_size=1, collate_fn=lambda x: x, shuffle=False)
     print(f" {bcolors.OKGREEN}Latents are ready.{bcolors.ENDC}")
@@ -2322,6 +2324,7 @@ def main():
                     del unwrapped_unet
                     if torch.cuda.is_available():
                         torch.cuda.empty_cache()
+                        torch.cuda.ipc_collect()
                 if save_model == True:
                     print(f"{bcolors.OKGREEN}Weights saved to {save_dir}{bcolors.ENDC}")
                 elif save_model == False and len(imgs) > 0:
