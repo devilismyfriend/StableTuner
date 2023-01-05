@@ -2126,203 +2126,207 @@ def main():
             print('')
             print(f"{bcolors.WARNING}Use 'CTRL+H' to print this message again.{bcolors.ENDC}")
     def save_and_sample_weights(step,context='checkpoint',save_model=True):
-        #check how many folders are in the output dir
-        #if there are more than 5, delete the oldest one
-        #save the model
-        #save the optimizer
-        #save the lr_scheduler
-        #save the args
-        height = args.sample_height
-        width = args.sample_width
-        batch_prompts = []
-        if args.sample_from_batch > 0:
-            num_samples = args.sample_from_batch if args.sample_from_batch < args.train_batch_size else args.train_batch_size
+        try:
+            #check how many folders are in the output dir
+            #if there are more than 5, delete the oldest one
+            #save the model
+            #save the optimizer
+            #save the lr_scheduler
+            #save the args
+            height = args.sample_height
+            width = args.sample_width
             batch_prompts = []
-            tokens = args.batch_tokens
-            if tokens != None:
-                allPrompts = list(set([tokenizer.decode(p).replace('<|endoftext|>','').replace('<|startoftext|>', '') for p in tokens]))
-                if len(allPrompts) < num_samples:
-                    num_samples = len(allPrompts)
-                batch_prompts = random.sample(allPrompts, num_samples)
-                    
+            if args.sample_from_batch > 0:
+                num_samples = args.sample_from_batch if args.sample_from_batch < args.train_batch_size else args.train_batch_size
+                batch_prompts = []
+                tokens = args.batch_tokens
+                if tokens != None:
+                    allPrompts = list(set([tokenizer.decode(p).replace('<|endoftext|>','').replace('<|startoftext|>', '') for p in tokens]))
+                    if len(allPrompts) < num_samples:
+                        num_samples = len(allPrompts)
+                    batch_prompts = random.sample(allPrompts, num_samples)
+                        
 
-        if args.sample_aspect_ratios:
-            #choose random aspect ratio from ASPECTS    
-            aspect_ratio = random.choice(ASPECTS)
-            height = aspect_ratio[0]
-            width = aspect_ratio[1]
-        if os.path.exists(args.output_dir):
-            if args.detect_full_drive==True:
-                folders = os.listdir(args.output_dir)
-                #check how much space is left on the drive
-                total, used, free = shutil.disk_usage("/")
-                if (free // (2**30)) < 4:
-                    #folders.remove("0")
-                    #get the folder with the lowest number
-                    #oldest_folder = min(folder for folder in folders if folder.isdigit())
-                    print(f"{bcolors.FAIL}Drive is almost full, Please make some space to continue training.{bcolors.ENDC}")
-                    if args.send_telegram_updates:
-                        try:
-                            send_telegram_message(f"Drive is almost full, Please make some space to continue training.", args.telegram_chat_id, args.telegram_token)
-                        except:
-                            pass
-                    #count time
-                    import time
-                    start_time = time.time()
-                    import platform
-                    while input("Press Enter to continue... if you're on linux we'll wait 5 minutes for you to make space and continue"):
-                        #check if five minutes have passed
-                        #check if os is linux
-                        if 'Linux' in platform.platform():
-                            if time.time() - start_time > 300:
-                                break
-
-                    
-                    #oldest_folder_path = os.path.join(args.output_dir, oldest_folder)
-                    #shutil.rmtree(oldest_folder_path)
-        # Create the pipeline using using the trained modules and save it.
-        if accelerator.is_main_process:
-            if 'step' in context:
-                #what is the current epoch
-                epoch = step // num_update_steps_per_epoch
-            else:
-                epoch = step
-            if args.train_text_encoder and args.stop_text_encoder_training == True:
-                text_enc_model = accelerator.unwrap_model(text_encoder,True)
-            elif args.train_text_encoder and args.stop_text_encoder_training > epoch:
-                text_enc_model = accelerator.unwrap_model(text_encoder,True)
-            elif args.train_text_encoder == False:
-                text_enc_model = CLIPTextModel.from_pretrained(args.pretrained_model_name_or_path, subfolder="text_encoder" )
-            elif args.train_text_encoder and args.stop_text_encoder_training <= epoch:
-                if 'frozen_directory' in locals():
-                    text_enc_model = CLIPTextModel.from_pretrained(frozen_directory, subfolder="text_encoder")
-                else:
-                    text_enc_model = accelerator.unwrap_model(text_encoder,True)
-                
-            #scheduler = DDIMScheduler(beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear", clip_sample=False, set_alpha_to_one=False)
-            #scheduler = EulerDiscreteScheduler.from_pretrained(args.pretrained_model_name_or_path, subfolder="scheduler", prediction_type="v_prediction")
-            scheduler = DPMSolverMultistepScheduler.from_pretrained(args.pretrained_model_name_or_path, subfolder="scheduler")
-            unwrapped_unet = accelerator.unwrap_model(unet,True)
-            if args.use_ema:
-                ema_unet.copy_to(unwrapped_unet.parameters())
-                
-            pipeline = DiffusionPipeline.from_pretrained(
-                args.pretrained_model_name_or_path,
-                unet=unwrapped_unet,
-                text_encoder=text_enc_model,
-                vae=AutoencoderKL.from_pretrained(args.pretrained_vae_name_or_path or args.pretrained_model_name_or_path,subfolder=None if args.pretrained_vae_name_or_path else "vae" ),
-                safety_checker=None,
-                torch_dtype=weight_dtype,
-                local_files_only=False,
-            )
-            pipeline.scheduler = scheduler
-            if is_xformers_available() and args.attention=='xformers':
-                try:
-                    unet.enable_xformers_memory_efficient_attention()
-                except Exception as e:
-                    logger.warning(
-                        "Could not enable memory efficient attention. Make sure xformers is installed"
-                        f" correctly and a GPU is available: {e}"
-                    )
-            elif args.attention=='flash_attention':
-                tu.replace_unet_cross_attn_to_flash_attention()
-            save_dir = os.path.join(args.output_dir, f"{context}_{step}")
-            sample_dir = os.path.join(args.output_dir, f"samples/{context}_{step}")
-            #if sample dir path does not exist, create it
-            
-            if args.stop_text_encoder_training == True:
-                save_dir = frozen_directory
-            if step != 0:
-                if save_model:
-                    pipeline.save_pretrained(save_dir,safe_serialization=True)
-                    with open(os.path.join(save_dir, "args.json"), "w") as f:
-                            json.dump(args.__dict__, f, indent=2)
-                if args.stop_text_encoder_training == True:
-                    #delete every folder in frozen_directory but the text encoder
-                    for folder in os.listdir(save_dir):
-                        if folder != "text_encoder" and os.path.isdir(os.path.join(save_dir, folder)):
-                            shutil.rmtree(os.path.join(save_dir, folder))
-            imgs = []
-            if args.add_sample_prompt is not None or batch_prompts != [] and args.stop_text_encoder_training != True:
-                prompts = []
-                if args.add_sample_prompt is not None:
-                    for prompt in args.add_sample_prompt:
-                        prompts.append(prompt)
-                if batch_prompts != []:
-                    for prompt in batch_prompts:
-                        prompts.append(prompt)
-
-                pipeline = pipeline.to(accelerator.device)
-                pipeline.set_progress_bar_config(disable=True)
-                #sample_dir = os.path.join(save_dir, "samples")
-                #if sample_dir exists, delete it
-                if os.path.exists(sample_dir):
-                    shutil.rmtree(sample_dir)
-                os.makedirs(sample_dir, exist_ok=True)
-                with torch.autocast("cuda"), torch.inference_mode():
-                    if args.send_telegram_updates:
-                        try:
-                            send_telegram_message(f"Generating samples for <b>{step}</b> {context}", args.telegram_chat_id, args.telegram_token)
-                        except:
-                            pass
-                    for samplePrompt in prompts:
-                        sampleIndex = prompts.index(samplePrompt)
-                        #convert sampleIndex to number in words
-                        sampleName = f"prompt_{sampleIndex+1}"
-                        os.makedirs(os.path.join(sample_dir,sampleName), exist_ok=True)
-                        if args.model_variant == 'inpainting':
-                            conditioning_image = torch.zeros(1, 3, width, height)
-                            mask = torch.ones(1, 1, width, height)
-                        if args.model_variant == 'depth2img':
-                            #pil new white image
-                            test_image = Image.new('RGB', (width, height), (255, 255, 255))
-                            depth_image = Image.new('RGB', (width, height), (255, 255, 255))
-                            depth = np.array(depth_image.convert("L"))
-                            depth = depth.astype(np.float32) / 255.0
-                            depth = depth[None, None]
-                            depth = torch.from_numpy(depth)
-                        for i in tqdm(range(args.n_save_sample) if not args.save_sample_controlled_seed else range(args.n_save_sample+len(args.save_sample_controlled_seed)), desc="Generating samples"):
-                            #check if the sample is controlled by a seed
-                            if i < args.n_save_sample:
-                                if args.model_variant == 'inpainting':
-                                    images = pipeline(samplePrompt, conditioning_image, mask, height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps).images
-                                if args.model_variant == 'depth2img':
-                                    images = pipeline(samplePrompt,image=test_image, height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps,strength=1.0).images
-                                elif args.model_variant == 'base':
-                                    images = pipeline(samplePrompt,height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps).images
-                                images[0].save(os.path.join(sample_dir,sampleName, f"{sampleName}_{i}.png"))
-                            else:
-                                seed = args.save_sample_controlled_seed[i - args.n_save_sample]
-                                generator = torch.Generator("cuda").manual_seed(seed)
-                                if args.model_variant == 'inpainting':
-                                    images = pipeline(samplePrompt,conditioning_image, mask,height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps, generator=generator).images
-                                if args.model_variant == 'depth2img':
-                                    images = pipeline(samplePrompt,image=test_image, height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps,generator=generator,strength=1.0).images
-                                elif args.model_variant == 'base':
-                                    images = pipeline(samplePrompt,height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps, generator=generator).images
-                                images[0].save(os.path.join(sample_dir,sampleName, f"{sampleName}_controlled_seed_{str(seed)}.png"))
+            if args.sample_aspect_ratios:
+                #choose random aspect ratio from ASPECTS    
+                aspect_ratio = random.choice(ASPECTS)
+                height = aspect_ratio[0]
+                width = aspect_ratio[1]
+            if os.path.exists(args.output_dir):
+                if args.detect_full_drive==True:
+                    folders = os.listdir(args.output_dir)
+                    #check how much space is left on the drive
+                    total, used, free = shutil.disk_usage("/")
+                    if (free // (2**30)) < 4:
+                        #folders.remove("0")
+                        #get the folder with the lowest number
+                        #oldest_folder = min(folder for folder in folders if folder.isdigit())
+                        print(f"{bcolors.FAIL}Drive is almost full, Please make some space to continue training.{bcolors.ENDC}")
                         if args.send_telegram_updates:
-                            imgs = []
-                            #get all the images from the sample folder
-                            dir = os.listdir(os.path.join(sample_dir,sampleName))
-                            for file in dir:
-                                if file.endswith(".png"):
-                                    #open the image with pil
-                                    img = Image.open(os.path.join(sample_dir,sampleName,file))
-                                    imgs.append(img)
                             try:
-                                send_media_group(args.telegram_chat_id,args.telegram_token,imgs, caption=f"Samples for the <b>{step}</b> {context} using the prompt:\n\n<b>{samplePrompt}</b>")
+                                send_telegram_message(f"Drive is almost full, Please make some space to continue training.", args.telegram_chat_id, args.telegram_token)
                             except:
                                 pass
-                del pipeline
-                del unwrapped_unet
-                if torch.cuda.is_available():
-                    torch.cuda.empty_cache()
-            if save_model == True:
-                print(f"{bcolors.OKGREEN}Weights saved to {save_dir}{bcolors.ENDC}")
-            elif save_model == False and len(imgs) > 0:
-                del imgs
-                print(f"{bcolors.OKGREEN}Samples saved to {sample_dir}{bcolors.ENDC}")
+                        #count time
+                        import time
+                        start_time = time.time()
+                        import platform
+                        while input("Press Enter to continue... if you're on linux we'll wait 5 minutes for you to make space and continue"):
+                            #check if five minutes have passed
+                            #check if os is linux
+                            if 'Linux' in platform.platform():
+                                if time.time() - start_time > 300:
+                                    break
+
+                        
+                        #oldest_folder_path = os.path.join(args.output_dir, oldest_folder)
+                        #shutil.rmtree(oldest_folder_path)
+            # Create the pipeline using using the trained modules and save it.
+            if accelerator.is_main_process:
+                if 'step' in context:
+                    #what is the current epoch
+                    epoch = step // num_update_steps_per_epoch
+                else:
+                    epoch = step
+                if args.train_text_encoder and args.stop_text_encoder_training == True:
+                    text_enc_model = accelerator.unwrap_model(text_encoder,True)
+                elif args.train_text_encoder and args.stop_text_encoder_training > epoch:
+                    text_enc_model = accelerator.unwrap_model(text_encoder,True)
+                elif args.train_text_encoder == False:
+                    text_enc_model = CLIPTextModel.from_pretrained(args.pretrained_model_name_or_path, subfolder="text_encoder" )
+                elif args.train_text_encoder and args.stop_text_encoder_training <= epoch:
+                    if 'frozen_directory' in locals():
+                        text_enc_model = CLIPTextModel.from_pretrained(frozen_directory, subfolder="text_encoder")
+                    else:
+                        text_enc_model = accelerator.unwrap_model(text_encoder,True)
+                    
+                #scheduler = DDIMScheduler(beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear", clip_sample=False, set_alpha_to_one=False)
+                #scheduler = EulerDiscreteScheduler.from_pretrained(args.pretrained_model_name_or_path, subfolder="scheduler", prediction_type="v_prediction")
+                scheduler = DPMSolverMultistepScheduler.from_pretrained(args.pretrained_model_name_or_path, subfolder="scheduler")
+                unwrapped_unet = accelerator.unwrap_model(unet,True)
+                if args.use_ema:
+                    ema_unet.copy_to(unwrapped_unet.parameters())
+                    
+                pipeline = DiffusionPipeline.from_pretrained(
+                    args.pretrained_model_name_or_path,
+                    unet=unwrapped_unet,
+                    text_encoder=text_enc_model,
+                    vae=AutoencoderKL.from_pretrained(args.pretrained_vae_name_or_path or args.pretrained_model_name_or_path,subfolder=None if args.pretrained_vae_name_or_path else "vae" ),
+                    safety_checker=None,
+                    torch_dtype=weight_dtype,
+                    local_files_only=False,
+                )
+                pipeline.scheduler = scheduler
+                if is_xformers_available() and args.attention=='xformers':
+                    try:
+                        unet.enable_xformers_memory_efficient_attention()
+                    except Exception as e:
+                        logger.warning(
+                            "Could not enable memory efficient attention. Make sure xformers is installed"
+                            f" correctly and a GPU is available: {e}"
+                        )
+                elif args.attention=='flash_attention':
+                    tu.replace_unet_cross_attn_to_flash_attention()
+                save_dir = os.path.join(args.output_dir, f"{context}_{step}")
+                sample_dir = os.path.join(args.output_dir, f"samples/{context}_{step}")
+                #if sample dir path does not exist, create it
+                
+                if args.stop_text_encoder_training == True:
+                    save_dir = frozen_directory
+                if step != 0:
+                    if save_model:
+                        pipeline.save_pretrained(save_dir,safe_serialization=True)
+                        with open(os.path.join(save_dir, "args.json"), "w") as f:
+                                json.dump(args.__dict__, f, indent=2)
+                    if args.stop_text_encoder_training == True:
+                        #delete every folder in frozen_directory but the text encoder
+                        for folder in os.listdir(save_dir):
+                            if folder != "text_encoder" and os.path.isdir(os.path.join(save_dir, folder)):
+                                shutil.rmtree(os.path.join(save_dir, folder))
+                imgs = []
+                if args.add_sample_prompt is not None or batch_prompts != [] and args.stop_text_encoder_training != True:
+                    prompts = []
+                    if args.add_sample_prompt is not None:
+                        for prompt in args.add_sample_prompt:
+                            prompts.append(prompt)
+                    if batch_prompts != []:
+                        for prompt in batch_prompts:
+                            prompts.append(prompt)
+
+                    pipeline = pipeline.to(accelerator.device)
+                    pipeline.set_progress_bar_config(disable=True)
+                    #sample_dir = os.path.join(save_dir, "samples")
+                    #if sample_dir exists, delete it
+                    if os.path.exists(sample_dir):
+                        shutil.rmtree(sample_dir)
+                    os.makedirs(sample_dir, exist_ok=True)
+                    with torch.autocast("cuda"), torch.inference_mode():
+                        if args.send_telegram_updates:
+                            try:
+                                send_telegram_message(f"Generating samples for <b>{step}</b> {context}", args.telegram_chat_id, args.telegram_token)
+                            except:
+                                pass
+                        for samplePrompt in prompts:
+                            sampleIndex = prompts.index(samplePrompt)
+                            #convert sampleIndex to number in words
+                            sampleName = f"prompt_{sampleIndex+1}"
+                            os.makedirs(os.path.join(sample_dir,sampleName), exist_ok=True)
+                            if args.model_variant == 'inpainting':
+                                conditioning_image = torch.zeros(1, 3, width, height)
+                                mask = torch.ones(1, 1, width, height)
+                            if args.model_variant == 'depth2img':
+                                #pil new white image
+                                test_image = Image.new('RGB', (width, height), (255, 255, 255))
+                                depth_image = Image.new('RGB', (width, height), (255, 255, 255))
+                                depth = np.array(depth_image.convert("L"))
+                                depth = depth.astype(np.float32) / 255.0
+                                depth = depth[None, None]
+                                depth = torch.from_numpy(depth)
+                            for i in tqdm(range(args.n_save_sample) if not args.save_sample_controlled_seed else range(args.n_save_sample+len(args.save_sample_controlled_seed)), desc="Generating samples"):
+                                #check if the sample is controlled by a seed
+                                if i < args.n_save_sample:
+                                    if args.model_variant == 'inpainting':
+                                        images = pipeline(samplePrompt, conditioning_image, mask, height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps).images
+                                    if args.model_variant == 'depth2img':
+                                        images = pipeline(samplePrompt,image=test_image, height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps,strength=1.0).images
+                                    elif args.model_variant == 'base':
+                                        images = pipeline(samplePrompt,height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps).images
+                                    images[0].save(os.path.join(sample_dir,sampleName, f"{sampleName}_{i}.png"))
+                                else:
+                                    seed = args.save_sample_controlled_seed[i - args.n_save_sample]
+                                    generator = torch.Generator("cuda").manual_seed(seed)
+                                    if args.model_variant == 'inpainting':
+                                        images = pipeline(samplePrompt,conditioning_image, mask,height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps, generator=generator).images
+                                    if args.model_variant == 'depth2img':
+                                        images = pipeline(samplePrompt,image=test_image, height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps,generator=generator,strength=1.0).images
+                                    elif args.model_variant == 'base':
+                                        images = pipeline(samplePrompt,height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps, generator=generator).images
+                                    images[0].save(os.path.join(sample_dir,sampleName, f"{sampleName}_controlled_seed_{str(seed)}.png"))
+                            if args.send_telegram_updates:
+                                imgs = []
+                                #get all the images from the sample folder
+                                dir = os.listdir(os.path.join(sample_dir,sampleName))
+                                for file in dir:
+                                    if file.endswith(".png"):
+                                        #open the image with pil
+                                        img = Image.open(os.path.join(sample_dir,sampleName,file))
+                                        imgs.append(img)
+                                try:
+                                    send_media_group(args.telegram_chat_id,args.telegram_token,imgs, caption=f"Samples for the <b>{step}</b> {context} using the prompt:\n\n<b>{samplePrompt}</b>")
+                                except:
+                                    pass
+                    del pipeline
+                    del unwrapped_unet
+                    if torch.cuda.is_available():
+                        torch.cuda.empty_cache()
+                if save_model == True:
+                    print(f"{bcolors.OKGREEN}Weights saved to {save_dir}{bcolors.ENDC}")
+                elif save_model == False and len(imgs) > 0:
+                    del imgs
+                    print(f"{bcolors.OKGREEN}Samples saved to {sample_dir}{bcolors.ENDC}")
+        except:
+            print(f"{bcolors.FAIL}Error occured during sampling, skipping.{bcolors.ENDC}")
+            pass
 
     # Only show the progress bar once on each machine.
     progress_bar_inter_epoch = tqdm(range(num_update_steps_per_epoch),bar_format='%s{l_bar}%s%s{bar}%s%s{r_bar}%s'%(bcolors.OKBLUE,bcolors.ENDC, bcolors.OKGREEN, bcolors.ENDC,bcolors.OKBLUE,bcolors.ENDC,), disable=not accelerator.is_local_main_process)
@@ -2600,13 +2604,13 @@ def main():
                 save_and_sample_weights(epoch,'quit_epoch')
                 quit()
             if not epoch % args.save_every_n_epoch:
-                    #print(epoch % args.save_every_n_epoch)
-                    #print('test')
-                    if epoch != 0:
-                        save_and_sample_weights(epoch,'epoch')
-                    else:
-                        pass
-                        #save_and_sample_weights(epoch,'epoch',False)
+                if args.save_every_n_epoch == 1:
+                    save_and_sample_weights(epoch,'epoch')
+                if epoch != 0:
+                    save_and_sample_weights(epoch,'epoch')
+                else:
+                    pass
+                    #save_and_sample_weights(epoch,'epoch',False)
                     print_instructions()
             if epoch % args.save_every_n_epoch and mid_checkpoint==True or mid_sample==True:
                 if mid_checkpoint==True:
