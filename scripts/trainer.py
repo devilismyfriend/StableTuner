@@ -2330,7 +2330,8 @@ def main():
                 elif save_model == False and len(imgs) > 0:
                     del imgs
                     print(f"{bcolors.OKGREEN}Samples saved to {sample_dir}{bcolors.ENDC}")
-        except:
+        except e as Exception:
+            print(e)
             print(f"{bcolors.FAIL}Error occured during sampling, skipping.{bcolors.ENDC}")
             pass
 
