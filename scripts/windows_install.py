@@ -196,7 +196,7 @@ if os.name == "nt":
                     status = shutil.copy2(src_file, cudnn_dest)
             if status:
                 print("Copied CUDNN 8.6 files to destination")
-    d_commit = '0ca1724'
+    d_commit = 'f7bb9ca'
     diffusers_cmd = f"git+https://github.com/huggingface/diffusers.git@{d_commit}#egg=diffusers --force-reinstall"
     run(f'"{python}" -m pip install {diffusers_cmd}', f"Installing Diffusers {d_commit} commit", "Couldn't install diffusers")
     #install requirements file
