@@ -13,7 +13,7 @@
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/36Z4ETFZx94/0.jpg)](https://www.youtube.com/watch?v=36Z4ETFZx94)
     
 ### Join the Discord for training and chill ;) 
-Stable Tuner wants to be the easiest and most complete Stable Diffusion tuner :)
+Stable Tuner wants to be the easiest and most complete Stable Diffusion tuner :) 
 
 Features
 * **For End Users** - ST was made to provide a solution that is convenient but powerful on windows, if you wanted to try finetuning, there's no better option, for Linux folks, a bash script will be added at a later date if there's enough interest.
