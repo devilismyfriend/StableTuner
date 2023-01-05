@@ -716,7 +716,7 @@ class App(ctk.CTk):
         #empty label
         
         if self.update_available:
-            self.sidebar_button_11 = ctk.CTkButton(self.sidebar_frame,text='Update Available',fg_color='red',command=self.update_ST)
+            self.sidebar_button_11 = ctk.CTkButton(self.sidebar_frame,text='Update Available',fg_color='red',hover_color='darkred',command=self.update_ST)
             self.sidebar_button_11.grid(row=12, column=0, padx=20, pady=5)
         else:
             self.empty_label = ctk.CTkLabel(self.sidebar_frame, text="", font=ctk.CTkFont(size=20, weight="bold"))
