@@ -11,7 +11,7 @@
 
 
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/36Z4ETFZx94/0.jpg)](https://www.youtube.com/watch?v=36Z4ETFZx94)
-    
+  
 ### Join the Discord for training and chill ;) 
 Stable Tuner wants to be the easiest and most complete Stable Diffusion tuner :)
 
