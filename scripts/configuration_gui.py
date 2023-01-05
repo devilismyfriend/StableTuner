@@ -1983,6 +1983,8 @@ class App(ctk.CTk):
                     else:
                         
                         newest_dirs = sorted(glob.iglob(last_output_path + os.sep + '*'), key=os.path.getctime, reverse=True)
+                        #remove anything that is not a dir
+                        newest_dirs = [x for x in newest_dirs if os.path.isdir(x)]
                         #sort newest_dirs by date
                         for newest_dir in newest_dirs:
                             #check if the newest dir has all the required folders
@@ -1995,6 +1997,7 @@ class App(ctk.CTk):
                 else:
                         
                         newest_dirs = sorted(glob.iglob(last_output_path + os.sep + '*'), key=os.path.getctime, reverse=True)
+                        newest_dirs = [x for x in newest_dirs if os.path.isdir(x)]
                         #sort newest_dirs by date
                         for newest_dir in newest_dirs:
                             #check if the newest dir has all the required folders
