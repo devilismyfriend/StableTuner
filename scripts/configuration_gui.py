@@ -2647,7 +2647,12 @@ class App(ctk.CTk):
     
     def get_sd_version(self,file_path):
             import torch
-            checkpoint = torch.load(file_path)
+            if 'ckpt' in file_path:
+                checkpoint = torch.load(file_path, map_location="cpu")
+            else:
+                from safetensors.torch import load_file
+                checkpoint = load_file(file_path)
+            #checkpoint = torch.load(file_path)
             answer = messagebox.askyesno("V-Model?", "Is this model using V-Parameterization? (based on SD2.x 768 model)")
             if answer == True:
                 prediction = "vprediction"
@@ -2682,7 +2687,7 @@ class App(ctk.CTk):
                     return
                 file_path = model_dir
             #if the file is not a model index file
-        if file_path.endswith(".ckpt"):
+        if file_path.endswith(".ckpt") or file_path.endswith(".safetensors"):
             sd_file = file_path
             version, prediction = self.get_sd_version(sd_file)
             #create a directory under the models folder with the name of the ckpt file
@@ -2722,10 +2727,6 @@ class App(ctk.CTk):
                 self.convert_model_dialog.destroy()
 
                 file_path = model_path
-        if file_path.endswith(".safetensors"):
-            #raise not implemented error
-            raise NotImplementedError("The selected file is a safetensors file. This file type is not supported yet.")
-            file_path = ''
         self.input_model_path_entry.delete(0, tk.END)
         self.input_model_path_entry.insert(0, file_path)
     
