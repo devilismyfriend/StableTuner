@@ -3343,27 +3343,27 @@ class App(ctk.CTk):
                 batBase += ' --use_text_files_as_captions'
             else:
                 batBase += ' "--use_text_files_as_captions" '
-        if self.sample_step_interval != '0' or self.sample_step_interval != '' or self.sample_step_interval != ' ':
+        if int(self.sample_step_interval) != 0 or self.sample_step_interval != '' or self.sample_step_interval != ' ':
             if export == 'Linux':
                 batBase += f' --sample_step_interval={self.sample_step_interval}'
             else:
                 batBase += f' "--sample_step_interval={self.sample_step_interval}" '
-            try:
-                #if limit_text_encoder is a percentage calculate what epoch to stop at
-                if '%' in self.limit_text_encoder:
-                    percent = float(self.limit_text_encoder.replace('%',''))
-                    stop_epoch = int((int(self.train_epocs) * percent) / 100)
-                    if export == 'Linux':
-                        batBase += f' --stop_text_encoder_training={stop_epoch}'
-                    else:
-                        batBase += f' "--stop_text_encoder_training={stop_epoch}" '
-                elif '%' not in self.limit_text_encoder and self.limit_text_encoder != '' and self.limit_text_encoder != ' ' and self.limit_text_encoder != '0':
-                    if export == 'Linux':
-                        batBase += f' --stop_text_encoder_training={self.limit_text_encoder}'
-                    else:
-                        batBase += f' "--stop_text_encoder_training={self.limit_text_encoder}" '
-            except:
-                pass
+        try:
+            #if limit_text_encoder is a percentage calculate what epoch to stop at
+            if '%' in self.limit_text_encoder:
+                percent = float(self.limit_text_encoder.replace('%',''))
+                stop_epoch = int((int(self.train_epocs) * percent) / 100)
+                if export == 'Linux':
+                    batBase += f' --stop_text_encoder_training={stop_epoch}'
+                else:
+                    batBase += f' "--stop_text_encoder_training={stop_epoch}" '
+            elif '%' not in self.limit_text_encoder and self.limit_text_encoder != '' and self.limit_text_encoder != ' ' and self.limit_text_encoder != '0':
+                if export == 'Linux':
+                    batBase += f' --stop_text_encoder_training={self.limit_text_encoder}'
+                else:
+                    batBase += f' "--stop_text_encoder_training={self.limit_text_encoder}" '
+        except:
+            pass
         if export=='Linux':
             batBase += f' --pretrained_model_name_or_path="{self.model_path}" '
             batBase += f' --pretrained_vae_name_or_path="{self.vae_path}" '
