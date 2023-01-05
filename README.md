@@ -9,7 +9,7 @@
 # Stable Tuner, Fine-tune your SD
 <a href='https://ko-fi.com/O4O5GU04F' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi2.png?v=3' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a> <a href='https://discord.gg/DahNECrBUZ' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://cincydiscord.com/wp-content/uploads/2019/02/CINCYDISCORDJOIN.png' border='0' alt='Join the discord :)' /></a>
 
-    
+
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/36Z4ETFZx94/0.jpg)](https://www.youtube.com/watch?v=36Z4ETFZx94)
     
 ### Join the Discord for training and chill ;) 
