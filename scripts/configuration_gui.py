@@ -651,7 +651,7 @@ class App(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        latest_git_hash = subprocess.check_output(["git", "describe", "--always"], cwd=Path(__file__).resolve().parent).strip().decode()
+        latest_git_hash = subprocess.check_output(["git", "ls-remote", "http://github.com/devilismyfriend/StableTuner.git","main"], cwd=Path(__file__).resolve().parent).strip().decode()[0:7]
         #check if configs folder exists
         print("Latest git hash: " + latest_git_hash)
         if not os.path.exists("configs"):
@@ -2013,7 +2013,7 @@ class App(ctk.CTk):
             return
     def update_ST(self):
         #git
-        new_version = subprocess.check_output(["git", "describe", "--always"], cwd=Path(__file__).resolve().parent).strip().decode()
+        new_version = subprocess.check_output(["git", "ls-remote", "http://github.com/devilismyfriend/StableTuner.git","main"], cwd=Path(__file__).resolve().parent).strip().decode()[0:7]
         #open the stabletuner_hash.cfg file
         #update the stabletuner_hash.cfg file
         with open("configs/stabletuner_hash.cfg", "w") as f:
