@@ -2607,7 +2607,7 @@ def main():
                 save_and_sample_weights(epoch,'quit_epoch')
                 quit()
             if not epoch % args.save_every_n_epoch:
-                if args.save_every_n_epoch == 1:
+                if args.save_every_n_epoch == 1 and epoch == 0:
                     save_and_sample_weights(epoch,'epoch')
                 if epoch != 0:
                     save_and_sample_weights(epoch,'epoch')
