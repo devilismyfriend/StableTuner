@@ -650,10 +650,12 @@ class CreateToolTip(object):
 class App(ctk.CTk):    
     def __init__(self):
         super().__init__()
-
-        latest_git_hash = subprocess.check_output(["git", "ls-remote", "http://github.com/devilismyfriend/StableTuner.git","main"], cwd=Path(__file__).resolve().parent).strip().decode()[0:7]
-        #check if configs folder exists
-        print("Latest git hash: " + latest_git_hash)
+        try:
+            latest_git_hash = subprocess.check_output(["git", "ls-remote", "http://github.com/devilismyfriend/StableTuner.git","main"], cwd=Path(__file__).resolve().parent).strip().decode()[0:7]
+            #check if configs folder exists
+            print("Latest git hash: " + latest_git_hash)
+        except:
+            pass
         if not os.path.exists("configs"):
             os.makedirs("configs")
         
@@ -683,10 +685,13 @@ class App(ctk.CTk):
             #read stableTuner.cfg
             with open("configs/stableTuner_hash.cfg", "r") as f:
                 old_git_hash = f.read()
-            #check if the latest git hash is the same as the one in stableTuner.cfg
-            if latest_git_hash != old_git_hash:
-                #if not the same, delete the old stableTuner.cfg and create a new one with the latest git hash
-                self.update_available = True
+            try:
+                #check if the latest git hash is the same as the one in stableTuner.cfg
+                if latest_git_hash != old_git_hash:
+                    #if not the same, delete the old stableTuner.cfg and create a new one with the latest git hash
+                    self.update_available = True
+            except:
+                self.update_available = False
         self.sidebar_frame = ctk.CTkFrame(self, width=140, corner_radius=0)
         self.sidebar_frame.grid(row=0, column=0, rowspan=10, sticky="nsew")
         self.logo_img = ctk.CTkImage(Image.open("resources/stableTuner_logo.png").resize((300, 300), Image.Resampling.LANCZOS),size=(80,80))

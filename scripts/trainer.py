@@ -495,7 +495,7 @@ ASPECTS_512 = [[512,512],      # 262144 1:1
 
 #failsafe aspects
 ASPECTS = ASPECTS_512
-def get_aspect_buckets(resolution,mode='MJ'):
+def get_aspect_buckets(resolution):
     if resolution < 512:
         raise ValueError("Resolution must be at least 512")
     try: 
@@ -1614,7 +1614,7 @@ def main():
                     pipeline = DiffusionPipeline.from_pretrained(
                         args.pretrained_model_name_or_path,
                         safety_checker=None,
-                        vae=AutoencoderKL.from_pretrained(args.pretrained_vae_name_or_path or args.pretrained_model_name_or_path,subfolder=None if args.pretrained_vae_name_or_path else "vae" ),
+                        vae=AutoencoderKL.from_pretrained(args.pretrained_vae_name_or_path or args.pretrained_model_name_or_path,subfolder=None if args.pretrained_vae_name_or_path else "vae" ,safe_serialization=True),
                         torch_dtype=torch_dtype,
                          
                     )
@@ -1663,7 +1663,7 @@ def main():
     #text_encoder = CLIPTextModel.from_pretrained(args.pretrained_model_name_or_path, subfolder="text_encoder" )
     text_encoder_cls = tu.import_model_class_from_model_name_or_path(args.pretrained_model_name_or_path, None)
     text_encoder = text_encoder_cls.from_pretrained(args.pretrained_model_name_or_path, subfolder="text_encoder" )
-    vae = AutoencoderKL.from_pretrained(args.pretrained_model_name_or_path, subfolder="vae" )
+    vae = AutoencoderKL.from_pretrained(args.pretrained_vae_name_or_path or args.pretrained_model_name_or_path,subfolder=None if args.pretrained_vae_name_or_path else "vae" )
     unet = UNet2DConditionModel.from_pretrained(args.pretrained_model_name_or_path, subfolder="unet" )
     if is_xformers_available() and args.attention=='xformers':
         try:
@@ -2055,7 +2055,7 @@ def main():
             args.pretrained_model_name_or_path,
             unet=unwrapped_unet,
             text_encoder=text_enc_model,
-            vae=AutoencoderKL.from_pretrained(args.pretrained_vae_name_or_path or args.pretrained_model_name_or_path,subfolder=None if args.pretrained_vae_name_or_path else "vae" ),
+            vae=AutoencoderKL.from_pretrained(args.pretrained_vae_name_or_path or args.pretrained_model_name_or_path,subfolder=None if args.pretrained_vae_name_or_path else "vae", safe_serialization=True),
             safety_checker=None,
             torch_dtype=weight_dtype,
             local_files_only=False,
@@ -2216,7 +2216,7 @@ def main():
                     args.pretrained_model_name_or_path,
                     unet=unwrapped_unet,
                     text_encoder=text_enc_model,
-                    vae=AutoencoderKL.from_pretrained(args.pretrained_vae_name_or_path or args.pretrained_model_name_or_path,subfolder=None if args.pretrained_vae_name_or_path else "vae" ),
+                    vae=AutoencoderKL.from_pretrained(args.pretrained_vae_name_or_path or args.pretrained_model_name_or_path,subfolder=None if args.pretrained_vae_name_or_path else "vae",),
                     safety_checker=None,
                     torch_dtype=weight_dtype,
                     local_files_only=False,
