@@ -2026,8 +2026,8 @@ class App(ctk.CTk):
         #update the stabletuner
         #self.update_stabletuner()
         #git pull and wait for it to finish
-        subprocess.run(["git", "fetch"], cwd=Path(__file__).resolve().parent)
-        print('feteched')
+        subprocess.run(["git", "pull"], cwd=Path(__file__).resolve().parent)
+        print('pulled')
         #restart the app
         restart(self)
     def packageForCloud(self):
