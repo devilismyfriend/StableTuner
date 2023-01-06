@@ -495,7 +495,7 @@ ASPECTS_512 = [[512,512],      # 262144 1:1
 
 #failsafe aspects
 ASPECTS = ASPECTS_512
-def get_aspect_buckets(resolution):
+def get_aspect_buckets(resolution,mode=''):
     if resolution < 512:
         raise ValueError("Resolution must be at least 512")
     try: 
