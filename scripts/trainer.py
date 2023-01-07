@@ -42,7 +42,7 @@ from torchvision.transforms import functional
 from tqdm.auto import tqdm
 from transformers import CLIPTextModel, CLIPTokenizer
 from typing import Dict, List, Generator, Tuple
-from PIL import Image
+from PIL import Image, ImageFile
 from diffusers.utils.import_utils import is_xformers_available
 import trainer_util as tu
 
@@ -1928,6 +1928,7 @@ def main():
         print(f" {bcolors.WARNING}Generating latents cache...{bcolors.ENDC}")
         train_dataset = LatentsDataset([], [], [], [], [])
         counter = 0
+        ImageFile.LOAD_TRUNCATED_IMAGES = True
         with torch.no_grad():
             for batch in tqdm(train_dataloader, desc="Caching latents", bar_format='%s{l_bar}%s%s{bar}%s%s{r_bar}%s'%(bcolors.OKBLUE,bcolors.ENDC, bcolors.OKBLUE, bcolors.ENDC,bcolors.OKBLUE,bcolors.ENDC,)):
                 cached_conditioning_latent = None
