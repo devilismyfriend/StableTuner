@@ -884,6 +884,7 @@ class App(ctk.CTk):
         self.preview_images = []
         self.disable_cudnn_benchmark = True
         self.sample_step_interval = 500
+        self.token_limit = 75
     def select_frame_by_name(self, name):
         # set button color for selected button
         self.sidebar_button_1.configure(fg_color=("gray75", "gray25") if name == "general" else "transparent")
@@ -1526,6 +1527,12 @@ class App(ctk.CTk):
         self.prior_loss_preservation_weight_entry = ctk.CTkEntry(self.training_frame_subframe)
         self.prior_loss_preservation_weight_entry.grid(row=19, column=3, sticky="w")
         self.prior_loss_preservation_weight_entry.insert(0, self.prior_loss_weight)
+
+        # Token truncation limit
+        self.token_limit_label = ctk.CTkLabel(self.training_frame_subframe, text="Token Limit")
+        token_label_ttp = CreateToolTip(self.token_limit_label, "The number of tokens you want to truncate at, always rounded up to the next multiple of 75 - i.e. 75 -> 75, 76 -> 150\n\nTokens beyond this limit will be lost, and will consume larger amounts of video memory beyond 1500 tokens.")
+        self.token_limit_entry = ctk.CTkEntry(self.training_frame_subframe)
+        self.token_limit_entry.insert(0, self.token_limit)
         
 
     def create_dataset_settings_widgets(self):
@@ -2854,6 +2861,7 @@ class App(ctk.CTk):
         configure["train_text_encoder"] = self.train_text_encoder_var.get()
         configure["with_prior_loss_preservation"] = self.with_prior_loss_preservation_var.get()
         configure["prior_loss_preservation_weight"] = self.prior_loss_preservation_weight_entry.get()
+        configure["token_limit"] = self.token_limit_entry.get()
         configure["use_image_names_as_captions"] = self.use_image_names_as_captions_var.get()
         configure["auto_balance_concept_datasets"] = self.auto_balance_dataset_var.get()
         configure["add_class_images_to_dataset"] = self.add_class_images_to_dataset_var.get()
@@ -2979,6 +2987,11 @@ class App(ctk.CTk):
         self.with_prior_loss_preservation_var.set(configure["with_prior_loss_preservation"])
         self.prior_loss_preservation_weight_entry.delete(0, tk.END)
         self.prior_loss_preservation_weight_entry.insert(0, configure["prior_loss_preservation_weight"])
+        self.token_limit_entry.delete(0, tk.END)
+        if configure["token_limit"]:
+            self.token_limit_entry.insert(0, configure["token_limit"])
+        else:
+            self.token_limit_entry.insert(0, 75)
         self.use_image_names_as_captions_var.set(configure["use_image_names_as_captions"])
         self.auto_balance_dataset_var.set(configure["auto_balance_concept_datasets"])
         self.add_class_images_to_dataset_var.set(configure["add_class_images_to_dataset"])
@@ -3064,6 +3077,7 @@ class App(ctk.CTk):
         self.train_text_encoder = self.train_text_encoder_var.get()
         self.with_prior_loss_preservation = self.with_prior_loss_preservation_var.get()
         self.prior_loss_preservation_weight = self.prior_loss_preservation_weight_entry.get()
+        self.token_limit = self.token_limit_entry.get()
         self.use_image_names_as_captions = self.use_image_names_as_captions_var.get()
         self.auto_balance_concept_datasets = self.auto_balance_dataset_var.get()
         self.add_class_images_to_dataset = self.add_class_images_to_dataset_var.get()
@@ -3310,6 +3324,11 @@ class App(ctk.CTk):
                 batBase += f' "--prior_loss_weight={self.prior_loss_preservation_weight}" '
         elif self.with_prior_loss_preservation == True and self.use_aspect_ratio_bucketing == True:
             print('loss preservation isnt supported with aspect ratio bucketing yet, sorry!')
+        if export == "Linux":
+            batBase += f' --token_limit={self.token_limit}'
+        else:
+            batBase += f' "--token_limit={self.token_limit}" '
+
         if self.use_image_names_as_captions == True:
             if export == 'Linux':
                 batBase += ' --use_image_names_as_captions'
