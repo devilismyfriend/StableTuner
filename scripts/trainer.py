@@ -62,6 +62,18 @@ logger = get_logger(__name__)
 def parse_args():
     parser = argparse.ArgumentParser(description="Simple example of a training script.")
     parser.add_argument(
+        "--shuffle_per_epoch",
+        default=False,
+        action="store_true",
+        help="Will shffule the dataset per epoch",
+    )
+    parser.add_argument(
+            "--sample_from_batch",
+            type=int,
+            default=0,
+            help=("Number of prompts to sample from the batch for inference"),
+        )
+    parser.add_argument(
         "--attention",
         type=str,
         choices=["xformers", "flash_attention"],
@@ -1359,42 +1371,64 @@ class PromptDataset(Dataset):
 
 class CachedLatentsDataset(Dataset):
     #stores paths and loads latents on the fly
-    def __init__(self, cache_paths=(),batch_size=None,tokenizer=None,conditional_dropout=None,accelerator=None,dtype=None,model_variant='base'):
+    def __init__(self, cache_paths=(),batch_size=None,tokenizer=None,text_encoder=None,dtype=None,model_variant='base',shuffle_per_epoch=False,args=None):
         self.cache_paths = cache_paths
         self.tokenizer = tokenizer
+        self.args = args
+        self.text_encoder = text_encoder
+        #get text encoder device
+        text_encoder_device = next(self.text_encoder.parameters()).device
         self.empty_batch = [self.tokenizer('',padding="do_not_pad",truncation=True,max_length=self.tokenizer.model_max_length,).input_ids for i in range(batch_size)]
-        self.empty_tokens = tokenizer.pad({"input_ids": self.empty_batch},padding="max_length",max_length=tokenizer.model_max_length,return_tensors="pt",).input_ids
-        self.empty_tokens.to(accelerator.device, dtype=dtype)
-        self.conditional_dropout = conditional_dropout
+        #handle text encoder for empty tokens
+        if self.args.train_text_encoder != True:
+            self.empty_tokens = tokenizer.pad({"input_ids": self.empty_batch},padding="max_length",max_length=tokenizer.model_max_length,return_tensors="pt",).to(text_encoder_device).input_ids
+            self.empty_tokens.to(text_encoder_device, dtype=dtype)
+            self.empty_tokens = self.text_encoder(self.empty_tokens)[0]
+        else:
+            self.empty_tokens = tokenizer.pad({"input_ids": self.empty_batch},padding="max_length",max_length=tokenizer.model_max_length,return_tensors="pt",).input_ids
+            self.empty_tokens.to(text_encoder_device, dtype=dtype)
+
+        self.conditional_dropout = args.conditional_dropout
         self.conditional_indexes = []
         self.model_variant = model_variant
+        self.shuffle_per_epoch = shuffle_per_epoch
     def __len__(self):
         return len(self.cache_paths)
     def __getitem__(self, index):
         if index == 0:
+            if self.shuffle_per_epoch == True:
+                self.cache_paths = tuple(random.sample(self.cache_paths, len(self.cache_paths)))
             if len(self.cache_paths) > 1:
-                possible_indexes = list(range(0,len(self.cache_paths)-1))
+                possible_indexes_extension = None
+                possible_indexes = list(range(0,len(self.cache_paths)))
                 #conditional dropout is a percentage of images to drop from the total cache_paths
                 if self.conditional_dropout != None:
-                    if self.conditional_indexes == []:
-                        print(f" {bcolors.WARNING}Conditional dropout will drop {int(math.ceil(len(self.cache_paths) * self.conditional_dropout))} random batch's captions per epoch{bcolors.ENDC}")
-                        while len(self.conditional_indexes) < math.ceil(len(self.cache_paths) * self.conditional_dropout):
-                            picked_index = random.choice(possible_indexes)
-                            self.conditional_indexes.append(picked_index)
-                            possible_indexes.remove(picked_index)
+                    if len(self.conditional_indexes) == 0:
+                        self.conditional_indexes = random.sample(possible_indexes, k=int(math.ceil(len(possible_indexes)*self.conditional_dropout)))
                     else:
-                        past_indexes = self.conditional_indexes
-                        self.conditional_indexes = []
-                        #pick new indexes, but don't pick the same ones twice
-                        while len(self.conditional_indexes) < math.ceil(len(self.cache_paths) * self.conditional_dropout):
-                            picked_index = random.choice(possible_indexes)
-                            if picked_index in past_indexes:
-                                continue
-                            self.conditional_indexes.append(picked_index)
-                            possible_indexes.remove(picked_index)
-
+                        #pick indexes from the remaining possible indexes
+                        possible_indexes_extension = [i for i in possible_indexes if i not in self.conditional_indexes]
+                        #duplicate all values in possible_indexes_extension
+                        possible_indexes_extension = possible_indexes_extension + possible_indexes_extension
+                        possible_indexes_extension = possible_indexes_extension + self.conditional_indexes
+                        self.conditional_indexes = random.sample(possible_indexes_extension, k=int(math.ceil(len(possible_indexes)*self.conditional_dropout)))
+                        #check for duplicates in conditional_indexes values
+                        if len(self.conditional_indexes) != len(set(self.conditional_indexes)):
+                            #remove duplicates
+                            self.conditional_indexes_non_dupe = list(set(self.conditional_indexes))
+                            #add a random value from possible_indexes_extension for each duplicate
+                            for i in range(len(self.conditional_indexes) - len(self.conditional_indexes_non_dupe)):
+                                while True:
+                                    random_value = random.choice(possible_indexes_extension)
+                                    if random_value not in self.conditional_indexes_non_dupe:
+                                        self.conditional_indexes_non_dupe.append(random_value)
+                                        break
+                            self.conditional_indexes = self.conditional_indexes_non_dupe
         self.cache = torch.load(self.cache_paths[index])
         self.latents = self.cache.latents_cache[0]
+        self.tokens = self.cache.tokens_cache[0]
+        self.conditioning_latent_cache = None
+        self.extra_cache = None
         if index in self.conditional_indexes:
             self.text_encoder = self.empty_tokens
         else:
@@ -1402,11 +1436,9 @@ class CachedLatentsDataset(Dataset):
         if self.model_variant != 'base':
             self.conditioning_latent_cache = self.cache.conditioning_latent_cache[0]
             self.extra_cache = self.cache.extra_cache[0]
-            del self.cache
-            return self.latents, self.text_encoder, self.conditioning_latent_cache, self.extra_cache
-        elif self.model_variant == 'base':
-            del self.cache
-            return self.latents, self.text_encoder
+        del self.cache
+        return self.latents, self.text_encoder, self.conditioning_latent_cache, self.extra_cache, self.tokens
+
     def add_pt_cache(self, cache_path):
         if len(self.cache_paths) == 0:
             self.cache_paths = (cache_path,)
@@ -1509,6 +1541,8 @@ def main():
     print(f" {bcolors.OKBLUE}Please wait a moment as we load up some stuff...{bcolors.ENDC}") 
     #torch.cuda.set_per_process_memory_fraction(0.5)
     args = parse_args()
+    #temp arg
+    args.batch_tokens = None
     if args.disable_cudnn_benchmark:
         torch.backends.cudnn.benchmark = False
     else:
@@ -1725,6 +1759,7 @@ def main():
         #print(examples)
         input_ids = [example["instance_prompt_ids"] for example in examples]
         pixel_values = [example["instance_images"] for example in examples]
+        tokens = input_ids
         if args.model_variant == 'inpainting':
             mask = [example["mask"] for example in examples]
         if args.model_variant == 'depth2img':
@@ -1764,18 +1799,12 @@ def main():
         if num_chunks > 1:
             len_input = (tokenizer.model_max_length * num_chunks) - (num_chunks * 2)
             
-        input_ids = tokenizer.pad(
-            {"input_ids": input_ids},
-            padding="max_length",
-            max_length=len_input,
-            return_tensors="pt",\
-            ).input_ids
-
         if args.model_variant == 'base':
             batch = {
                 "input_ids": input_ids,
                 "pixel_values": pixel_values,
-                "extra_values": None
+                "extra_values": None,
+                "tokens" : tokens
             }
         else:
             if args.model_variant == 'depth2img':
@@ -1785,7 +1814,8 @@ def main():
             batch = {
                 "input_ids": input_ids,
                 "pixel_values": pixel_values,
-                "extra_values": extra_values
+                "extra_values": extra_values,
+                "tokens" : tokens
             }
         return batch
 
@@ -1845,11 +1875,12 @@ def main():
         extra_latent = {shape: vae.encode(torch.zeros(1, 3, shape[1], shape[0]).to(accelerator.device, dtype=weight_dtype)).latent_dist.mean * 0.18215 for shape in wh}
 
     cached_dataset = CachedLatentsDataset(batch_size=args.train_batch_size,
+    text_encoder=text_encoder,
     tokenizer=tokenizer,
-    conditional_dropout=args.conditional_dropout,
-    accelerator=accelerator,dtype=weight_dtype,
-    model_variant=args.model_variant)
-
+    dtype=weight_dtype,
+    model_variant=args.model_variant,
+    shuffle_per_epoch=args.shuffle_per_epoch,
+    args = args,)
     gen_cache = False
     data_len = len(train_dataloader)
     latent_cache_dir = Path(args.output_dir, "logs", "latent_cache")
@@ -1872,13 +1903,14 @@ def main():
             del text_encoder
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
+            torch.cuda.ipc_collect()
         #load all the cached latents into a single dataset
-        for i in tqdm(range(0,data_len-1), desc = f" {bcolors.WARNING} ** Loading latent cache from disk{bcolors.ENDC}"):
+        for i in range(0,data_len-1):
             cached_dataset.add_pt_cache(os.path.join(latent_cache_dir,f"latents_cache_{i}.pt"))
     if gen_cache == True:
         #delete all the cached latents if they exist to avoid problems
         print(f" {bcolors.WARNING}Generating latents cache...{bcolors.ENDC}")
-        train_dataset = LatentsDataset([], [], [], [])
+        train_dataset = LatentsDataset([], [], [], [], [])
         counter = 0
         with torch.no_grad():
             for batch in tqdm(train_dataloader, desc="Caching latents", bar_format='%s{l_bar}%s%s{bar}%s%s{r_bar}%s'%(bcolors.OKBLUE,bcolors.ENDC, bcolors.OKBLUE, bcolors.ENDC,bcolors.OKBLUE,bcolors.ENDC,)):
@@ -1899,8 +1931,7 @@ def main():
                     cached_text_enc = batch["input_ids"]
                 else:
                     cached_text_enc = text_encoder(batch["input_ids"])[0]
-                
-                train_dataset.add_latent(cached_latent, cached_text_enc, cached_conditioning_latent, cached_extra)
+                train_dataset.add_latent(cached_latent, cached_text_enc, cached_conditioning_latent, cached_extra, batch["tokens"])
                 del batch
                 del cached_latent
                 del cached_text_enc
@@ -1909,7 +1940,7 @@ def main():
                 torch.save(train_dataset, os.path.join(latent_cache_dir,f"latents_cache_{counter}.pt"))
                 cached_dataset.add_pt_cache(os.path.join(latent_cache_dir,f"latents_cache_{counter}.pt"))
                 counter += 1
-                train_dataset = LatentsDataset([], [], [], [])
+                train_dataset = LatentsDataset([], [], [], [], [])
                 #if counter % 300 == 0:
                     #train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=1, collate_fn=lambda x: x, shuffle=False)
                 #    gc.collect()
@@ -1922,7 +1953,7 @@ def main():
             del text_encoder
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
-        #load all the cached latents into a single dataset
+            torch.cuda.ipc_collect()
     train_dataloader = torch.utils.data.DataLoader(cached_dataset, batch_size=1, collate_fn=lambda x: x, shuffle=False)
     print(f" {bcolors.OKGREEN}Latents are ready.{bcolors.ENDC}")
     # Scheduler and math around the number of training steps.
@@ -2080,141 +2111,174 @@ def main():
             print('')
             print(f"{bcolors.WARNING}Use 'CTRL+H' to print this message again.{bcolors.ENDC}")
     def save_and_sample_weights(step,context='checkpoint',save_model=True):
-        #check how many folders are in the output dir
-        #if there are more than 5, delete the oldest one
-        #save the model
-        #save the optimizer
-        #save the lr_scheduler
-        #save the args
-        height = args.sample_height
-        width = args.sample_width
-        if args.sample_aspect_ratios:
-            #choose random aspect ratio from ASPECTS    
-            aspect_ratio = random.choice(ASPECTS)
-            height = aspect_ratio[0]
-            width = aspect_ratio[1]
-        if os.path.exists(args.output_dir):
-            if args.delete_checkpoints_when_full_drive==True:
-                folders = os.listdir(args.output_dir)
-                #check how much space is left on the drive
-                total, used, free = shutil.disk_usage("/")
-                if (free // (2**30)) < 4:
-                    #folders.remove("0")
-                    #get the folder with the lowest number
-                    oldest_folder = min(folder for folder in folders if folder.isdigit())
-                    if args.send_telegram_updates:
-                        try:
-                            send_telegram_message(f"Deleting folder <b>{oldest_folder}</b> because the drive is full", args.telegram_chat_id, args.telegram_token)
-                        except:
-                            pass
-                    oldest_folder_path = os.path.join(args.output_dir, oldest_folder)
-                    shutil.rmtree(oldest_folder_path)
-        # Create the pipeline using using the trained modules and save it.
-        if accelerator.is_main_process:
-            if 'step' in context:
-                #what is the current epoch
-                epoch = step // num_update_steps_per_epoch
-            else:
-                epoch = step
-            if args.train_text_encoder and args.stop_text_encoder_training == True:
-                text_enc_model = accelerator.unwrap_model(text_encoder,True)
-            elif args.train_text_encoder and args.stop_text_encoder_training > epoch:
-                text_enc_model = accelerator.unwrap_model(text_encoder,True)
-            elif args.train_text_encoder == False:
-                text_enc_model = CLIPTextModel.from_pretrained(args.pretrained_model_name_or_path, subfolder="text_encoder" )
-            elif args.train_text_encoder and args.stop_text_encoder_training <= epoch:
-                if 'frozen_directory' in locals():
-                    text_enc_model = CLIPTextModel.from_pretrained(frozen_directory, subfolder="text_encoder")
+        try:
+            #check how many folders are in the output dir
+            #if there are more than 5, delete the oldest one
+            #save the model
+            #save the optimizer
+            #save the lr_scheduler
+            #save the args
+            height = args.sample_height
+            width = args.sample_width
+            batch_prompts = []
+            if args.sample_from_batch > 0:
+                num_samples = args.sample_from_batch if args.sample_from_batch < args.train_batch_size else args.train_batch_size
+                batch_prompts = []
+                tokens = args.batch_tokens
+                if tokens != None:
+                    allPrompts = list(set([tokenizer.decode(p).replace('<|endoftext|>','').replace('<|startoftext|>', '') for p in tokens]))
+                    if len(allPrompts) < num_samples:
+                        num_samples = len(allPrompts)
+                    batch_prompts = random.sample(allPrompts, num_samples)
+                        
+
+            if args.sample_aspect_ratios:
+                #choose random aspect ratio from ASPECTS    
+                aspect_ratio = random.choice(ASPECTS)
+                height = aspect_ratio[0]
+                width = aspect_ratio[1]
+            if os.path.exists(args.output_dir):
+                if args.detect_full_drive==True:
+                    folders = os.listdir(args.output_dir)
+                    #check how much space is left on the drive
+                    total, used, free = shutil.disk_usage("/")
+                    if (free // (2**30)) < 4:
+                        #folders.remove("0")
+                        #get the folder with the lowest number
+                        #oldest_folder = min(folder for folder in folders if folder.isdigit())
+                        print(f"{bcolors.FAIL}Drive is almost full, Please make some space to continue training.{bcolors.ENDC}")
+                        if args.send_telegram_updates:
+                            try:
+                                send_telegram_message(f"Drive is almost full, Please make some space to continue training.", args.telegram_chat_id, args.telegram_token)
+                            except:
+                                pass
+                        #count time
+                        import time
+                        start_time = time.time()
+                        import platform
+                        while input("Press Enter to continue... if you're on linux we'll wait 5 minutes for you to make space and continue"):
+                            #check if five minutes have passed
+                            #check if os is linux
+                            if 'Linux' in platform.platform():
+                                if time.time() - start_time > 300:
+                                    break
+
+                        
+                        #oldest_folder_path = os.path.join(args.output_dir, oldest_folder)
+                        #shutil.rmtree(oldest_folder_path)
+            # Create the pipeline using using the trained modules and save it.
+            if accelerator.is_main_process:
+                if 'step' in context:
+                    #what is the current epoch
+                    epoch = step // num_update_steps_per_epoch
                 else:
+                    epoch = step
+                if args.train_text_encoder and args.stop_text_encoder_training == True:
                     text_enc_model = accelerator.unwrap_model(text_encoder,True)
+                elif args.train_text_encoder and args.stop_text_encoder_training > epoch:
+                    text_enc_model = accelerator.unwrap_model(text_encoder,True)
+                elif args.train_text_encoder == False:
+                    text_enc_model = CLIPTextModel.from_pretrained(args.pretrained_model_name_or_path, subfolder="text_encoder" )
+                elif args.train_text_encoder and args.stop_text_encoder_training <= epoch:
+                    if 'frozen_directory' in locals():
+                        text_enc_model = CLIPTextModel.from_pretrained(frozen_directory, subfolder="text_encoder")
+                    else:
+                        text_enc_model = accelerator.unwrap_model(text_encoder,True)
+                    
+                #scheduler = DDIMScheduler(beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear", clip_sample=False, set_alpha_to_one=False)
+                #scheduler = EulerDiscreteScheduler.from_pretrained(args.pretrained_model_name_or_path, subfolder="scheduler", prediction_type="v_prediction")
+                scheduler = DPMSolverMultistepScheduler.from_pretrained(args.pretrained_model_name_or_path, subfolder="scheduler")
+                unwrapped_unet = accelerator.unwrap_model(unet,True)
+                if args.use_ema:
+                    ema_unet.copy_to(unwrapped_unet.parameters())
+                    
+                pipeline = DiffusionPipeline.from_pretrained(
+                    args.pretrained_model_name_or_path,
+                    unet=unwrapped_unet,
+                    text_encoder=text_enc_model,
+                    vae=AutoencoderKL.from_pretrained(args.pretrained_vae_name_or_path or args.pretrained_model_name_or_path,subfolder=None if args.pretrained_vae_name_or_path else "vae",),
+                    safety_checker=None,
+                    torch_dtype=weight_dtype,
+                    local_files_only=False,
+                )
+                pipeline.scheduler = scheduler
+                if is_xformers_available() and args.attention=='xformers':
+                    try:
+                        unet.enable_xformers_memory_efficient_attention()
+                    except Exception as e:
+                        logger.warning(
+                            "Could not enable memory efficient attention. Make sure xformers is installed"
+                            f" correctly and a GPU is available: {e}"
+                        )
+                elif args.attention=='flash_attention':
+                    tu.replace_unet_cross_attn_to_flash_attention()
+                save_dir = os.path.join(args.output_dir, f"{context}_{step}")
+                sample_dir = os.path.join(args.output_dir, f"samples/{context}_{step}")
+                #if sample dir path does not exist, create it
                 
-            #scheduler = DDIMScheduler(beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear", clip_sample=False, set_alpha_to_one=False)
-            #scheduler = EulerDiscreteScheduler.from_pretrained(args.pretrained_model_name_or_path, subfolder="scheduler", prediction_type="v_prediction")
-            scheduler = DPMSolverMultistepScheduler.from_pretrained(args.pretrained_model_name_or_path, subfolder="scheduler")
-            unwrapped_unet = accelerator.unwrap_model(unet,True)
-            if args.use_ema:
-                ema_unet.copy_to(unwrapped_unet.parameters())
-                
-            pipeline = DiffusionPipeline.from_pretrained(
-                args.pretrained_model_name_or_path,
-                unet=unwrapped_unet,
-                text_encoder=text_enc_model,
-                vae=AutoencoderKL.from_pretrained(args.pretrained_vae_name_or_path or args.pretrained_model_name_or_path,subfolder=None if args.pretrained_vae_name_or_path else "vae" ),
-                safety_checker=None,
-                torch_dtype=torch.float16,
-                local_files_only=True,
-            )
-            pipeline.scheduler = scheduler
-            if is_xformers_available() and args.attention=='xformers':
-                try:
-                    unet.enable_xformers_memory_efficient_attention()
-                except Exception as e:
-                    logger.warning(
-                        "Could not enable memory efficient attention. Make sure xformers is installed"
-                        f" correctly and a GPU is available: {e}"
-                    )
-            elif args.attention=='flash_attention':
-                tu.replace_unet_cross_attn_to_flash_attention()
-            save_dir = os.path.join(args.output_dir, f"{context}_{step}")
-            sample_dir = os.path.join(args.output_dir, f"samples/{context}_{step}")
-            #if sample dir path does not exist, create it
-            
-            if args.stop_text_encoder_training == True:
-                save_dir = frozen_directory
-            if step != 0:
-                if save_model:
-                    pipeline.save_pretrained(save_dir)
-                    with open(os.path.join(save_dir, "args.json"), "w") as f:
-                            json.dump(args.__dict__, f, indent=2)
                 if args.stop_text_encoder_training == True:
-                    #delete every folder in frozen_directory but the text encoder
-                    for folder in os.listdir(save_dir):
-                        if folder != "text_encoder" and os.path.isdir(os.path.join(save_dir, folder)):
-                            shutil.rmtree(os.path.join(save_dir, folder))
-            imgs = []
-            if args.add_sample_prompt is not None and args.stop_text_encoder_training != True:
-                
-                pipeline = pipeline.to(accelerator.device)
-                pipeline.set_progress_bar_config(disable=True)
-                #sample_dir = os.path.join(save_dir, "samples")
-                #if sample_dir exists, delete it
-                if os.path.exists(sample_dir):
-                    shutil.rmtree(sample_dir)
-                os.makedirs(sample_dir, exist_ok=True)
-                with torch.autocast("cuda"), torch.inference_mode():
-                    if args.send_telegram_updates:
-                        try:
-                            send_telegram_message(f"Generating samples for <b>{step}</b> {context}", args.telegram_chat_id, args.telegram_token)
-                        except:
-                            pass
-                    for samplePrompt in args.add_sample_prompt:
-                        sampleIndex = args.add_sample_prompt.index(samplePrompt)
-                        #convert sampleIndex to number in words
-                        sampleName = f"prompt_{sampleIndex+1}"
-                        os.makedirs(os.path.join(sample_dir,sampleName), exist_ok=True)
-                        if args.model_variant == 'inpainting':
-                            conditioning_image = torch.zeros(1, 3, width, height)
-                            mask = torch.ones(1, 1, width, height)
-                        if args.model_variant == 'depth2img':
-                            #pil new white image
-                            test_image = Image.new('RGB', (width, height), (255, 255, 255))
-                            depth_image = Image.new('RGB', (width, height), (255, 255, 255))
-                            depth = np.array(depth_image.convert("L"))
-                            depth = depth.astype(np.float32) / 255.0
-                            depth = depth[None, None]
-                            depth = torch.from_numpy(depth)
-                        for i in tqdm(range(args.n_save_sample) if not args.save_sample_controlled_seed else range(args.n_save_sample+len(args.save_sample_controlled_seed)), desc="Generating samples"):
-                            #check if the sample is controlled by a seed
-                            if i != args.n_save_sample:
-                                if args.model_variant == 'inpainting':
-                                    images = pipeline(samplePrompt, conditioning_image, mask, height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps).images
-                                if args.model_variant == 'depth2img':
-                                    images = pipeline(samplePrompt,image=test_image, height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps,strength=1.0).images
-                                elif args.model_variant == 'base':
-                                    images = pipeline(samplePrompt,height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps).images
-                                images[0].save(os.path.join(sample_dir,sampleName, f"{sampleName}_{i}.png"))
-                            else:
-                                for seed in args.save_sample_controlled_seed:
+                    save_dir = frozen_directory
+                if step != 0:
+                    if save_model:
+                        pipeline.save_pretrained(save_dir,safe_serialization=True)
+                        with open(os.path.join(save_dir, "args.json"), "w") as f:
+                                json.dump(args.__dict__, f, indent=2)
+                    if args.stop_text_encoder_training == True:
+                        #delete every folder in frozen_directory but the text encoder
+                        for folder in os.listdir(save_dir):
+                            if folder != "text_encoder" and os.path.isdir(os.path.join(save_dir, folder)):
+                                shutil.rmtree(os.path.join(save_dir, folder))
+                imgs = []
+                if args.add_sample_prompt is not None or batch_prompts != [] and args.stop_text_encoder_training != True:
+                    prompts = []
+                    if args.add_sample_prompt is not None:
+                        for prompt in args.add_sample_prompt:
+                            prompts.append(prompt)
+                    if batch_prompts != []:
+                        for prompt in batch_prompts:
+                            prompts.append(prompt)
+
+                    pipeline = pipeline.to(accelerator.device)
+                    pipeline.set_progress_bar_config(disable=True)
+                    #sample_dir = os.path.join(save_dir, "samples")
+                    #if sample_dir exists, delete it
+                    if os.path.exists(sample_dir):
+                        shutil.rmtree(sample_dir)
+                    os.makedirs(sample_dir, exist_ok=True)
+                    with torch.autocast("cuda"), torch.inference_mode():
+                        if args.send_telegram_updates:
+                            try:
+                                send_telegram_message(f"Generating samples for <b>{step}</b> {context}", args.telegram_chat_id, args.telegram_token)
+                            except:
+                                pass
+                        for samplePrompt in prompts:
+                            sampleIndex = prompts.index(samplePrompt)
+                            #convert sampleIndex to number in words
+                            sampleName = f"prompt_{sampleIndex+1}"
+                            os.makedirs(os.path.join(sample_dir,sampleName), exist_ok=True)
+                            if args.model_variant == 'inpainting':
+                                conditioning_image = torch.zeros(1, 3, width, height)
+                                mask = torch.ones(1, 1, width, height)
+                            if args.model_variant == 'depth2img':
+                                #pil new white image
+                                test_image = Image.new('RGB', (width, height), (255, 255, 255))
+                                depth_image = Image.new('RGB', (width, height), (255, 255, 255))
+                                depth = np.array(depth_image.convert("L"))
+                                depth = depth.astype(np.float32) / 255.0
+                                depth = depth[None, None]
+                                depth = torch.from_numpy(depth)
+                            for i in tqdm(range(args.n_save_sample) if not args.save_sample_controlled_seed else range(args.n_save_sample+len(args.save_sample_controlled_seed)), desc="Generating samples"):
+                                #check if the sample is controlled by a seed
+                                if i < args.n_save_sample:
+                                    if args.model_variant == 'inpainting':
+                                        images = pipeline(samplePrompt, conditioning_image, mask, height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps).images
+                                    if args.model_variant == 'depth2img':
+                                        images = pipeline(samplePrompt,image=test_image, height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps,strength=1.0).images
+                                    elif args.model_variant == 'base':
+                                        images = pipeline(samplePrompt,height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps).images
+                                    images[0].save(os.path.join(sample_dir,sampleName, f"{sampleName}_{i}.png"))
+                                else:
+                                    seed = args.save_sample_controlled_seed[i - args.n_save_sample]
                                     generator = torch.Generator("cuda").manual_seed(seed)
                                     if args.model_variant == 'inpainting':
                                         images = pipeline(samplePrompt,conditioning_image, mask,height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps, generator=generator).images
@@ -2223,28 +2287,34 @@ def main():
                                     elif args.model_variant == 'base':
                                         images = pipeline(samplePrompt,height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps, generator=generator).images
                                     images[0].save(os.path.join(sample_dir,sampleName, f"{sampleName}_controlled_seed_{str(seed)}.png"))
-                        if args.send_telegram_updates:
-                            imgs = []
-                            #get all the images from the sample folder
-                            dir = os.listdir(os.path.join(sample_dir,sampleName))
-                            for file in dir:
-                                if file.endswith(".png"):
-                                    #open the image with pil
-                                    img = Image.open(os.path.join(sample_dir,sampleName,file))
-                                    imgs.append(img)
-                            try:
-                                send_media_group(args.telegram_chat_id,args.telegram_token,imgs, caption=f"Samples for the <b>{step}</b> {context} using the prompt:\n\n<b>{samplePrompt}</b>")
-                            except:
-                                pass
-                del pipeline
-                del unwrapped_unet
-                if torch.cuda.is_available():
-                    torch.cuda.empty_cache()
-            if save_model == True:
-                print(f"{bcolors.OKGREEN}Weights saved to {save_dir}{bcolors.ENDC}")
-            elif save_model == False and len(imgs) > 0:
-                del imgs
-                print(f"{bcolors.OKGREEN}Samples saved to {sample_dir}{bcolors.ENDC}")
+                            if args.send_telegram_updates:
+                                imgs = []
+                                #get all the images from the sample folder
+                                dir = os.listdir(os.path.join(sample_dir,sampleName))
+                                for file in dir:
+                                    if file.endswith(".png"):
+                                        #open the image with pil
+                                        img = Image.open(os.path.join(sample_dir,sampleName,file))
+                                        imgs.append(img)
+                                try:
+                                    send_media_group(args.telegram_chat_id,args.telegram_token,imgs, caption=f"Samples for the <b>{step}</b> {context} using the prompt:\n\n<b>{samplePrompt}</b>")
+                                except:
+                                    pass
+                    del pipeline
+                    del unwrapped_unet
+                    if torch.cuda.is_available():
+                        torch.cuda.empty_cache()
+                        torch.cuda.ipc_collect()
+                if save_model == True:
+                    print(f"{bcolors.OKGREEN}Weights saved to {save_dir}{bcolors.ENDC}")
+                elif save_model == False and len(imgs) > 0:
+                    del imgs
+                    print(f"{bcolors.OKGREEN}Samples saved to {sample_dir}{bcolors.ENDC}")
+        except Exception as e:
+            print(e)
+            print(f"{bcolors.FAIL} Error occured during sampling, skipping.{bcolors.ENDC}")
+            pass
+
 
     # Only show the progress bar once on each machine.
     progress_bar_inter_epoch = tqdm(range(num_update_steps_per_epoch),bar_format='%s{l_bar}%s%s{bar}%s%s{r_bar}%s'%(bcolors.OKBLUE,bcolors.ENDC, bcolors.OKGREEN, bcolors.ENDC,bcolors.OKBLUE,bcolors.ENDC,), disable=not accelerator.is_local_main_process)
@@ -2399,6 +2469,8 @@ def main():
                             conditioning_latents = conditioning_latent_dist.sample() * 0.18215
                         if args.model_variant == 'depth2img':
                             depth = batch[0][3]
+                    if args.sample_from_batch > 0:
+                        args.batch_tokens = batch[0][4]
 
                     # Sample noise that we'll add to the latents
                     noise = torch.randn_like(latents)
@@ -2455,7 +2527,7 @@ def main():
                                             z = text_encoder.text_model.final_layer_norm(encode['hidden_states'][-2])
                                             del encode
                                         else:
-                                            encode = text_encoder(chunk.to(accelerator.device), output_hidden_states=True)[0]
+                                            encode = text_encoder(chunk.to(accelerator.device), output_hidden_states=True)
                                             z = encode.last_hidden_state
                                             del encode
                                     else:
@@ -2464,7 +2536,7 @@ def main():
                                             z = torch.cat((z, text_encoder.text_model.final_layer_norm(encode['hidden_states'][-2])), dim=-2)
                                             del encode
                                         else:
-                                            encode = text_encoder(chunk.to(accelerator.device), output_hidden_states=True)[0]
+                                            encode = text_encoder(chunk.to(accelerator.device), output_hidden_states=True)
                                             z = torch.cat((z, encode.last_hidden_state), dim=-2)
                                             del encode
 
