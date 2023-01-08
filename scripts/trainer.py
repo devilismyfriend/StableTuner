@@ -2455,7 +2455,7 @@ def main():
                                             z = text_encoder.text_model.final_layer_norm(encode['hidden_states'][-2])
                                             del encode
                                         else:
-                                            encode = text_encoder(chunk.to(accelerator.device), output_hidden_states=True)[0]
+                                            encode = text_encoder(chunk.to(accelerator.device), output_hidden_states=True)
                                             z = encode.last_hidden_state
                                             del encode
                                     else:
@@ -2464,7 +2464,7 @@ def main():
                                             z = torch.cat((z, text_encoder.text_model.final_layer_norm(encode['hidden_states'][-2])), dim=-2)
                                             del encode
                                         else:
-                                            encode = text_encoder(chunk.to(accelerator.device), output_hidden_states=True)[0]
+                                            encode = text_encoder(chunk.to(accelerator.device), output_hidden_states=True)
                                             z = torch.cat((z, encode.last_hidden_state), dim=-2)
                                             del encode
 
@@ -2484,7 +2484,7 @@ def main():
                                     encoder_hidden_states = text_encoder(batch[0][1],output_hidden_states=True)
                                     encoder_hidden_states = text_encoder.text_model.final_layer_norm(encoder_hidden_states['hidden_states'][-2])
                                 else:
-                                    encoder_hidden_states = text_encoder(batch[0][1])[0]
+                                    encoder_hidden_states = text_encoder(batch[0][1])
                             # Clear cache to prevent memory leakage every now and then
                             # Clear Python GC and accelerator cache less often than PyTorch cache and when we're using lots of tokens
                             if global_step % 500 or clamp_event:
