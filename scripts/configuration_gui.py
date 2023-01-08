@@ -833,6 +833,7 @@ class App(ctk.CTk):
             pass
 
     def create_default_variables(self):
+        self.play_current_image = None
         self.update_available = False
         self.shuffle_dataset_per_epoch = False
         self.batch_prompt_sampling_num_prompts = '0'
