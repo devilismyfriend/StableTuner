@@ -2449,6 +2449,9 @@ def main():
         frozen_directory=args.output_dir + "/frozen_text_encoder"
         # Get our limit of token chunks early.
         token_chunks_limit = math.ceil(args.token_limit / 75)
+        #tokenzier length
+        max_length = tokenizer.model_max_length
+        max_standard_tokens = max_length - 2
         if token_chunks_limit < 1:
             token_chunks_limit = 1
         for epoch in range(args.num_train_epochs):
@@ -2509,8 +2512,6 @@ def main():
                     # Get the text embedding for conditioning
                     with text_enc_context:
                         if args.train_text_encoder:
-                            max_length = tokenizer.model_max_length
-                            max_standard_tokens = max_length - 2
                             tru_len = max(len(x) for x in batch[0][1])
                             max_chunks = np.ceil(tru_len / max_standard_tokens).astype(int)
                             max_len = max_chunks.item() * max_standard_tokens
@@ -2565,10 +2566,11 @@ def main():
 
                                     clamp_chunk += 1
                                     del chunk
+                                
                                 encoder_hidden_states = torch.stack(tuple(z))
+                                #print encoder_hidden_states type
+                                
                                 del n_batch
-                                del max_length
-                                del max_standard_tokens
                                 del max_chunks
                                 del max_len
                                 del z
@@ -2579,7 +2581,7 @@ def main():
                                     encoder_hidden_states = text_encoder(batch[0][1],output_hidden_states=True)
                                     encoder_hidden_states = text_encoder.text_model.final_layer_norm(encoder_hidden_states['hidden_states'][-2])
                                 else:
-                                    encoder_hidden_states = text_encoder(batch[0][1])
+                                    encoder_hidden_states = text_encoder(batch[0][1])[0]
                             # Clear cache to prevent memory leakage every now and then
                             # Clear Python GC and accelerator cache less often than PyTorch cache and when we're using lots of tokens
                             if global_step % 500 or clamp_event:
