@@ -833,8 +833,6 @@ class App(ctk.CTk):
             pass
 
     def create_default_variables(self):
-        self.token_limit = 75
-        self.play_current_image = None
         self.update_available = False
         self.shuffle_dataset_per_epoch = False
         self.batch_prompt_sampling_num_prompts = '0'
@@ -922,7 +920,6 @@ class App(ctk.CTk):
         self.preview_images = []
         self.disable_cudnn_benchmark = True
         self.sample_step_interval = 500
-        
     def select_frame_by_name(self, name):
         # set button color for selected button
         self.sidebar_button_1.configure(fg_color=("gray75", "gray25") if name == "general" else "transparent")
@@ -1567,12 +1564,6 @@ class App(ctk.CTk):
         self.prior_loss_preservation_weight_entry = ctk.CTkEntry(self.training_frame_subframe)
         self.prior_loss_preservation_weight_entry.grid(row=19, column=3, sticky="w")
         self.prior_loss_preservation_weight_entry.insert(0, self.prior_loss_weight)
-
-        # Token truncation limit
-        self.token_limit_label = ctk.CTkLabel(self.training_frame_subframe, text="Token Limit")
-        token_label_ttp = CreateToolTip(self.token_limit_label, "The number of tokens you want to truncate at, always rounded up to the next multiple of 75 - i.e. 75 -> 75, 76 -> 150\n\nTokens beyond this limit will be lost, and will consume larger amounts of video memory, maximum 1500 tokens.")
-        self.token_limit_entry = ctk.CTkEntry(self.training_frame_subframe, placeholder_text='test')
-        self.token_limit_entry.insert(0, self.token_limit)
         
 
     def create_dataset_settings_widgets(self):
@@ -2986,7 +2977,6 @@ class App(ctk.CTk):
         configure["train_text_encoder"] = self.train_text_encoder_var.get()
         configure["with_prior_loss_preservation"] = self.with_prior_loss_preservation_var.get()
         configure["prior_loss_preservation_weight"] = self.prior_loss_preservation_weight_entry.get()
-        configure["token_limit"] = self.token_limit_entry.get()
         configure["use_image_names_as_captions"] = self.use_image_names_as_captions_var.get()
         configure["auto_balance_concept_datasets"] = self.auto_balance_dataset_var.get()
         configure["add_class_images_to_dataset"] = self.add_class_images_to_dataset_var.get()
@@ -3164,9 +3154,6 @@ class App(ctk.CTk):
         self.aspect_ratio_bucketing_mode_var.set(configure["aspect_ratio_bucketing_mode"])
         self.dynamic_bucketing_mode_var.set(configure["dynamic_bucketing_mode"])
         self.attention_var.set(configure["attention"])
-        if configure["token_limit"]:
-            self.token_limit_entry.delete(0, tk.END)
-            self.token_limit_entry.insert(0, configure["token_limit"])
         self.batch_prompt_sampling_optionmenu_var.set(str(configure['batch_prompt_sampling']))
         self.shuffle_dataset_per_epoch_var.set(configure["shuffle_dataset_per_epoch"])
         self.update()
@@ -3232,7 +3219,6 @@ class App(ctk.CTk):
         self.model_variant = self.model_variant_var.get()
         self.fallback_mask_prompt = self.fallback_mask_prompt_entry.get()
         self.attention = self.attention_var.get()
-        self.token_limit = self.token_limit_entry.get()
         self.batch_prompt_sampling = int(self.batch_prompt_sampling_optionmenu_var.get())
         self.shuffle_dataset_per_epoch = self.shuffle_dataset_per_epoch_var.get()
         mode = 'normal'
@@ -3472,11 +3458,6 @@ class App(ctk.CTk):
                 batBase += f' "--prior_loss_weight={self.prior_loss_preservation_weight}" '
         elif self.with_prior_loss_preservation == True and self.use_aspect_ratio_bucketing == True:
             print('loss preservation isnt supported with aspect ratio bucketing yet, sorry!')
-        if export == "Linux":
-            batBase += f' --token_limit={self.token_limit}'
-        else:
-            batBase += f' "--token_limit={self.token_limit}" '
-
         if self.use_image_names_as_captions == True:
             if export == 'Linux':
                 batBase += ' --use_image_names_as_captions'
