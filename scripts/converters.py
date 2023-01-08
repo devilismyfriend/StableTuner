@@ -110,5 +110,5 @@ class Convert_Diffusers_to_SD():
             original_model = None
             key_count = model_util.save_stable_diffusion_checkpoint(v2_model, output_path, text_encoder, unet,
                                                               original_model, epoch, global_step, dtype, vae)
-            print(f"Saved CKPT model")
+            print(f"Saved model")
         return main(model_path, output_path)

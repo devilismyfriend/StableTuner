@@ -17,6 +17,8 @@ import pyperclip
 import random
 import customtkinter as ctk
 import random
+import subprocess
+from pathlib import Path
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 #work in progress code, not finished, credits will be added at a later date.
@@ -648,6 +650,15 @@ class CreateToolTip(object):
 class App(ctk.CTk):    
     def __init__(self):
         super().__init__()
+        try:
+            latest_git_hash = subprocess.check_output(["git", "ls-remote", "http://github.com/devilismyfriend/StableTuner.git","main"], cwd=Path(__file__).resolve().parent).strip().decode()[0:7]
+            #check if configs folder exists
+            print("Latest git hash: " + latest_git_hash)
+        except:
+            pass
+        if not os.path.exists("configs"):
+            os.makedirs("configs")
+        
         self.grid_columnconfigure(1, weight=1)
         self.grid_columnconfigure((2, 3), weight=0)
         self.grid_rowconfigure((0, 1, 2), weight=1)
@@ -665,6 +676,22 @@ class App(ctk.CTk):
         #resizable window
         self.resizable(True, True)
         self.create_default_variables()
+        #check if stableTuner.cfg exists
+        if not os.path.exists("configs/stableTuner_hash.cfg"):
+            #create stableTuner.cfg and write the latest git hash
+            with open("configs/stableTuner_hash.cfg", "w") as f:
+                f.write(latest_git_hash)
+        else:
+            #read stableTuner.cfg
+            with open("configs/stableTuner_hash.cfg", "r") as f:
+                old_git_hash = f.read()
+            try:
+                #check if the latest git hash is the same as the one in stableTuner.cfg
+                if latest_git_hash != old_git_hash:
+                    #if not the same, delete the old stableTuner.cfg and create a new one with the latest git hash
+                    self.update_available = True
+            except:
+                self.update_available = False
         self.sidebar_frame = ctk.CTkFrame(self, width=140, corner_radius=0)
         self.sidebar_frame.grid(row=0, column=0, rowspan=10, sticky="nsew")
         self.logo_img = ctk.CTkImage(Image.open("resources/stableTuner_logo.png").resize((300, 300), Image.Resampling.LANCZOS),size=(80,80))
@@ -692,11 +719,16 @@ class App(ctk.CTk):
         self.empty_label = ctk.CTkLabel(self.sidebar_frame, text="", font=ctk.CTkFont(size=20, weight="bold"))
         self.empty_label.grid(row=9, column=0, padx=0, pady=0)
         #empty label
-        self.empty_label = ctk.CTkLabel(self.sidebar_frame, text="", font=ctk.CTkFont(size=20, weight="bold"))
-        self.empty_label.grid(row=10, column=0, padx=0, pady=0)
-        #empty label
-        self.empty_label = ctk.CTkLabel(self.sidebar_frame, text="", font=ctk.CTkFont(size=20, weight="bold"))
-        self.empty_label.grid(row=11, column=0, padx=0, pady=0)
+        
+        if self.update_available:
+            self.sidebar_button_11 = ctk.CTkButton(self.sidebar_frame,text='Update Available',fg_color='red',hover_color='darkred',command=self.update_ST)
+            self.sidebar_button_11.grid(row=12, column=0, padx=20, pady=5)
+        else:
+            self.empty_label = ctk.CTkLabel(self.sidebar_frame, text="", font=ctk.CTkFont(size=20, weight="bold"))
+            self.empty_label.grid(row=10, column=0, padx=0, pady=0)
+            #empty label
+            self.empty_label = ctk.CTkLabel(self.sidebar_frame, text="", font=ctk.CTkFont(size=20, weight="bold"))
+            self.empty_label.grid(row=11, column=0, padx=0, pady=0)
         self.sidebar_button_11 = ctk.CTkButton(self.sidebar_frame,text='Caption Buddy',command=self.caption_buddy)
         self.sidebar_button_11.grid(row=13, column=0, padx=20, pady=5)
         self.sidebar_button_12 = ctk.CTkButton(self.sidebar_frame,text='Start Training!', command=lambda : self.process_inputs(export=False))
@@ -802,6 +834,10 @@ class App(ctk.CTk):
 
     def create_default_variables(self):
         self.token_limit = 75
+        self.update_available = False
+        self.shuffle_dataset_per_epoch = False
+        self.batch_prompt_sampling_num_prompts = '0'
+        self.save_safetensors = False
         self.attention = 'xformers'
         self.attention_types = ['xformers','Flash Attention']
         self.model_variant = 'Regular'
@@ -1194,10 +1230,12 @@ class App(ctk.CTk):
 
         #self.prior_loss_preservation_weight_entry.set(1.0)
         pass
+    '''
     def lora_mode(self):
         self.lora_mode_selected = ctk.CTkLabel(self.general_frame_subframe_side_guide,fg_color='transparent', text="Lora it is!\n I disabled irrelevant features for you.", font=ctk.CTkFont(size=14))
         self.lora_mode_selected.pack(side="top", fill="x", expand=False, padx=10, pady=10)
         pass
+    '''
     def create_general_settings_widgets(self):
 
 
@@ -1219,8 +1257,8 @@ class App(ctk.CTk):
         self.fine_tune_button = ctk.CTkButton(self.general_frame_subframe_side_guide, text="Fine-Tune", command=self.fine_tune_mode)
         self.fine_tune_button.pack(side="top", fill="x", expand=False, padx=10, pady=10)
         #add LORA button with disabled state
-        self.lora_button = ctk.CTkButton(self.general_frame_subframe_side_guide, text="LORA", command=self.lora_mode, state="disabled")
-        self.lora_button.pack(side="top", fill="x", expand=False, padx=10, pady=10)
+        #self.lora_button = ctk.CTkButton(self.general_frame_subframe_side_guide, text="LORA", command=self.lora_mode, state="disabled")
+        #self.lora_button.pack(side="top", fill="x", expand=False, padx=10, pady=10)
         self.quick_select_var = tk.StringVar(self.master)
         self.quick_select_var.set('Quick Select Base Model')
         self.quick_select_dropdown = ctk.CTkOptionMenu(self.general_frame_subframe, variable=self.quick_select_var, values=self.quick_select_models, command=self.quick_select_model,dynamic_resizing=False, width=200)
@@ -1369,11 +1407,11 @@ class App(ctk.CTk):
         
         #create mixed precision dark mode dropdown
         self.mixed_precision_label = ctk.CTkLabel(self.training_frame_subframe, text="Mixed Precision")
-        mixed_precision_label_ttp = CreateToolTip(self.mixed_precision_label, "Use mixed precision training to speed up training, FP16 is recommended but requires a GPU with Tensor Cores.")
+        mixed_precision_label_ttp = CreateToolTip(self.mixed_precision_label, "Use mixed precision training to speed up training, FP16 is recommended but requires a GPU with Tensor Cores. TF32 is recommended for RTX 30 series GPUs and newer.")
         #self.mixed_precision_label.grid(row=5, column=0, sticky="nsew")
         self.mixed_precision_var = tk.StringVar()
         self.mixed_precision_var.set(self.mixed_precision)
-        self.mixed_precision_dropdown = ctk.CTkOptionMenu(self.training_frame_subframe, variable=self.mixed_precision_var,values=["fp16", "fp32"])
+        self.mixed_precision_dropdown = ctk.CTkOptionMenu(self.training_frame_subframe, variable=self.mixed_precision_var,values=["bf16","fp16","fp32","tf32"])
         #self.mixed_precision_dropdown.grid(row=5, column=1, sticky="nsew")
 
         #create use 8bit adam checkbox
@@ -1402,7 +1440,7 @@ class App(ctk.CTk):
         #self.gradient_accumulation_steps_label.grid(row=8, column=0, sticky="nsew")
         self.gradient_accumulation_steps_var = tk.StringVar()
         self.gradient_accumulation_steps_var.set(self.accumulation_steps)
-        self.gradient_accumulation_steps_dropdown = ctk.CTkOptionMenu(self.training_frame_subframe, variable=self.gradient_accumulation_steps_var, values=['0','1','2','3','4','5','6','7','8','9','10'])
+        self.gradient_accumulation_steps_dropdown = ctk.CTkOptionMenu(self.training_frame_subframe, variable=self.gradient_accumulation_steps_var, values=['1','2','3','4','5','6','7','8','9','10'])
         #self.gradient_accumulation_steps_dropdown.grid(row=8, column=1, sticky="nsew")
         #create learning rate dark mode entry
         self.learning_rate_label = ctk.CTkLabel(self.training_frame_subframe, text="Learning Rate")
@@ -1625,13 +1663,24 @@ class App(ctk.CTk):
         self.dynamic_bucketing_mode_label.grid(row=9, column=0, sticky="nsew")
         self.dynamic_bucketing_mode_option_menu = ctk.CTkOptionMenu(self.dataset_frame_subframe, variable=self.dynamic_bucketing_mode_var, values=['Duplicate', 'Drop'])
         self.dynamic_bucketing_mode_option_menu.grid(row=9, column=1, sticky="nsew")
+        #add shuffle dataset per epoch checkbox
+        self.shuffle_dataset_per_epoch_var = tk.IntVar()
+        self.shuffle_dataset_per_epoch_var.set(self.shuffle_dataset_per_epoch)
+        #create label
+        self.shuffle_dataset_per_epoch_label = ctk.CTkLabel(self.dataset_frame_subframe, text="Shuffle Dataset Per Epoch")
+        shuffle_dataset_per_epoch_label_ttp = CreateToolTip(self.shuffle_dataset_per_epoch_label, "Will shuffle the dataset per epoch, may improve training.")
+        self.shuffle_dataset_per_epoch_label.grid(row=1, column=2, sticky="nsew")
+        #create checkbox
+        self.shuffle_dataset_per_epoch_checkbox = ctk.CTkSwitch(self.dataset_frame_subframe, variable=self.shuffle_dataset_per_epoch_var)
+        self.shuffle_dataset_per_epoch_checkbox.grid(row=1, column=3, sticky="nsew")
+
         #option menu to select dynamic bucketing mode (if enabled)
         self.fallback_mask_prompt_label = ctk.CTkLabel(self.dataset_frame_subframe, text="Fallback Mask Prompt")
         fallback_mask_prompt_label_ttp = CreateToolTip(self.fallback_mask_prompt_label, "A prompt used for masking images without a mask. Only used when training inpainting models.")
         self.fallback_mask_prompt_entry = ctk.CTkEntry(self.dataset_frame_subframe)
         self.fallback_mask_prompt_entry.insert(0, self.fallback_mask_prompt)
-        self.fallback_mask_prompt_label.grid(row=10, column=0, sticky="nsew")
-        self.fallback_mask_prompt_entry.grid(row=10, column=1, sticky="nsew")
+        self.fallback_mask_prompt_label.grid(row=2, column=2, sticky="nsew")
+        self.fallback_mask_prompt_entry.grid(row=2, column=3, sticky="nsew")
         #add download dataset entry
         #add a switch to duplicate fill bucket
         #self.duplicate_fill_buckets_var = tk.IntVar()
@@ -1705,6 +1754,17 @@ class App(ctk.CTk):
         #create checkbox
         self.sample_random_aspect_ratio_checkbox = ctk.CTkSwitch(self.sampling_frame_subframe, variable=self.sample_random_aspect_ratio_var)
         self.sample_random_aspect_ratio_checkbox.grid(row=7, column=1, sticky="nsew")
+        
+        #create an optionmenu to select a number of desired prompts to sample from the batch
+        self.batch_prompt_sampling_optionmenu_var = tk.StringVar()
+        self.batch_prompt_sampling_optionmenu_var.set(self.batch_prompt_sampling_num_prompts)
+        self.batch_prompt_sampling_label = ctk.CTkLabel(self.sampling_frame_subframe, text="Batch Prompt Sampling")
+        self.batch_prompt_sampling_label.grid(row=8, column=0, sticky="nsew")
+        self.batch_prompt_sampling_optionmenu = ctk.CTkOptionMenu(self.sampling_frame_subframe, variable=self.batch_prompt_sampling_optionmenu_var, values=['0','1','2','3','4','5','6','7','8','9','10'])
+        self.batch_prompt_sampling_optionmenu_ttp = CreateToolTip(self.batch_prompt_sampling_label, "Will try to sample prompts/tokens from the batch to use as prompts for the samples.")
+        self.batch_prompt_sampling_optionmenu.grid(row=8, column=1, sticky="nsew")
+        
+        
         #create add sample prompt button
         self.add_sample_prompt_button = ctk.CTkButton(self.sampling_frame_subframe, text="Add Sample Prompt",  command=self.add_sample_prompt)
         add_sample_prompt_button_ttp = CreateToolTip(self.add_sample_prompt_button, "Add a sample prompt to the list.")
@@ -1752,6 +1812,7 @@ class App(ctk.CTk):
             self.controlled_seed_sample_entries[i].insert(0, self.add_controlled_seed_to_sample[i])
         for i in self.controlled_seed_sample_entries:
             i.bind("<Button-3>", self.create_right_click_menu)
+    
     def create_data_settings_widgets(self):
         #add concept settings label
         self.data_frame_title = ctk.CTkLabel(self.data_frame, text='Data Settings', font=ctk.CTkFont(size=20, weight="bold"))
@@ -1786,6 +1847,7 @@ class App(ctk.CTk):
         #self.concept_entries = []
         #self.concept_labels = []
         #self.concept_file_dialog_buttons = []
+    
     def next_concept_page(self):
         self.concept_page += 1
         self.update_concept_page()
@@ -1861,6 +1923,8 @@ class App(ctk.CTk):
         #add convert to ckpt button
         self.play_convert_to_ckpt_button = ctk.CTkButton(self.playground_frame_subframe, text="Convert To CKPT", command=lambda:self.convert_to_ckpt(model_path=self.play_model_entry.get()))
         #add interative generation button to act as a toggle
+        #convert to safetensors button
+        
         #self.play_interactive_generation_button_bool = tk.BooleanVar()
         #self.play_interactive_generation_button = ctk.CTkButton(self.playground_frame_subframe, text="Interactive Generation", command=self.interactive_generation_button)
         #self.play_interactive_generation_button_bool.set(False)#add play model entry with button to open file dialog
@@ -1880,9 +1944,13 @@ class App(ctk.CTk):
         #add a button to convert to ckpt
         self.convert_to_ckpt_button = ctk.CTkButton(self.toolbox_frame_subframe, text="Convert Diffusers To CKPT", command=lambda:self.convert_to_ckpt())
         self.convert_to_ckpt_button.grid(row=4, column=0, columnspan=1, sticky="nsew")
+        #convert to safetensors button
+        self.convert_to_safetensors_button = ctk.CTkButton(self.toolbox_frame_subframe, text="Convert Diffusers To SafeTensors", command=lambda:self.convert_to_safetensors())
+        self.convert_to_safetensors_button.grid(row=4, column=1, columnspan=1, sticky="nsew")
+
         #add a button to convert ckpt to diffusers
         self.convert_ckpt_to_diffusers_button = ctk.CTkButton(self.toolbox_frame_subframe, text="Convert CKPT To Diffusers", command=lambda:self.convert_ckpt_to_diffusers())
-        self.convert_ckpt_to_diffusers_button.grid(row=4, column=1, columnspan=1, sticky="nsew")
+        self.convert_ckpt_to_diffusers_button.grid(row=4, column=2, columnspan=1, sticky="nsew")
         #empty row
         self.empty_row = ctk.CTkLabel(self.toolbox_frame_subframe, text="")
         self.empty_row.grid(row=6, column=0, sticky="nsew")
@@ -1928,6 +1996,8 @@ class App(ctk.CTk):
                     else:
                         
                         newest_dirs = sorted(glob.iglob(last_output_path + os.sep + '*'), key=os.path.getctime, reverse=True)
+                        #remove anything that is not a dir
+                        newest_dirs = [x for x in newest_dirs if os.path.isdir(x)]
                         #sort newest_dirs by date
                         for newest_dir in newest_dirs:
                             #check if the newest dir has all the required folders
@@ -1940,6 +2010,7 @@ class App(ctk.CTk):
                 else:
                         
                         newest_dirs = sorted(glob.iglob(last_output_path + os.sep + '*'), key=os.path.getctime, reverse=True)
+                        newest_dirs = [x for x in newest_dirs if os.path.isdir(x)]
                         #sort newest_dirs by date
                         for newest_dir in newest_dirs:
                             #check if the newest dir has all the required folders
@@ -1953,7 +2024,20 @@ class App(ctk.CTk):
                 return
         else:
             return
-
+    def update_ST(self):
+        #git
+        new_version = subprocess.check_output(["git", "ls-remote", "http://github.com/devilismyfriend/StableTuner.git","main"], cwd=Path(__file__).resolve().parent).strip().decode()[0:7]
+        #open the stabletuner_hash.cfg file
+        #update the stabletuner_hash.cfg file
+        with open("configs/stabletuner_hash.cfg", "w") as f:
+            f.write(new_version)
+        #update the stabletuner
+        #self.update_stabletuner()
+        #git pull and wait for it to finish
+        subprocess.run(["git", "pull"], cwd=Path(__file__).resolve().parent)
+        print('pulled')
+        #restart the app
+        restart(self)
     def packageForCloud(self):
         #check if there's an export folder in the cwd and if not create one
         if not os.path.exists("exports"):
@@ -2060,7 +2144,8 @@ class App(ctk.CTk):
         shutil.copy('scripts' + os.sep + 'converters.py', self.full_export_path + os.sep + 'scripts' + os.sep + 'converters.py')
         #copy model_util.py to the scripts folder
         shutil.copy('scripts' + os.sep + 'model_util.py', self.full_export_path + os.sep + 'scripts' + os.sep + 'model_util.py')
-        
+        #copy clip_seg to the scripts folder
+        shutil.copy('scripts' + os.sep + 'clip_segmentation.py', self.full_export_path + os.sep + 'scripts' + os.sep + 'clip_segmentation.py')
     def caption_buddy(self):
         import captionBuddy
         #self.master.overrideredirect(False)
@@ -2235,20 +2320,21 @@ class App(ctk.CTk):
             #file dialog to save diffusers model
             output_path = fd.askdirectory(initialdir=os.getcwd(), title="Select where to save Diffusers Model Directory")
         version, prediction = self.get_sd_version(ckpt_path)
-        self.convert_model_dialog = tk.Toplevel(self)
-        self.convert_model_dialog.title("Converting model")
+        #self.convert_model_dialog = ctk.CTkToplevel(self, takefocus=True)
+        #self.convert_model_dialog.title("Converting model")
         #label
-        empty_label = ctk.CTkLabel(self.convert_model_dialog, text="")
-        empty_label.pack()
-        label = ctk.CTkLabel(self.convert_model_dialog, text="Converting CKPT to Diffusers. Please wait...")
-        label.pack()
-        self.convert_model_dialog.geometry("300x70")
-        self.convert_model_dialog.resizable(False, False)
-        self.convert_model_dialog.grab_set()
-        self.convert_model_dialog.focus_set()
-        self.update()
+        #empty_label = ctk.CTkLabel(self.convert_model_dialog, text="")
+        #empty_label.pack()
+        #label = ctk.CTkLabel(self.convert_model_dialog, text="Converting CKPT to Diffusers. Please wait...")
+        #label.pack()
+        #self.convert_model_dialog.geometry("300x70")
+        #self.convert_model_dialog.resizable(False, False)
+        #self.convert_model_dialog.grab_set()
+        #self.convert_model_dialog.focus_set()
+        #self.update()
         convert = converters.Convert_SD_to_Diffusers(ckpt_path,output_path,prediction_type=prediction,version=version)
-        self.convert_model_dialog.destroy()
+        
+        #self.convert_model_dialog.destroy()
 
     def convert_to_ckpt(self,model_path=None, output_path=None,name=None):
         if model_path is None:
@@ -2268,7 +2354,7 @@ class App(ctk.CTk):
         if not output_path or output_path == "":
             return
 
-        self.convert_model_dialog = tk.Toplevel(self)
+        self.convert_model_dialog = ctk.CTkToplevel(self)
         self.convert_model_dialog.title("Converting model")
         #label
         empty_label = ctk.CTkLabel(self.convert_model_dialog, text="")
@@ -2283,7 +2369,39 @@ class App(ctk.CTk):
         converters.Convert_Diffusers_to_SD(model_path, output_path)
         self.convert_model_dialog.destroy()
         #messagebox.showinfo("Conversion Complete", "Conversion Complete")
-    
+    def convert_to_safetensors(self,model_path=None, output_path=None,name=None):
+        if model_path is None:
+            model_path = fd.askdirectory(initialdir=self.output_path_entry.get(), title="Select Diffusers Model Directory")
+        #check if model path has vae,unet,text_encoder,tokenizer,scheduler and args.json and model_index.json
+        if output_path is None:
+            output_path = fd.asksaveasfilename(initialdir=os.getcwd(),title = "Save Safetensors file",filetypes = (("safetensors files","*.safetensors"),("all files","*.*")))
+        if not os.path.exists(model_path) and not os.path.exists(os.path.join(model_path,"vae")) and not os.path.exists(os.path.join(model_path,"unet")) and not os.path.exists(os.path.join(model_path,"text_encoder")) and not os.path.exists(os.path.join(model_path,"tokenizer")) and not os.path.exists(os.path.join(model_path,"scheduler")) and not os.path.exists(os.path.join(model_path,"args.json")) and not os.path.exists(os.path.join(model_path,"model_index.json")):
+            messagebox.showerror("Error", "Couldn't find model structure in path")
+            return
+            #check if ckpt in output path
+        if name != None:
+            output_path = os.path.join(output_path,name+".safetensors")
+        if not output_path.endswith(".safetensors") and output_path != "":
+            #add ckpt to output path
+            output_path = output_path + ".safetensors"
+        if not output_path or output_path == "":
+            return
+
+        self.convert_model_dialog = ctk.CTkToplevel(self)
+        self.convert_model_dialog.title("Converting model")
+        #label
+        empty_label = ctk.CTkLabel(self.convert_model_dialog, text="")
+        empty_label.pack()
+        label = ctk.CTkLabel(self.convert_model_dialog, text="Converting Diffusers to CKPT. Please wait...")
+        label.pack()
+        self.convert_model_dialog.geometry("300x70")
+        self.convert_model_dialog.resizable(False, False)
+        self.convert_model_dialog.grab_set()
+        self.convert_model_dialog.focus_set()
+        self.update()
+        converters.Convert_Diffusers_to_SD(model_path, output_path)
+        self.convert_model_dialog.destroy()
+        #messagebox.showinfo("Conversion Complete", "Conversion Complete")
     #function to act as a callback when the user adds a new concept data path to generate a new preview image
     def update_preview_image(self, event):
         #check if entry has changed
@@ -2542,14 +2660,20 @@ class App(ctk.CTk):
     
     def get_sd_version(self,file_path):
             import torch
-            checkpoint = torch.load(file_path)
+            if 'ckpt' in file_path:
+                checkpoint = torch.load(file_path, map_location="cpu")
+            else:
+                from safetensors.torch import load_file
+                checkpoint = load_file(file_path)
+            #checkpoint = torch.load(file_path)
             answer = messagebox.askyesno("V-Model?", "Is this model using V-Parameterization? (based on SD2.x 768 model)")
             if answer == True:
                 prediction = "vprediction"
             else:
                 prediction = "epsilon"
             key_name = "model.diffusion_model.input_blocks.2.1.transformer_blocks.0.attn2.to_k.weight"
-            checkpoint = checkpoint["state_dict"]
+            if "state_dict" in checkpoint.keys():
+                checkpoint = checkpoint["state_dict"]
             if key_name in checkpoint and checkpoint[key_name].shape[-1] == 1024:
                 version = "v2"
             else:
@@ -2576,7 +2700,7 @@ class App(ctk.CTk):
                     return
                 file_path = model_dir
             #if the file is not a model index file
-        if file_path.endswith(".ckpt"):
+        if file_path.endswith(".ckpt") or file_path.endswith(".safetensors"):
             sd_file = file_path
             version, prediction = self.get_sd_version(sd_file)
             #create a directory under the models folder with the name of the ckpt file
@@ -2600,7 +2724,7 @@ class App(ctk.CTk):
                 os.mkdir(model_path)
                 #converter
                 #show a dialog to inform the user that the model is being converted
-                self.convert_model_dialog = tk.Toplevel(self)
+                self.convert_model_dialog = ctk.CTkToplevel(self)
                 self.convert_model_dialog.title("Converting model")
                 #label
                 empty_label = ctk.CTkLabel(self.convert_model_dialog, text="")
@@ -2616,10 +2740,6 @@ class App(ctk.CTk):
                 self.convert_model_dialog.destroy()
 
                 file_path = model_path
-        if file_path.endswith(".safetensors"):
-            #raise not implemented error
-            raise NotImplementedError("The selected file is a safetensors file. This file type is not supported yet.")
-            file_path = ''
         self.input_model_path_entry.delete(0, tk.END)
         self.input_model_path_entry.insert(0, file_path)
     
@@ -2892,6 +3012,8 @@ class App(ctk.CTk):
         configure['model_variant'] = self.model_variant_var.get()
         configure['fallback_mask_prompt'] = self.fallback_mask_prompt_entry.get()
         configure['attention'] = self.attention_var.get()
+        configure['batch_prompt_sampling'] = int(self.batch_prompt_sampling_optionmenu_var.get())
+        configure['shuffle_dataset_per_epoch'] = self.shuffle_dataset_per_epoch_var.get()
         #save the configure file
         #if the file exists, delete it
         if os.path.exists(file_name):
@@ -3041,6 +3163,8 @@ class App(ctk.CTk):
         if configure["token_limit"]:
             self.token_limit_entry.delete(0, tk.END)
             self.token_limit_entry.insert(0, configure["token_limit"])
+        self.batch_prompt_sampling_optionmenu_var.set(str(configure['batch_prompt_sampling']))
+        self.shuffle_dataset_per_epoch_var.set(configure["shuffle_dataset_per_epoch"])
         self.update()
     
     def process_inputs(self,export=None):
@@ -3105,6 +3229,8 @@ class App(ctk.CTk):
         self.fallback_mask_prompt = self.fallback_mask_prompt_entry.get()
         self.attention = self.attention_var.get()
         self.token_limit = self.token_limit_entry.get()
+        self.batch_prompt_sampling = int(self.batch_prompt_sampling_optionmenu_var.get())
+        self.shuffle_dataset_per_epoch = self.shuffle_dataset_per_epoch_var.get()
         mode = 'normal'
         if self.cloud_mode == False and export == None:
             #check if output path exists
@@ -3160,6 +3286,8 @@ class App(ctk.CTk):
                     else:
                         messagebox.showinfo("StableTuner", "Configuration changed, regenerating latent cache")
                         self.regenerate_latent_cache = True
+                else:
+                    messagebox.showinfo("StableTuner", "Warning: Regenerating latent cache is enabled, will regenerate latent cache")
             except Exception as e:
                 print(e)
                 print("Error checking last run, regenerating latent cache")
@@ -3172,9 +3300,26 @@ class App(ctk.CTk):
             if export == 'Linux':
                 batBase = f'accelerate launch --mixed_precision="{self.mixed_precision}" scripts/trainer.py'
         else:
-            batBase = 'accelerate "launch" "--mixed_precision=no" "scripts/trainer.py"'
+            if self.mixed_precision == 'fp32':
+                batBase = 'accelerate "launch" "--mixed_precision=no" "scripts/trainer.py"'
+                if export == 'Linux':
+                    batBase = f'accelerate launch --mixed_precision="no" scripts/trainer.py'
+            elif self.mixed_precision == 'tf32':
+                batBase = 'accelerate "launch" "--mixed_precision=no" "scripts/trainer.py"'
+                if export == 'Linux':
+                    batBase = f'accelerate launch --mixed_precision="no" scripts/trainer.py'
+        
+        if self.shuffle_dataset_per_epoch == True:
             if export == 'Linux':
-                batBase = f'accelerate launch --mixed_precision="no" scripts/trainer.py'
+                batBase += ' --shuffle_per_epoch'
+            else:
+                batBase += ' "--shuffle_per_epoch"'
+        
+        if self.batch_prompt_sampling != 0:
+            if export == 'Linux':
+                batBase += f' --sample_from_batch={self.batch_prompt_sampling}'
+            else:
+                batBase += f' "--sample_from_batch={self.batch_prompt_sampling}"'
         if self.attention == 'xformers':
             if export == 'Linux':
                 batBase += ' --attention="xformers"'
@@ -3217,27 +3362,27 @@ class App(ctk.CTk):
                 batBase += ' --use_text_files_as_captions'
             else:
                 batBase += ' "--use_text_files_as_captions" '
-        if self.sample_step_interval != '0' or self.sample_step_interval != '' or self.sample_step_interval != ' ':
+        if int(self.sample_step_interval) != 0 or self.sample_step_interval != '' or self.sample_step_interval != ' ':
             if export == 'Linux':
                 batBase += f' --sample_step_interval={self.sample_step_interval}'
             else:
                 batBase += f' "--sample_step_interval={self.sample_step_interval}" '
-            try:
-                #if limit_text_encoder is a percentage calculate what epoch to stop at
-                if '%' in self.limit_text_encoder:
-                    percent = float(self.limit_text_encoder.replace('%',''))
-                    stop_epoch = int((int(self.train_epocs) * percent) / 100)
-                    if export == 'Linux':
-                        batBase += f' --stop_text_encoder_training={stop_epoch}'
-                    else:
-                        batBase += f' "--stop_text_encoder_training={stop_epoch}" '
-                elif '%' not in self.limit_text_encoder and self.limit_text_encoder != '' and self.limit_text_encoder != ' ' and self.limit_text_encoder != '0':
-                    if export == 'Linux':
-                        batBase += f' --stop_text_encoder_training={self.limit_text_encoder}'
-                    else:
-                        batBase += f' "--stop_text_encoder_training={self.limit_text_encoder}" '
-            except:
-                pass
+        try:
+            #if limit_text_encoder is a percentage calculate what epoch to stop at
+            if '%' in self.limit_text_encoder:
+                percent = float(self.limit_text_encoder.replace('%',''))
+                stop_epoch = int((int(self.train_epocs) * percent) / 100)
+                if export == 'Linux':
+                    batBase += f' --stop_text_encoder_training={stop_epoch}'
+                else:
+                    batBase += f' "--stop_text_encoder_training={stop_epoch}" '
+            elif '%' not in self.limit_text_encoder and self.limit_text_encoder != '' and self.limit_text_encoder != ' ' and self.limit_text_encoder != '0':
+                if export == 'Linux':
+                    batBase += f' --stop_text_encoder_training={self.limit_text_encoder}'
+                else:
+                    batBase += f' "--stop_text_encoder_training={self.limit_text_encoder}" '
+        except:
+            pass
         if export=='Linux':
             batBase += f' --pretrained_model_name_or_path="{self.model_path}" '
             batBase += f' --pretrained_vae_name_or_path="{self.vae_path}" '
@@ -3255,7 +3400,7 @@ class App(ctk.CTk):
             batBase += f' "--train_batch_size={self.batch_size}" '
             batBase += f' "--num_train_epochs={self.train_epocs}" '
 
-        if self.mixed_precision == 'fp16' or self.mixed_precision == 'bf16':
+        if self.mixed_precision == 'fp16' or self.mixed_precision == 'bf16' or self.mixed_precision == 'tf32':
             if export == 'Linux':
                 batBase += f' --mixed_precision="{self.mixed_precision}"'
             else:
@@ -3402,7 +3547,12 @@ class App(ctk.CTk):
             else:
                 #check if float
                 try:
-                    self.conditional_dropout = float(self.conditional_dropout)
+                    #check if value is above 1.0
+                    if float(self.conditional_dropout) > 1.0:
+                        #divide by 100
+                        self.conditional_dropout = float(self.conditional_dropout) / 100
+                    else:
+                        self.conditional_dropout = float(self.conditional_dropout)
                 except:
                     print('Error: Conditional Dropout must be a percent between 0 and 100, or a decimal between 0 and 1.')
             #print(self.conditional_dropout)
@@ -3426,6 +3576,16 @@ class App(ctk.CTk):
                 batBase += f' "--use_ema" '
         
         self.save_config('stabletune_last_run.json')
+        #check if output folder exists
+        if os.path.exists(self.output_path) == False:
+            #create everything leading up to output folder
+            os.makedirs(self.output_path)
+        #get unique name for config file
+        now = datetime.now()
+        dt_string = now.strftime("%m-%d-%H-%M")
+        #construct name
+        config_log_name = 'stabletuner'+'_'+str(self.resolution)+"_e"+str(self.train_epocs)+"_"+dt_string+'.json'
+        self.save_config(os.path.join(self.output_path, config_log_name))
         
         if export == False:
             #save the bat file
@@ -3525,7 +3685,12 @@ class App(ctk.CTk):
         
 
 
-        
+
+def restart(instance):
+    instance.destroy()
+    #os.startfile(os.getcwd()+'/scripts/configuration_gui.py')
+    app = App()
+    app.mainloop()
 #root = ctk.CTk()
 app = App()
 app.mainloop()

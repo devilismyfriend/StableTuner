@@ -2395,3 +2395,5 @@ scripts/streamlit_configurator.py
 data.zip
 export.zip
 *.webp
+*.safetensors
+configs/stableTuner_hash.cfg

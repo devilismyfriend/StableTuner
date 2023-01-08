@@ -10,6 +10,7 @@ from einops import rearrange
 from torch import einsum
 import math
 import diffusers
+from transformers import AutoTokenizer, PretrainedConfig, CLIPTextModel
 # FlashAttention based on https://github.com/lucidrains/memory-efficient-attention-pytorch/blob/main
 # /memory_efficient_attention_pytorch/flash_attention.py LICENSE MIT
 # https://github.com/lucidrains/memory-efficient-attention-pytorch/blob/main/LICENSE constants
@@ -189,6 +190,24 @@ class FlashAttentionFunction(torch.autograd.function.Function):
 
         return dq, dk, dv, None, None, None, None
 
+def import_model_class_from_model_name_or_path(pretrained_model_name_or_path: str, revision):
+    text_encoder_config = PretrainedConfig.from_pretrained(
+        pretrained_model_name_or_path,
+        subfolder="text_encoder",
+        revision=revision,
+    )
+    model_class = text_encoder_config.architectures[0]
+
+    if model_class == "CLIPTextModel":
+        from transformers import CLIPTextModel
+
+        return CLIPTextModel
+    elif model_class == "RobertaSeriesModelWithTransformation":
+        from diffusers.pipelines.alt_diffusion.modeling_roberta_series import RobertaSeriesModelWithTransformation
+
+        return RobertaSeriesModelWithTransformation
+    else:
+        raise ValueError(f"{model_class} is not supported.")
 
 def replace_unet_cross_attn_to_flash_attention():
     print("Using FlashAttention")

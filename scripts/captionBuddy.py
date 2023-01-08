@@ -214,8 +214,8 @@ class ImageBrowser(ctk.CTkToplevel):
         #self.open_folder()
         
         self.canvas.focus_force()
-        self.canvas.bind("<Shift-Right>", self.next_image)
-        self.canvas.bind("<Shift-Left>", self.prev_image)
+        self.canvas.bind("<Alt-Right>", self.next_image)
+        self.canvas.bind("<Alt-Left>", self.prev_image)
         #on close window
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
     def on_closing(self):
@@ -252,7 +252,7 @@ class ImageBrowser(ctk.CTkToplevel):
         self.generate_caption_button.pack(side="left", fill="x",expand=True,padx=10)
         
         #add a label for tips under the buttons
-        self.tips_label = ctk.CTkLabel(self.tip_frame, text="Use shift with left and right arrow keys to navigate images, enter to save the caption.")
+        self.tips_label = ctk.CTkLabel(self.tip_frame, text="Use Alt with left and right arrow keys to navigate images, enter to save the caption.")
         self.tips_label.pack(side="top")
         #add image count label
         self.image_count_label = ctk.CTkLabel(self.tip_frame, text=f"Image {self.cur_img_index} of {self.image_count}")
@@ -273,8 +273,9 @@ class ImageBrowser(ctk.CTkToplevel):
         #bind to enter key
         self.caption_entry.bind("<Return>", self.save_caption)
         self.canvas.bind("<Return>", self.save_caption)
-        self.caption_entry.bind("<Shift-Right>", self.next_image)
-        self.caption_entry.bind("<Shift-Left>", self.prev_image)
+        self.caption_entry.bind("<Alt-Right>", self.next_image)
+        self.caption_entry.bind("<Alt-Left>", self.prev_image)
+        self.caption_entry.bind("<Control-BackSpace>", self.delete_word)
         #next button
 
         self.next_button = ctk.CTkButton(self.frame,text='Next', command= lambda event=None: self.next_image(event),width=50)
@@ -520,7 +521,7 @@ class ImageBrowser(ctk.CTkToplevel):
         if self.folder == '':
             return
         self.output_folder = self.folder
-        self.image_list = [os.path.join(self.folder, f) for f in os.listdir(self.folder) if (f.endswith('.jpg') or f.endswith('.png') or f.endswith('.jpeg')) and not f.endswith('-masklabel.png')]
+        self.image_list = [os.path.join(self.folder, f) for f in os.listdir(self.folder) if (f.endswith('.jpg') or f.endswith('.png') or f.endswith('.jpeg')) and not f.endswith('-masklabel.png') and not f.endswith('-depth.png')]
         #self.image_list.sort()
         #sort the image list alphabetically so that the images are in the same order every time
         self.image_list.sort(key=lambda x: x.lower())
@@ -677,6 +678,11 @@ class ImageBrowser(ctk.CTkToplevel):
         self.caption_entry.configure(fg_color='green')
 
         self.caption_entry.focus_force()
+    def delete_word(self,event):
+        ent = event.widget
+        end_idx = ent.index(tk.INSERT)
+        start_idx = ent.get().rfind(" ", None, end_idx)
+        ent.selection_range(start_idx, end_idx)
     def prev_image(self, event):
         if self.image_index > 0:
             self.image_index -= 1

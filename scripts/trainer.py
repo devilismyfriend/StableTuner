@@ -42,7 +42,7 @@ from torchvision.transforms import functional
 from tqdm.auto import tqdm
 from transformers import CLIPTextModel, CLIPTokenizer
 from typing import Dict, List, Generator, Tuple
-from PIL import Image
+from PIL import Image, ImageFile
 from diffusers.utils.import_utils import is_xformers_available
 import trainer_util as tu
 
@@ -74,6 +74,7 @@ def parse_args():
             help=("Number of prompts to sample from the batch for inference"),
         )
     parser.add_argument(
+
         "--attention",
         type=str,
         choices=["xformers", "flash_attention"],
@@ -106,6 +107,13 @@ def parse_args():
     parser.add_argument("--conditional_dropout", type=float, default=None,required=False, help="Conditional dropout probability")
     parser.add_argument('--disable_cudnn_benchmark', default=False, action="store_true")
     parser.add_argument('--use_text_files_as_captions', default=False, action="store_true")
+    
+    parser.add_argument(
+            "--sample_from_batch",
+            type=int,
+            default=0,
+            help=("Number of prompts to sample from the batch for inference"),
+        )
     parser.add_argument(
             "--stop_text_encoder_training",
             type=int,
@@ -322,7 +330,7 @@ def parse_args():
         ),
     )
     parser.add_argument(
-        "--lr_warmup_steps", type=int, default=500, help="Number of steps for the warmup in the lr scheduler."
+        "--lr_warmup_steps", type=float, default=500, help="Number of steps for the warmup in the lr scheduler."
     )
     parser.add_argument(
         "--use_8bit_adam", action="store_true", help="Whether or not to use 8-bit Adam from bitsandbytes."
@@ -355,7 +363,7 @@ def parse_args():
         "--mixed_precision",
         type=str,
         default="no",
-        choices=["no", "fp16", "bf16"],
+        choices=["no", "fp16", "bf16","tf32"],
         help=(
             "Whether to use mixed precision. Choose"
             "between fp16 and bf16 (bfloat16). Bf16 requires PyTorch >= 1.10."
@@ -370,7 +378,7 @@ def parse_args():
         help="Path to json containing multiple concepts, will overwrite parameters like instance_prompt, class_prompt, etc.",
     )
     parser.add_argument("--save_sample_controlled_seed", type=int, action='append', help="Set a seed for an extra sample image to be constantly saved.")
-    parser.add_argument("--delete_checkpoints_when_full_drive", default=False, action="store_true", help="Delete checkpoints when the drive is full.")
+    parser.add_argument("--detect_full_drive", default=True, action="store_true", help="Delete checkpoints when the drive is full.")
     parser.add_argument("--send_telegram_updates", default=False, action="store_true", help="Send Telegram updates.")
     parser.add_argument("--telegram_chat_id", type=str, default="0", help="Telegram chat ID.")
     parser.add_argument("--telegram_token", type=str, default="0", help="Telegram token.")
@@ -495,7 +503,7 @@ ASPECTS_512 = [[512,512],      # 262144 1:1
 
 #failsafe aspects
 ASPECTS = ASPECTS_512
-def get_aspect_buckets(resolution,mode=None):
+def get_aspect_buckets(resolution,mode=''):
     if resolution < 512:
         raise ValueError("Resolution must be at least 512")
     try: 
@@ -1446,20 +1454,22 @@ class CachedLatentsDataset(Dataset):
             self.cache_paths += (cache_path,)
 
 class LatentsDataset(Dataset):
-    def __init__(self, latents_cache=None, text_encoder_cache=None, conditioning_latent_cache=None, extra_cache=None):
+    def __init__(self, latents_cache=None, text_encoder_cache=None, conditioning_latent_cache=None, extra_cache=None,tokens_cache=None):
         self.latents_cache = latents_cache
         self.text_encoder_cache = text_encoder_cache
         self.conditioning_latent_cache = conditioning_latent_cache
         self.extra_cache = extra_cache
-    def add_latent(self, latent, text_encoder, cached_conditioning_latent, cached_extra):
+        self.tokens_cache = tokens_cache
+    def add_latent(self, latent, text_encoder, cached_conditioning_latent, cached_extra, tokens_cache):
         self.latents_cache.append(latent)
         self.text_encoder_cache.append(text_encoder)
         self.conditioning_latent_cache.append(cached_conditioning_latent)
         self.extra_cache.append(cached_extra)
+        self.tokens_cache.append(tokens_cache)
     def __len__(self):
         return len(self.latents_cache)
     def __getitem__(self, index):
-        return self.latents_cache[index], self.text_encoder_cache[index], self.conditioning_latent_cache[index], self.extra_cache[index]
+        return self.latents_cache[index], self.text_encoder_cache[index], self.conditioning_latent_cache[index], self.extra_cache[index], self.tokens_cache[index]
 class AverageMeter:
     def __init__(self, name=None):
         self.name = name
@@ -1564,7 +1574,7 @@ def main():
 
     accelerator = Accelerator(
         gradient_accumulation_steps=args.gradient_accumulation_steps,
-        mixed_precision=args.mixed_precision,
+        mixed_precision=args.mixed_precision if args.mixed_precision != 'tf32' else 'no',
         log_with="tensorboard",
         logging_dir=logging_dir,
     )
@@ -1608,7 +1618,7 @@ def main():
                     pipeline = DiffusionPipeline.from_pretrained(
                         args.pretrained_model_name_or_path,
                         safety_checker=None,
-                        vae=AutoencoderKL.from_pretrained(args.pretrained_vae_name_or_path or args.pretrained_model_name_or_path,subfolder=None if args.pretrained_vae_name_or_path else "vae" ),
+                        vae=AutoencoderKL.from_pretrained(args.pretrained_vae_name_or_path or args.pretrained_model_name_or_path,subfolder=None if args.pretrained_vae_name_or_path else "vae" ,safe_serialization=True),
                         torch_dtype=torch_dtype,
                          
                     )
@@ -1636,7 +1646,7 @@ def main():
                         sample_dataloader, desc="Generating class images", disable=not accelerator.is_local_main_process
                     ):
                         with torch.autocast("cuda"):
-                            images = pipeline(example["prompt"]).images
+                            images = pipeline(example["prompt"],height=args.resolution,width=args.resolution).images
                         for i, image in enumerate(images):
                             hash_image = hashlib.sha1(image.tobytes()).hexdigest()
                             image_filename = class_images_dir / f"{example['index'][i] + cur_class_images}-{hash_image}.jpg"
@@ -1645,7 +1655,7 @@ def main():
         del pipeline
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
-
+            torch.cuda.ipc_collect()
     # Load the tokenizer
     if args.tokenizer_name:
         tokenizer = CLIPTokenizer.from_pretrained(args.tokenizer_name )
@@ -1654,8 +1664,10 @@ def main():
         tokenizer = CLIPTokenizer.from_pretrained(args.pretrained_model_name_or_path, subfolder="tokenizer" )
 
     # Load models and create wrapper for stable diffusion
-    text_encoder = CLIPTextModel.from_pretrained(args.pretrained_model_name_or_path, subfolder="text_encoder" )
-    vae = AutoencoderKL.from_pretrained(args.pretrained_model_name_or_path, subfolder="vae" )
+    #text_encoder = CLIPTextModel.from_pretrained(args.pretrained_model_name_or_path, subfolder="text_encoder" )
+    text_encoder_cls = tu.import_model_class_from_model_name_or_path(args.pretrained_model_name_or_path, None)
+    text_encoder = text_encoder_cls.from_pretrained(args.pretrained_model_name_or_path, subfolder="text_encoder" )
+    vae = AutoencoderKL.from_pretrained(args.pretrained_vae_name_or_path or args.pretrained_model_name_or_path,subfolder=None if args.pretrained_vae_name_or_path else "vae" )
     unet = UNet2DConditionModel.from_pretrained(args.pretrained_model_name_or_path, subfolder="unet" )
     if is_xformers_available() and args.attention=='xformers':
         try:
@@ -1758,6 +1770,7 @@ def main():
     def collate_fn(examples):
         #print(examples)
         input_ids = [example["instance_prompt_ids"] for example in examples]
+        tokens = input_ids
         pixel_values = [example["instance_images"] for example in examples]
         tokens = input_ids
         if args.model_variant == 'inpainting':
@@ -1852,11 +1865,17 @@ def main():
         with open(logging_dir / "last_run.json", "w") as f:
             json.dump(last_run, f)
 
-    weight_dtype = torch.float32
+    
     if args.mixed_precision == "fp16":
         weight_dtype = torch.float16
     elif args.mixed_precision == "bf16":
         weight_dtype = torch.bfloat16
+    elif args.mixed_precision == "no":
+        weight_dtype = torch.float32
+    elif args.mixed_precision == "tf32":
+        weight_dtype = torch.float32
+        torch.backends.cuda.matmul.allow_tf32 = True
+        #torch.set_float32_matmul_precision("medium")
 
     # Move text_encode and vae to gpu.
     # For mixed precision training we cast the text_encoder and vae weights to half-precision
@@ -1912,6 +1931,7 @@ def main():
         print(f" {bcolors.WARNING}Generating latents cache...{bcolors.ENDC}")
         train_dataset = LatentsDataset([], [], [], [], [])
         counter = 0
+        ImageFile.LOAD_TRUNCATED_IMAGES = True
         with torch.no_grad():
             for batch in tqdm(train_dataloader, desc="Caching latents", bar_format='%s{l_bar}%s%s{bar}%s%s{r_bar}%s'%(bcolors.OKBLUE,bcolors.ENDC, bcolors.OKBLUE, bcolors.ENDC,bcolors.OKBLUE,bcolors.ENDC,)):
                 cached_conditioning_latent = None
@@ -1954,20 +1974,25 @@ def main():
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
             torch.cuda.ipc_collect()
+        #load all the cached latents into a single dataset
+
     train_dataloader = torch.utils.data.DataLoader(cached_dataset, batch_size=1, collate_fn=lambda x: x, shuffle=False)
     print(f" {bcolors.OKGREEN}Latents are ready.{bcolors.ENDC}")
     # Scheduler and math around the number of training steps.
     overrode_max_train_steps = False
-    num_update_steps_per_epoch = math.ceil(len(train_dataloader) / args.gradient_accumulation_steps)
+    num_update_steps_per_epoch = len(train_dataloader)
     if args.max_train_steps is None:
         args.max_train_steps = args.num_train_epochs * num_update_steps_per_epoch
         overrode_max_train_steps = True
+        
+    if args.lr_warmup_steps < 1:
+        args.lr_warmup_steps = math.floor(args.lr_warmup_steps * args.max_train_steps / args.gradient_accumulation_steps)
 
     lr_scheduler = get_scheduler(
         args.lr_scheduler,
         optimizer=optimizer,
         num_warmup_steps=args.lr_warmup_steps * args.gradient_accumulation_steps,
-        num_training_steps=args.max_train_steps * args.gradient_accumulation_steps,
+        num_training_steps=args.max_train_steps,
     )
 
     if args.train_text_encoder and not args.use_ema:
@@ -1988,9 +2013,9 @@ def main():
         )
 
     # We need to recalculate our total training steps as the size of the training dataloader may have changed.
-    num_update_steps_per_epoch = math.ceil(len(train_dataloader) / args.gradient_accumulation_steps)
+    num_update_steps_per_epoch = len(train_dataloader)
     if overrode_max_train_steps:
-        args.max_train_steps = args.num_train_epochs * num_update_steps_per_epoch * args.gradient_accumulation_steps
+        args.max_train_steps = args.num_train_epochs * num_update_steps_per_epoch
         #print(args.max_train_steps, num_update_steps_per_epoch)
     # Afterwards we recalculate our number of training epochs
     #print(args.max_train_steps, num_update_steps_per_epoch)
@@ -2035,10 +2060,10 @@ def main():
             args.pretrained_model_name_or_path,
             unet=unwrapped_unet,
             text_encoder=text_enc_model,
-            vae=AutoencoderKL.from_pretrained(args.pretrained_vae_name_or_path or args.pretrained_model_name_or_path,subfolder=None if args.pretrained_vae_name_or_path else "vae" ),
+            vae=AutoencoderKL.from_pretrained(args.pretrained_vae_name_or_path or args.pretrained_model_name_or_path,subfolder=None if args.pretrained_vae_name_or_path else "vae", safe_serialization=True),
             safety_checker=None,
-            torch_dtype=torch.float16,
-            local_files_only=True,
+            torch_dtype=weight_dtype,
+            local_files_only=False,
         )
         pipeline.scheduler = scheduler
         if is_xformers_available() and args.attention=='xformers':
@@ -2315,7 +2340,6 @@ def main():
             print(f"{bcolors.FAIL} Error occured during sampling, skipping.{bcolors.ENDC}")
             pass
 
-
     # Only show the progress bar once on each machine.
     progress_bar_inter_epoch = tqdm(range(num_update_steps_per_epoch),bar_format='%s{l_bar}%s%s{bar}%s%s{r_bar}%s'%(bcolors.OKBLUE,bcolors.ENDC, bcolors.OKGREEN, bcolors.ENDC,bcolors.OKBLUE,bcolors.ENDC,), disable=not accelerator.is_local_main_process)
     progress_bar = tqdm(range(args.max_train_steps),bar_format='%s{l_bar}%s%s{bar}%s%s{r_bar}%s'%(bcolors.OKBLUE,bcolors.ENDC, bcolors.OKBLUE, bcolors.ENDC,bcolors.OKBLUE,bcolors.ENDC,), disable=not accelerator.is_local_main_process)
@@ -2461,6 +2485,7 @@ def main():
                 with accelerator.accumulate(unet):
                     # Convert images to latent space
                     with torch.no_grad():
+
                         latent_dist = batch[0][0]
                         latents = latent_dist.sample() * 0.18215
                         if args.model_variant == 'inpainting':
@@ -2471,7 +2496,6 @@ def main():
                             depth = batch[0][3]
                     if args.sample_from_batch > 0:
                         args.batch_tokens = batch[0][4]
-
                     # Sample noise that we'll add to the latents
                     noise = torch.randn_like(latents)
                     bsz = latents.shape[0]
@@ -2644,7 +2668,7 @@ def main():
                 
                 
 
-                if global_step > 0 and not global_step % args.sample_step_interval:
+                if global_step > 0 and not global_step % args.sample_step_interval and epoch != 0:
                     save_and_sample_weights(global_step,'step',save_model=False)
 
                 progress_bar.update(1)
@@ -2673,12 +2697,13 @@ def main():
                 save_and_sample_weights(epoch,'quit_epoch')
                 quit()
             if not epoch % args.save_every_n_epoch:
-                    #print(epoch % args.save_every_n_epoch)
-                    #print('test')
-                    if epoch != 0:
-                        save_and_sample_weights(epoch,'epoch')
-                    else:
-                        save_and_sample_weights(epoch,'epoch',False)
+                if args.save_every_n_epoch == 1 and epoch == 0:
+                    save_and_sample_weights(epoch,'epoch')
+                if epoch != 0:
+                    save_and_sample_weights(epoch,'epoch')
+                else:
+                    pass
+                    #save_and_sample_weights(epoch,'epoch',False)
                     print_instructions()
             if epoch % args.save_every_n_epoch and mid_checkpoint==True or mid_sample==True:
                 if mid_checkpoint==True:
