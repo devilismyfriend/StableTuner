@@ -2444,7 +2444,7 @@ def main():
         mid_quit_step = False
         #lambda set mid_generation to true
         frozen_directory=args.output_dir + "/frozen_text_encoder"
-        
+
         for epoch in range(args.num_train_epochs):
             #every 10 epochs print instructions
             unet.train()
