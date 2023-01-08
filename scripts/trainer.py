@@ -109,12 +109,6 @@ def parse_args():
     parser.add_argument('--use_text_files_as_captions', default=False, action="store_true")
     
     parser.add_argument(
-            "--sample_from_batch",
-            type=int,
-            default=0,
-            help=("Number of prompts to sample from the batch for inference"),
-        )
-    parser.add_argument(
             "--stop_text_encoder_training",
             type=int,
             default=999999999999999,
@@ -1438,14 +1432,14 @@ class CachedLatentsDataset(Dataset):
         self.conditioning_latent_cache = None
         self.extra_cache = None
         if index in self.conditional_indexes:
-            self.text_encoder = self.empty_tokens
+            self.text_cache = self.empty_tokens
         else:
-            self.text_encoder = self.cache.text_encoder_cache[0]
+            self.text_cache = self.cache.text_encoder_cache[0]
         if self.model_variant != 'base':
             self.conditioning_latent_cache = self.cache.conditioning_latent_cache[0]
             self.extra_cache = self.cache.extra_cache[0]
         del self.cache
-        return self.latents, self.text_encoder, self.conditioning_latent_cache, self.extra_cache, self.tokens
+        return self.latents, self.text_cache, self.conditioning_latent_cache, self.extra_cache, self.tokens
 
     def add_pt_cache(self, cache_path):
         if len(self.cache_paths) == 0:
@@ -1772,7 +1766,6 @@ def main():
         input_ids = [example["instance_prompt_ids"] for example in examples]
         tokens = input_ids
         pixel_values = [example["instance_images"] for example in examples]
-        tokens = input_ids
         if args.model_variant == 'inpainting':
             mask = [example["mask"] for example in examples]
         if args.model_variant == 'depth2img':
@@ -1811,7 +1804,12 @@ def main():
         len_input = tokenizer.model_max_length - 2
         if num_chunks > 1:
             len_input = (tokenizer.model_max_length * num_chunks) - (num_chunks * 2)
-            
+        input_ids = tokenizer.pad(
+            {"input_ids": input_ids},
+            padding="max_length",
+            max_length=len_input,
+            return_tensors="pt",\
+            ).input_ids
         if args.model_variant == 'base':
             batch = {
                 "input_ids": input_ids,
@@ -1937,7 +1935,7 @@ def main():
                 cached_conditioning_latent = None
                 cached_extra = None
                 batch["pixel_values"] = batch["pixel_values"].to(accelerator.device, non_blocking=True, dtype=weight_dtype)
-                batch["input_ids"] = batch["input_ids"].to(accelerator.device, non_blocking=True)
+                batch["input_ids"] = batch["input_ids"]
                 if args.model_variant == "inpainting":
                     batch["extra_values"] = batch["extra_values"].to(accelerator.device, non_blocking=True, dtype=weight_dtype)
                     cached_conditioning_latent = vae.encode(batch["pixel_values"] * (1 - batch["extra_values"])).latent_dist
@@ -1949,8 +1947,9 @@ def main():
                 cached_latent = vae.encode(batch["pixel_values"]).latent_dist
                 if args.train_text_encoder:
                     cached_text_enc = batch["input_ids"]
+                    #print(cached_text_enc)
                 else:
-                    cached_text_enc = text_encoder(batch["input_ids"])[0]
+                    cached_text_enc = text_encoder(batch["input_ids"].to(accelerator.device, non_blocking=True))[0]
                 train_dataset.add_latent(cached_latent, cached_text_enc, cached_conditioning_latent, cached_extra, batch["tokens"])
                 del batch
                 del cached_latent
