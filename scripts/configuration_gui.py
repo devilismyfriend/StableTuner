@@ -834,6 +834,7 @@ class App(ctk.CTk):
 
     def create_default_variables(self):
         self.token_limit = 75
+        self.play_current_image = None
         self.update_available = False
         self.shuffle_dataset_per_epoch = False
         self.batch_prompt_sampling_num_prompts = '0'
@@ -2034,6 +2035,7 @@ class App(ctk.CTk):
         #update the stabletuner
         #self.update_stabletuner()
         #git pull and wait for it to finish
+        subprocess.run(["git", "stash"], cwd=Path(__file__).resolve().parent)
         subprocess.run(["git", "pull"], cwd=Path(__file__).resolve().parent)
         print('pulled')
         #restart the app
@@ -2275,6 +2277,8 @@ class App(ctk.CTk):
             self.play_image_canvas.itemconfig(self.play_image, image=self.play_current_image)
             self.play_image_canvas.update()
         with torch.autocast("cuda"), torch.inference_mode():
+            del self.play_current_image
+            torch.cuda.empty_cache()
             if seed == "" or seed == " ":
                 seed = -1
             seed = int(seed)
