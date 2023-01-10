@@ -833,6 +833,7 @@ class App(ctk.CTk):
             pass
 
     def create_default_variables(self):
+        self.possible_resolutions = ["512", "576", "640", "704", "768", "832", "896", "960", "1024","1088", "1152", "1216", "1280", "1344", "1408", "1472", "1536", "1600", "1664", "1728", "1792", "1856", "1920", '1984', '2048']
         self.play_current_image = None
         self.update_available = False
         self.shuffle_dataset_per_epoch = False
@@ -1382,7 +1383,7 @@ class App(ctk.CTk):
         #self.resolution_label.grid(row=2, column=0, sticky="nsew")
         self.resolution_var = tk.StringVar()
         self.resolution_var.set(self.resolution)
-        self.resolution_dropdown = ctk.CTkOptionMenu(self.training_frame_subframe, variable=self.resolution_var, values=["256", "320", "384", "448","512", "576", "640", "704", "768", "832", "896", "960", "1024"])
+        self.resolution_dropdown = ctk.CTkOptionMenu(self.training_frame_subframe, variable=self.resolution_var, values=self.possible_resolutions)
         #self.resolution_dropdown.grid(row=2, column=1, sticky="nsew")
         
         #create train batch size dark mode dropdown with values from 1 to 60
