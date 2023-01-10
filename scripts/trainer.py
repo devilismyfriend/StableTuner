@@ -1943,7 +1943,7 @@ def main():
                     batch["extra_values"] = batch["extra_values"].to(accelerator.device, non_blocking=True, dtype=weight_dtype)
                     cached_conditioning_latent = vae.encode(batch["pixel_values"] * (1 - batch["extra_values"])).latent_dist
                     cached_extra = functional.resize(batch["extra_values"], size=cached_conditioning_latent.mean.shape[2:])
-                cached_latent = vae.encode(batch["pixel_values"]).latent_dist
+                cached_latent = vae.encode(batch["pixel_values"]).latent_dist.sample() * 0.18215
                 if args.train_text_encoder:
                     cached_text_enc = batch["input_ids"]
                 else:
@@ -2479,8 +2479,7 @@ def main():
                     # Convert images to latent space
                     with torch.no_grad():
 
-                        latent_dist = batch[0][0]
-                        latents = latent_dist.sample() * 0.18215
+                        latents = batch[0][0]
                         if args.model_variant == 'inpainting':
                             conditioning_latent_dist = batch[0][2]
                             mask = batch[0][3]
