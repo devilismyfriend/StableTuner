@@ -19,6 +19,7 @@ import customtkinter as ctk
 import random
 import subprocess
 from pathlib import Path
+from diffusers import StableDiffusionPipeline, StableDiffusionInpaintPipeline, StableDiffusionDepth2ImgPipeline
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 #work in progress code, not finished, credits will be added at a later date.
@@ -2232,6 +2233,12 @@ class App(ctk.CTk):
             #self.play_generate_image_button.configure(fg="red")
             self.play_generate_image_button.update()
             self.pipe = diffusers.DiffusionPipeline.from_pretrained(model,torch_dtype=torch.float16,safety_checker=None)
+            if isinstance(self.pipe, StableDiffusionPipeline):
+                self.play_model_variant = 'base'
+            if isinstance(self.pipe, StableDiffusionInpaintPipeline):
+                self.play_model_variant = 'inpainting'
+            if isinstance(self.pipe, StableDiffusionDepth2ImgPipeline):
+                self.play_model_variant = 'depth2img'
             self.pipe.to('cuda')
             self.current_model = model
             if scheduler == 'DPMSolverMultistepScheduler':
@@ -2284,7 +2291,15 @@ class App(ctk.CTk):
             #self.play_generate_image_button["text"] = "Generating, Please stand by..."
             #self.play_generate_image_button.configure(fg=self.dark_mode_title_var)
             #self.play_generate_image_button.update()
-            image = self.pipe(prompt=prompt,negative_prompt=negative_prompt,height=int(sample_height),width=int(sample_width), guidance_scale=cfg, num_inference_steps=int(steps),generator=generator).images[0]
+            if self.play_model_variant == 'base':
+                image = self.pipe(prompt=prompt, negative_prompt=negative_prompt, height=int(sample_height), width=int(sample_width), guidance_scale=cfg, num_inference_steps=int(steps), generator=generator).images[0]
+            if self.play_model_variant == 'inpainting':
+                conditioning_image = torch.zeros(1, 3, int(sample_height), int(sample_width))
+                mask = torch.ones(1, 1, int(sample_height), int(sample_width))
+                image = self.pipe(prompt, conditioning_image, mask, height=int(sample_height), width=int(sample_width), guidance_scale=cfg, num_inference_steps=int(steps), generator=generator).images[0]
+            if self.play_model_variant == 'depth2img':
+                test_image = Image.new('RGB', (int(sample_width), int(sample_height)), (255, 255, 255))
+                image = self.pipe(prompt, image=test_image, height=int(sample_height), width=int(sample_width), guidance_scale=cfg, num_inference_steps=int(steps), strength=1.0, generator=generator).images[0]
             self.play_current_image = image
             #image is PIL image
             if self.generation_window is None:

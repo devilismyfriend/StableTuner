@@ -2442,8 +2442,8 @@ def main():
                             sampleName = f"prompt_{sampleIndex+1}"
                             os.makedirs(os.path.join(sample_dir,sampleName), exist_ok=True)
                             if args.model_variant == 'inpainting':
-                                conditioning_image = torch.zeros(1, 3, width, height)
-                                mask = torch.ones(1, 1, width, height)
+                                conditioning_image = torch.zeros(1, 3, height, width)
+                                mask = torch.ones(1, 1, height, width)
                             if args.model_variant == 'depth2img':
                                 #pil new white image
                                 test_image = Image.new('RGB', (width, height), (255, 255, 255))
