@@ -882,11 +882,9 @@ class ImageTrainItem():
         self.cropped_img = None
         self.is_dupe.append(1)
 
-    def load_image(self, pathname, crop, crop_jitter):
+    def load_image(self, pathname, crop, jitter_amount, flip):
         if len(self.is_dupe) > 0:
-            chance = float(len(self.is_dupe)) / 10.0
-            self.flip = transforms.RandomHorizontalFlip(p=self.flip_p + chance if chance < 1.0 else 1.0)
-            self.crop_jitter = crop_jitter + (len(self.is_dupe) * 10) if crop_jitter < 50 else 50
+            self.flip = transforms.RandomHorizontalFlip(p=1.0 if flip else 0.0)
         image = Image.open(pathname).convert('RGB')
 
         width, height = image.size
@@ -895,7 +893,6 @@ class ImageTrainItem():
             image = cropped_img.resize((512, 512), resample=Image.Resampling.LANCZOS)
         else:
             width, height = image.size
-            jitter_amount = random.randint(0, crop_jitter)
 
             if self.target_wh[0] == self.target_wh[1]:
                 if width > height:
@@ -948,10 +945,20 @@ class ImageTrainItem():
         """
 
         if not hasattr(self, 'image') or len(self.image) == 0:
-            self.image = self.load_image(self.pathname, crop, crop_jitter)
+            chance = float(len(self.is_dupe)) / 10.0
+            
+            flip_p = self.flip_p + chance if chance < 1.0 else 1.0
+            flip = random.uniform(0, 1) < flip_p
+
+            if len(self.is_dupe) > 0:
+                crop_jitter = crop_jitter + (len(self.is_dupe) * 10) if crop_jitter < 50 else 50
+                
+            jitter_amount = random.randint(0, crop_jitter)
+
+            self.image = self.load_image(self.pathname, crop, jitter_amount, flip)
             if self.model_variant == "inpainting":
                 if os.path.exists(self.mask_pathname):
-                    self.extra = self.load_image(self.mask_pathname, crop, crop_jitter)
+                    self.extra = self.load_image(self.mask_pathname, crop, jitter_amount, flip)
                 else:
                     if self.variant_warning == False:
                         print(f" {bcolors.FAIL} ** Warning: No mask found for an image, using an empty mask but make sure you're training the right model variant.{bcolors.ENDC}")
@@ -959,7 +966,7 @@ class ImageTrainItem():
                     self.extra = Image.new('RGB', self.image.size, color="white").convert("L")
             if self.model_variant == "depth2img":
                 if os.path.exists(self.depth_pathname):
-                    self.extra = self.load_image(self.depth_pathname, crop, crop_jitter)
+                    self.extra = self.load_image(self.depth_pathname, crop, jitter_amount, flip)
                 else:
                     if self.variant_warning == False:
                         print(f" {bcolors.FAIL} ** Warning: No depth found for an image, using an empty depth but make sure you're training the right model variant.{bcolors.ENDC}")
