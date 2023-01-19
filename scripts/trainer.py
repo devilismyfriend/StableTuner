@@ -2715,7 +2715,8 @@ def main():
                         target, target_prior = torch.chunk(target, 2, dim=0)
                         loss = F.mse_loss(model_pred.float(), target.float(), reduction="none").mean([1, 2, 3]).mean()
                         prior_loss = F.mse_loss(model_pred_prior.float(), target_prior.float(), reduction="mean")
-                        
+                        # Add the prior loss to the instance loss.
+                        loss = loss + args.prior_loss_weight * prior_loss
                     else:
                         loss = F.mse_loss(model_pred.float(), target.float(), reduction="mean")
                     accelerator.backward(loss)
