@@ -146,7 +146,7 @@ class ConceptWidget(ctk.CTkFrame):
                         import random
                         
                         #filter files for images
-                        files = [f for f in files if f.endswith(".jpg") or f.endswith(".png") or f.endswith(".jpeg")]
+                        files = [f for f in files if (f.endswith(".jpg") or f.endswith(".png") or f.endswith(".jpeg")) and not f.endswith("-masklabel.png") and not f.endswith("-depth.png")]
                         if len(files) != 0:
                             rand = random.choice(files)
                             image_path = rand
@@ -159,20 +159,20 @@ class ConceptWidget(ctk.CTkFrame):
                             image_to_add = Image.open(image_path)
                             #resize the image to 38x38
                             #resize to 150x150 closest to the original aspect ratio
-                            image_to_add.thumbnail((150, 150), Image.Resampling.LANCZOS)
+                            image_to_add.thumbnail((75, 75), Image.Resampling.LANCZOS)
                             #decide where to put the image
                             if i == 0:
                                 #top left
                                 image.paste(image_to_add, (0, 0))
                             elif i == 1:
                                 #top right
-                                image.paste(image_to_add, (76, 0))
+                                image.paste(image_to_add, (75, 0))
                             elif i == 2:
                                 #bottom left
-                                image.paste(image_to_add, (0, 76))
+                                image.paste(image_to_add, (0, 75))
                             elif i == 3:
                                 #bottom right
-                                image.paste(image_to_add, (76, 76))
+                                image.paste(image_to_add, (75, 75))
                     image = add_corners(image, 30)
                         #convert the image to a photoimage
                         #image.show()
