@@ -725,6 +725,7 @@ class ImageBrowser(ctk.CTkToplevel):
             self.caption = self.caption +', ' + self.suffix_var
         else:
             self.caption = self.caption + self.suffix_var
+        self.caption = self.caption.strip()
         if self.output_folder != self.folder:
             outputFolder = self.output_folder
         else:

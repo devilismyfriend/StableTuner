@@ -2,6 +2,7 @@
 from typing import Iterable
 import torch
 import torch.utils.checkpoint
+import torch.nn.functional as F
 from diffusers import DiffusionPipeline
 from torchvision import transforms
 from PIL import Image, ImageFilter
@@ -27,6 +28,11 @@ def exists(val):
 def default(val, d):
     return val if exists(val) else d
 
+
+def masked_mse_loss(predicted, target, mask, reduction="none"):
+    masked_predicted = predicted * mask
+    masked_target = target * mask
+    return F.mse_loss(masked_predicted, masked_target, reduction=reduction)
 
 # flash attention forwards and backwards
 # https://arxiv.org/abs/2205.14135
