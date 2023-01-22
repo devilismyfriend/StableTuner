@@ -1035,9 +1035,24 @@ class DataLoaderMultiAspect():
         if balance_datasets:
             print(f" {bcolors.WARNING} Balancing datasets...{bcolors.ENDC}") 
             #get the concept with the least number of images in instance_data_dir
-            min_concept = min(concept_list, key=lambda x: len(os.listdir(x['instance_data_dir'])))
+            for concept in concept_list:
+                count = 0
+                if 'use_sub_dirs' in concept:
+                    if concept['use_sub_dirs'] == 1:
+                        tot = 0
+                        for root, dirs, files in os.walk(concept['instance_data_dir']):
+                            tot += len(files)
+                        count = tot
+                    else:
+                        count = len(os.listdir(concept['instance_data_dir']))
+                else:
+                    count = len(os.listdir(concept['instance_data_dir']))
+                print(f"{concept['instance_data_dir']} has count of {count}")
+                concept['count'] = count
+                
+            min_concept = min(concept_list, key=lambda x: x['count'])
             #get the number of images in the concept with the least number of images
-            min_concept_num_images = len(os.listdir(min_concept['instance_data_dir']))
+            min_concept_num_images = min_concept['count']
             print(" Min concept: ",min_concept['instance_data_dir']," with ",min_concept_num_images," images")
             
             balance_cocnept_list = []
