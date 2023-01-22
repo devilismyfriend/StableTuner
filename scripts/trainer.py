@@ -108,6 +108,12 @@ def parse_args():
             help=("Number of prompts to sample from the batch for inference"),
         )
     parser.add_argument(
+        "--flatten_sample_folder",
+        default=False,
+        action="store_true",
+        help="Will save samples in one folder instead of per-epoch",
+    )
+    parser.add_argument(
             "--stop_text_encoder_training",
             type=int,
             default=999999999999999,
@@ -2406,7 +2412,10 @@ def main():
                 elif args.attention=='flash_attention':
                     tu.replace_unet_cross_attn_to_flash_attention()
                 save_dir = os.path.join(args.output_dir, f"{context}_{step}")
-                sample_dir = os.path.join(args.output_dir, f"samples/{context}_{step}")
+                if args.flatten_sample_folder:
+                    sample_dir = os.path.join(args.output_dir, "samples")
+                else:
+                    sample_dir = os.path.join(args.output_dir, f"samples/{context}_{step}")
                 #if sample dir path does not exist, create it
                 
                 if args.stop_text_encoder_training == True:
@@ -2436,7 +2445,8 @@ def main():
                     #sample_dir = os.path.join(save_dir, "samples")
                     #if sample_dir exists, delete it
                     if os.path.exists(sample_dir):
-                        shutil.rmtree(sample_dir)
+                        if not args.flatten_sample_folder:
+                            shutil.rmtree(sample_dir)
                     os.makedirs(sample_dir, exist_ok=True)
                     with torch.autocast("cuda"), torch.inference_mode():
                         if args.send_telegram_updates:
@@ -2447,8 +2457,22 @@ def main():
                         for samplePrompt in prompts:
                             sampleIndex = prompts.index(samplePrompt)
                             #convert sampleIndex to number in words
-                            sampleName = f"prompt_{sampleIndex+1}"
-                            os.makedirs(os.path.join(sample_dir,sampleName), exist_ok=True)
+                            # Data to be written
+                            sampleProperties = {
+                                "samplePrompt" : samplePrompt
+                            }
+                            
+                            # Serializing json
+                            json_object = json.dumps(sampleProperties, indent=4)
+                            
+                            if args.flatten_sample_folder:
+                                sampleName = f"{context}_{step}_prompt_{sampleIndex+1}"
+                            else:
+                                sampleName = f"prompt_{sampleIndex+1}"
+                            
+                            if not args.flatten_sample_folder:
+                                os.makedirs(os.path.join(sample_dir,sampleName), exist_ok=True)
+                            
                             if args.model_variant == 'inpainting':
                                 conditioning_image = torch.zeros(1, 3, width, height)
                                 mask = torch.ones(1, 1, width, height)
@@ -2469,7 +2493,12 @@ def main():
                                         images = pipeline(samplePrompt,image=test_image, height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps,strength=1.0).images
                                     elif args.model_variant == 'base':
                                         images = pipeline(samplePrompt,height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps).images
-                                    images[0].save(os.path.join(sample_dir,sampleName, f"{sampleName}_{i}.png"))
+                                    
+                                    if not args.flatten_sample_folder:
+                                        images[0].save(os.path.join(sample_dir,sampleName, f"{sampleName}_{i}.png"))
+                                    else:
+                                        images[0].save(os.path.join(sample_dir, f"{sampleName}_{i}.png"))
+                                                                       
                                 else:
                                     seed = args.save_sample_controlled_seed[i - args.n_save_sample]
                                     generator = torch.Generator("cuda").manual_seed(seed)
@@ -2479,11 +2508,20 @@ def main():
                                         images = pipeline(samplePrompt,image=test_image, height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps,generator=generator,strength=1.0).images
                                     elif args.model_variant == 'base':
                                         images = pipeline(samplePrompt,height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps, generator=generator).images
-                                    images[0].save(os.path.join(sample_dir,sampleName, f"{sampleName}_controlled_seed_{str(seed)}.png"))
+                                    
+                                    if not args.flatten_sample_folder:
+                                        images[0].save(os.path.join(sample_dir,sampleName, f"{sampleName}_controlled_seed_{str(seed)}.png"))
+                                    else:
+                                        images[0].save(os.path.join(sample_dir, f"{sampleName}_controlled_seed_{str(seed)}.png"))
+                            
                             if args.send_telegram_updates:
                                 imgs = []
                                 #get all the images from the sample folder
-                                dir = os.listdir(os.path.join(sample_dir,sampleName))
+                                if not args.flatten_sample_folder:
+                                    dir = os.listdir(os.path.join(sample_dir,sampleName))
+                                else:
+                                    dir = sample_dir
+
                                 for file in dir:
                                     if file.endswith(".png"):
                                         #open the image with pil
