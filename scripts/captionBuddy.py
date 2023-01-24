@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk, Menu
 import os
 import subprocess
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageDraw
 import tkinter.filedialog as fd
 import json
 import sys
@@ -141,6 +141,11 @@ class ImageBrowser(ctk.CTkToplevel):
         self.mainProcess = mainProcess
         self.captioner_folder = os.path.dirname(os.path.realpath(__file__))
         self.clip_seg = None
+        self.PILimage = None
+        self.PILmask = None
+        self.mask_draw_x = 0
+        self.mask_draw_y = 0
+        self.mask_draw_radius = 20
         #self = master
         #self.overrideredirect(True)
         #self.title_bar = TitleBar(self)
@@ -224,17 +229,25 @@ class ImageBrowser(ctk.CTkToplevel):
         self.destroy()
     def create_widgets(self):
         self.output_folder = ''
-        self.auto_generate_caption_text_override = tk.BooleanVar(self.top_subframe)
-        self.auto_generate_caption_text_override.set(False)
-        self.auto_generate_caption_checkbox_text_override = ctk.CTkCheckBox(self.top_subframe, text="Skip Auto Generate If Text Caption Exists", variable=self.auto_generate_caption_text_override,width=50)
-        self.auto_generate_caption_checkbox_text_override.grid(row=0,column=1,sticky="w",padx=10)
-        #self.auto_generate_caption_checkbox_text_override.pack(side="left", fill="x",expand=True)
-        #add a checkbox to toggle auto generate caption
+
+        # add a checkbox to toggle auto generate caption
         self.auto_generate_caption = tk.BooleanVar(self.top_subframe)
         self.auto_generate_caption.set(True)
         self.auto_generate_caption_checkbox = ctk.CTkCheckBox(self.top_subframe, text="Auto Generate Caption", variable=self.auto_generate_caption,width=50)
-        self.auto_generate_caption_checkbox.grid(row=0,column=0,sticky="e",padx=10)
-        #self.auto_generate_caption_checkbox.pack(side="left", fill="x",expand=True,anchor="w")
+        self.auto_generate_caption_checkbox.pack(side="left", fill="x", expand=True, padx=10)
+
+        # add a checkbox to skip auto generating captions if they already exist
+        self.auto_generate_caption_text_override = tk.BooleanVar(self.top_subframe)
+        self.auto_generate_caption_text_override.set(False)
+        self.auto_generate_caption_checkbox_text_override = ctk.CTkCheckBox(self.top_subframe, text="Skip Auto Generate If Text Caption Exists", variable=self.auto_generate_caption_text_override,width=50)
+        self.auto_generate_caption_checkbox_text_override.pack(side="left", fill="x", expand=True, padx=10)
+
+        # add a checkbox to enable mask editing
+        self.enable_mask_editing = tk.BooleanVar(self.top_subframe)
+        self.enable_mask_editing.set(False)
+        self.enable_mask_editing_checkbox = ctk.CTkCheckBox(self.top_subframe, text="Enable Mask Editing", variable=self.enable_mask_editing, width=50)
+        self.enable_mask_editing_checkbox.pack(side="left", fill="x", expand=True, padx=10)
+
         self.open_button = ctk.CTkButton(self.top_frame,text="Load Folder",fg_color=("gray75", "gray25"), command=self.open_folder,width=50)
         #self.open_button.grid(row=0, column=1)
         self.open_button.pack(side="left", fill="x",expand=True,padx=10)
@@ -260,6 +273,11 @@ class ImageBrowser(ctk.CTkToplevel):
 
         self.image_label = ctk.CTkLabel(self.canvas,text='',width=100,height=100)
         self.image_label.grid(row=0, column=0, sticky="nsew")
+        #self.image_label.bind("<Button-3>", self.click_canvas)
+        self.image_label.bind("<Motion>", self.draw_mask)
+        self.image_label.bind("<Button-1>", self.draw_mask)
+        self.image_label.bind("<Button-3>", self.draw_mask)
+        self.image_label.bind("<MouseWheel>", self.draw_mask_radius)
         #self.image_label.pack(side="top")
         #previous button
         self.prev_button = ctk.CTkButton(self.frame,text="Previous", command= lambda event=None: self.prev_image(event),width=50)
@@ -271,8 +289,8 @@ class ImageBrowser(ctk.CTkToplevel):
         #grid
         self.caption_entry.grid(row=1, column=1, rowspan=3, sticky="nsew",pady=10)
         #bind to enter key
-        self.caption_entry.bind("<Return>", self.save_caption)
-        self.canvas.bind("<Return>", self.save_caption)
+        self.caption_entry.bind("<Return>", self.save)
+        self.canvas.bind("<Return>", self.save)
         self.caption_entry.bind("<Alt-Right>", self.next_image)
         self.caption_entry.bind("<Alt-Left>", self.prev_image)
         self.caption_entry.bind("<Control-BackSpace>", self.delete_word)
@@ -288,7 +306,7 @@ class ImageBrowser(ctk.CTkToplevel):
         self.replace_label.grid(row=0, column=0, sticky="w",padx=5)
         self.replace_entry = ctk.CTkEntry(self.bottom_frame,   )
         self.replace_entry.grid(row=0, column=1, sticky="nsew",padx=5)
-        self.replace_entry.bind("<Return>", self.save_caption)
+        self.replace_entry.bind("<Return>", self.save)
         #self.replace_entry.bind("<Tab>", self.replace)
         #with label
         #create with string variable
@@ -296,7 +314,7 @@ class ImageBrowser(ctk.CTkToplevel):
         self.with_label.grid(row=0, column=2, sticky="w",padx=5)
         self.with_entry = ctk.CTkEntry(self.bottom_frame,   )
         self.with_entry.grid(row=0, column=3,  sticky="nswe",padx=5)
-        self.with_entry.bind("<Return>", self.save_caption)
+        self.with_entry.bind("<Return>", self.save)
         #add another entry with label, add suffix
         
         #create prefix string var
@@ -304,14 +322,14 @@ class ImageBrowser(ctk.CTkToplevel):
         self.prefix_label.grid(row=0, column=4, sticky="w",padx=5)
         self.prefix_entry = ctk.CTkEntry(self.bottom_frame,   )
         self.prefix_entry.grid(row=0, column=5, sticky="nsew",padx=5)
-        self.prefix_entry.bind("<Return>", self.save_caption)
+        self.prefix_entry.bind("<Return>", self.save)
 
         #create suffix string var
         self.suffix_label = ctk.CTkLabel(self.bottom_frame, text="Add to end:")
         self.suffix_label.grid(row=0, column=6, sticky="w",padx=5)
         self.suffix_entry = ctk.CTkEntry(self.bottom_frame,   )
         self.suffix_entry.grid(row=0, column=7, sticky="nsew",padx=5)
-        self.suffix_entry.bind("<Return>", self.save_caption)
+        self.suffix_entry.bind("<Return>", self.save)
         self.all_entries = [self.replace_entry, self.with_entry, self.suffix_entry, self.caption_entry, self.prefix_entry]
         #bind right click menu to all entries
         for entry in self.all_entries:
@@ -538,6 +556,68 @@ class ImageBrowser(ctk.CTkToplevel):
         self.load_image()
         self.caption_entry.focus_set()
 
+    def draw_mask(self, event):
+        if not self.enable_mask_editing.get():
+            return
+
+        if event.widget != self.image_label.children["!label"]:
+            return
+
+        start_x = int(event.x / self.image_size[0] * self.PILimage.width)
+        start_y = int(event.y / self.image_size[1] * self.PILimage.height)
+        end_x = int(self.mask_draw_x / self.image_size[0] * self.PILimage.width)
+        end_y = int(self.mask_draw_y / self.image_size[1] * self.PILimage.height)
+
+        self.mask_draw_x = event.x
+        self.mask_draw_y = event.y
+
+        color = None
+
+        if event.state & 0x0100 or event.num == 1:  # left mouse button
+            color = (255, 255, 255)
+        elif event.state & 0x0400 or event.num == 3:  # right mouse button
+            color = (0, 0, 0)
+
+        if color is not None:
+            if self.PILmask is None:
+                self.PILmask = Image.new('RGB', size=self.PILimage.size, color=(0, 0, 0))
+
+            draw = ImageDraw.Draw(self.PILmask)
+            draw.line((start_x, start_y, end_x, end_y), fill=color, width=self.mask_draw_radius + self.mask_draw_radius + 1)
+            draw.ellipse((start_x - self.mask_draw_radius, start_y - self.mask_draw_radius, start_x + self.mask_draw_radius, start_y + self.mask_draw_radius), fill=color, outline=None)
+            draw.ellipse((end_x - self.mask_draw_radius, end_y - self.mask_draw_radius, end_x + self.mask_draw_radius, end_y + self.mask_draw_radius), fill=color, outline=None)
+
+            self.compose_masked_image()
+            self.display_image()
+
+    def draw_mask_radius(self, event):
+        if event.widget != self.image_label.children["!label"]:
+            return
+
+        delta = -np.sign(event.delta) * 5
+        self.mask_draw_radius += delta
+
+    def compose_masked_image(self):
+        np_image = np.array(self.PILimage).astype(np.float32) / 255.0
+        np_mask = np.array(self.PILmask).astype(np.float32) / 255.0
+        np_mask = np.clip(np_mask, 0.4, 1.0)
+        np_masked_image = (np_image * np_mask * 255.0).astype(np.uint8)
+        self.image = Image.fromarray(np_masked_image, mode='RGB')
+
+    def display_image(self):
+        #resize to fit 600x600 while maintaining aspect ratio
+        width, height = self.image.size
+        if width > height:
+            new_width = 600
+            new_height = int(600 * height / width)
+        else:
+            new_height = 600
+            new_width = int(600 * width / height)
+        self.image_size = (new_width, new_height)
+        self.image = self.image.resize(self.image_size, Image.Resampling.LANCZOS)
+        self.image = ctk.CTkImage(self.image, size=self.image_size)
+        self.image_label.configure(image=self.image)
+
     def load_image(self):
         try:
             self.PILimage = Image.open(self.image_list[self.image_index]).convert('RGB')
@@ -556,14 +636,11 @@ class ImageBrowser(ctk.CTkToplevel):
         self.image = self.PILimage.copy()
 
         try:
+            self.PILmask = None
             mask_filename = os.path.splitext(self.image_list[self.image_index])[0] + '-masklabel.png'
             if os.path.exists(mask_filename):
-                mask = Image.open(mask_filename).convert('RGB')
-                np_image = np.array(self.image).astype(np.float32)/255.0
-                np_mask = np.array(mask).astype(np.float32)/255.0
-                np_mask = np.clip(np_mask, 0.4, 1.0)
-                np_masked_image = (np_image * np_mask * 255.0).astype(np.uint8)
-                self.image = Image.fromarray(np_masked_image, mode='RGB')
+                self.PILmask = Image.open(mask_filename).convert('RGB')
+                self.compose_masked_image()
         except Exception as e:
             print(f'Error opening mask for {self.image_list[self.image_index]}')
             print('Logged path to bad_files.txt')
@@ -576,20 +653,8 @@ class ImageBrowser(ctk.CTkToplevel):
                     f.write(self.image_list[self.image_index]+'\n')
             return
 
-        #print(self.image_list[self.image_index])
-        #self.image = self.image.resize((600, 600), Image.ANTIALIAS)
-        #resize to fit 600x600 while maintaining aspect ratio
-        width, height = self.image.size
-        if width > height:
-            new_width = 600
-            new_height = int(600 * height / width)
-        else:
-            new_height = 600
-            new_width = int(600 * width / height)
-        self.image = self.image.resize((new_width, new_height), Image.Resampling.LANCZOS)
-        self.image = ctk.CTkImage(self.image, size=(new_width, new_height))
-        #print(self.image)
-        self.image_label.configure(image=self.image)
+        self.display_image()
+
         self.caption_file_path = self.image_list[self.image_index]
         self.caption_file_name = os.path.basename(self.caption_file_path)
         self.caption_file_ext = os.path.splitext(self.caption_file_name)[1]
@@ -626,11 +691,18 @@ class ImageBrowser(ctk.CTkToplevel):
             #change the caption entry color to red
             self.caption_entry.configure(fg_color='red')
 
-            
-    def save_caption(self, event):
-        
-        
+    def save(self, event):
+        self.save_caption()
 
+        if self.enable_mask_editing.get():
+            self.save_mask()
+
+    def save_mask(self):
+        mask_filename = os.path.splitext(self.image_list[self.image_index])[0] + '-masklabel.png'
+        if self.PILmask is not None:
+            self.PILmask.save(mask_filename)
+
+    def save_caption(self):
         self.caption = self.caption_entry.get()
         self.replace = self.replace_entry.get()
         self.replace_with = self.with_entry.get()
@@ -653,6 +725,7 @@ class ImageBrowser(ctk.CTkToplevel):
             self.caption = self.caption +', ' + self.suffix_var
         else:
             self.caption = self.caption + self.suffix_var
+        self.caption = self.caption.strip()
         if self.output_folder != self.folder:
             outputFolder = self.output_folder
         else:
