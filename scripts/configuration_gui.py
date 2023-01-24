@@ -389,7 +389,7 @@ class ConceptWindow(ctk.CTkToplevel):
                         import random
                         
                         #filter files for images
-                        files = [f for f in files if f.endswith(".jpg") or f.endswith(".png") or f.endswith(".jpeg")]
+                        files = [f for f in files if (f.endswith(".jpg") or f.endswith(".png") or f.endswith(".jpeg")) and not f.endswith("-masklabel.png") and not f.endswith("-depth.png")]
                         if len(files) != 0:
                             rand = random.choice(files)
                             image_path = os.path.join(path,rand)
@@ -402,20 +402,20 @@ class ConceptWindow(ctk.CTkToplevel):
                             image_to_add = Image.open(image_path)
                             #resize the image to 38x38
                             #resize to 150x150 closest to the original aspect ratio
-                            image_to_add.thumbnail((150, 150), Image.Resampling.LANCZOS)
+                            image_to_add.thumbnail((75, 75), Image.Resampling.LANCZOS)
                             #decide where to put the image
                             if i == 0:
                                 #top left
                                 image.paste(image_to_add, (0, 0))
                             elif i == 1:
                                 #top right
-                                image.paste(image_to_add, (76, 0))
+                                image.paste(image_to_add, (75, 0))
                             elif i == 2:
                                 #bottom left
-                                image.paste(image_to_add, (0, 76))
+                                image.paste(image_to_add, (0, 75))
                             elif i == 3:
                                 #bottom right
-                                image.paste(image_to_add, (76, 76))
+                                image.paste(image_to_add, (75, 75))
                         add_corners(image, 30)
                         #convert the image to a photoimage
                         #image.show()
@@ -3335,7 +3335,7 @@ class App(ctk.CTk):
                         #check if resolution is the same
                         try:
                             #try because I keep adding stuff to the json file and it may error out for peeps
-                            if self.last_run["resolution"] != self.resolution or self.use_text_files_as_captions != self.last_run['use_text_files_as_captions'] or self.last_run['dataset_repeats'] != self.dataset_repeats or self.last_run["batch_size"] != self.batch_size or self.last_run["train_text_encoder"] != self.train_text_encoder or self.last_run["use_image_names_as_captions"] != self.use_image_names_as_captions or self.last_run["auto_balance_concept_datasets"] != self.auto_balance_concept_datasets or self.last_run["add_class_images_to_dataset"] != self.add_class_images_to_dataset or self.last_run["number_of_class_images"] != self.number_of_class_images or self.last_run["aspect_ratio_bucketing"] != self.use_aspect_ratio_bucketing:
+                            if self.last_run["resolution"] != self.resolution or self.use_text_files_as_captions != self.last_run['use_text_files_as_captions'] or self.last_run['dataset_repeats'] != self.dataset_repeats or self.last_run["batch_size"] != self.batch_size or self.last_run["train_text_encoder"] != self.train_text_encoder or self.last_run["use_image_names_as_captions"] != self.use_image_names_as_captions or self.last_run["auto_balance_concept_datasets"] != self.auto_balance_concept_datasets or self.last_run["add_class_images_to_dataset"] != self.add_class_images_to_dataset or self.last_run["number_of_class_images"] != self.number_of_class_images or self.last_run["aspect_ratio_bucketing"] != self.use_aspect_ratio_bucketing or self.last_run["masked_training"] != self.masked_training:
                                 self.regenerate_latent_cache = True
                                 #show message
                                 

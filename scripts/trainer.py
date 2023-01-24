@@ -967,7 +967,7 @@ class ImageTrainItem():
             self.image = self.load_image(self.pathname, crop, jitter_amount, flip)
 
             if self.model_variant == "inpainting" or self.load_mask:
-                if os.path.exists(self.mask_pathname):
+                if os.path.exists(self.mask_pathname) and self.load_mask:
                     self.mask = self.load_image(self.mask_pathname, crop, jitter_amount, flip)
                 else:
                     if self.variant_warning == False:
@@ -1430,7 +1430,7 @@ class NormalDataset(Dataset):
                 if '-depth' in f or '-masklabel' in f:
                     continue
                 ext = os.path.splitext(f)[1].lower()
-                if ext in ['.jpg', '.jpeg', '.png', '.bmp', '.webp'] and '-masklabel.png' not in f:
+                if ext in ['.jpg', '.jpeg', '.png', '.bmp', '.webp']:
                     try:
                         img = Image.open(current)
                     except:
@@ -1465,10 +1465,10 @@ class NormalDataset(Dataset):
         instance_path, instance_prompt = self.image_paths[index % self.num_instance_images]
         og_prompt = instance_prompt
         instance_image = Image.open(instance_path)
-        if self.load_mask:
+        if self.model_variant == "inpainting" or self.load_mask:
 
             mask_pathname = os.path.splitext(instance_path)[0] + "-masklabel.png"
-            if os.path.exists(mask_pathname):
+            if os.path.exists(mask_pathname) and self.load_mask:
                 mask = Image.open(mask_pathname).convert("L")
             else:
                 if self.variant_warning == False:
@@ -1662,7 +1662,7 @@ class LatentsDataset(Dataset):
         self.latents_cache.append(latent)
         self.text_encoder_cache.append(text_encoder)
         self.mask_cache.append(cached_mask)
-        self.mask_mean_cache.append(cached_mask.mean())
+        self.mask_mean_cache.append(None if cached_mask is None else cached_mask.mean())
         self.extra_cache.append(cached_extra)
         self.tokens_cache.append(tokens_cache)
     def __len__(self):
@@ -2136,7 +2136,7 @@ def main():
                 cached_latent = vae.encode(batch["pixel_values"]).latent_dist
                 if batch["mask_values"] is not None:
                     cached_mask = functional.resize(batch["mask_values"], size=cached_latent.mean.shape[2:])
-                if args.model_variant == "inpainting":
+                if batch["mask_values"] is not None and args.model_variant == "inpainting":
                     batch["mask_values"] = batch["mask_values"].to(accelerator.device, non_blocking=True, dtype=weight_dtype)
                     cached_extra = vae.encode(batch["pixel_values"] * (1 - batch["mask_values"])).latent_dist
                 if args.model_variant == "depth2img":
