@@ -2273,7 +2273,7 @@ class App(ctk.CTk):
             self.play_generate_image_button["text"] = "Loading Model, Please stand by..."
             #self.play_generate_image_button.configure(fg="red")
             self.play_generate_image_button.update()
-            self.pipe = diffusers.DiffusionPipeline.from_pretrained(model,torch_dtype=torch.float16,safety_checker=None)
+            self.pipe = diffusers.DiffusionPipeline.from_pretrained(model,custom_pipeline="lpw_stable_diffusion",torch_dtype=torch.float16,safety_checker=None)
             if isinstance(self.pipe, StableDiffusionPipeline):
                 self.play_model_variant = 'base'
             if isinstance(self.pipe, StableDiffusionInpaintPipeline):
