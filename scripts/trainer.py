@@ -1047,10 +1047,17 @@ class DataLoaderMultiAspect():
                     if concept['use_sub_dirs'] == 1:
                         tot = 0
                         for root, dirs, files in os.walk(concept['instance_data_dir']):
-                            tot += len(files)
+                            for file in files:
+                                if file.endswith( ('.jpg','.jpeg','.png','.webp','.bmp','.JPG','.JPEG','.PNG','.WEBP','.BMP')):
+                                    tot += 1
                         count = tot
                     else:
-                        count = len(os.listdir(concept['instance_data_dir']))
+                        tot = 0
+                        files = os.listdir(concept['instance_data_dir'])
+                        for file in files:
+                            if file.endswith( ('.jpg','.jpeg','.png','.webp','.bmp','.JPG','.JPEG','.PNG','.WEBP','.BMP')):
+                                tot += 1
+                        count = tot
                 else:
                     count = len(os.listdir(concept['instance_data_dir']))
                 print(f"{concept['instance_data_dir']} has count of {count}")
