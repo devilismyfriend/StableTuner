@@ -19,6 +19,7 @@ import customtkinter as ctk
 import random
 import subprocess
 from pathlib import Path
+from diffusers import StableDiffusionPipeline, StableDiffusionInpaintPipeline, StableDiffusionDepth2ImgPipeline
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 #work in progress code, not finished, credits will be added at a later date.
@@ -145,7 +146,7 @@ class ConceptWidget(ctk.CTkFrame):
                         import random
                         
                         #filter files for images
-                        files = [f for f in files if f.endswith(".jpg") or f.endswith(".png") or f.endswith(".jpeg")]
+                        files = [f for f in files if (f.endswith(".jpg") or f.endswith(".png") or f.endswith(".jpeg")) and not f.endswith("-masklabel.png") and not f.endswith("-depth.png")]
                         if len(files) != 0:
                             rand = random.choice(files)
                             image_path = rand
@@ -158,20 +159,20 @@ class ConceptWidget(ctk.CTkFrame):
                             image_to_add = Image.open(image_path)
                             #resize the image to 38x38
                             #resize to 150x150 closest to the original aspect ratio
-                            image_to_add.thumbnail((150, 150), Image.Resampling.LANCZOS)
+                            image_to_add.thumbnail((75, 75), Image.Resampling.LANCZOS)
                             #decide where to put the image
                             if i == 0:
                                 #top left
                                 image.paste(image_to_add, (0, 0))
                             elif i == 1:
                                 #top right
-                                image.paste(image_to_add, (76, 0))
+                                image.paste(image_to_add, (75, 0))
                             elif i == 2:
                                 #bottom left
-                                image.paste(image_to_add, (0, 76))
+                                image.paste(image_to_add, (0, 75))
                             elif i == 3:
                                 #bottom right
-                                image.paste(image_to_add, (76, 76))
+                                image.paste(image_to_add, (75, 75))
                     image = add_corners(image, 30)
                         #convert the image to a photoimage
                         #image.show()
@@ -388,7 +389,7 @@ class ConceptWindow(ctk.CTkToplevel):
                         import random
                         
                         #filter files for images
-                        files = [f for f in files if f.endswith(".jpg") or f.endswith(".png") or f.endswith(".jpeg")]
+                        files = [f for f in files if (f.endswith(".jpg") or f.endswith(".png") or f.endswith(".jpeg")) and not f.endswith("-masklabel.png") and not f.endswith("-depth.png")]
                         if len(files) != 0:
                             rand = random.choice(files)
                             image_path = os.path.join(path,rand)
@@ -401,20 +402,20 @@ class ConceptWindow(ctk.CTkToplevel):
                             image_to_add = Image.open(image_path)
                             #resize the image to 38x38
                             #resize to 150x150 closest to the original aspect ratio
-                            image_to_add.thumbnail((150, 150), Image.Resampling.LANCZOS)
+                            image_to_add.thumbnail((75, 75), Image.Resampling.LANCZOS)
                             #decide where to put the image
                             if i == 0:
                                 #top left
                                 image.paste(image_to_add, (0, 0))
                             elif i == 1:
                                 #top right
-                                image.paste(image_to_add, (76, 0))
+                                image.paste(image_to_add, (75, 0))
                             elif i == 2:
                                 #bottom left
-                                image.paste(image_to_add, (0, 76))
+                                image.paste(image_to_add, (0, 75))
                             elif i == 3:
                                 #bottom right
-                                image.paste(image_to_add, (76, 76))
+                                image.paste(image_to_add, (75, 75))
                         add_corners(image, 30)
                         #convert the image to a photoimage
                         #image.show()
@@ -843,7 +844,11 @@ class App(ctk.CTk):
         self.attention_types = ['xformers','Flash Attention']
         self.model_variant = 'Regular'
         self.model_variants = ['Regular', 'Inpaint','Depth2Img']
+        self.masked_training = False
+        self.normalize_masked_area_loss = True
+        self.unmasked_probability = '0%'
         self.fallback_mask_prompt = ''
+        self.max_denoising_strength = '100%'
         self.required_folders = ["vae", "unet", "tokenizer", "text_encoder"]
         self.aspect_ratio_bucketing_mode = 'Dynamic Fill'
         self.dynamic_bucketing_mode = 'Duplicate'
@@ -1668,13 +1673,50 @@ class App(ctk.CTk):
         self.shuffle_dataset_per_epoch_checkbox = ctk.CTkSwitch(self.dataset_frame_subframe, variable=self.shuffle_dataset_per_epoch_var)
         self.shuffle_dataset_per_epoch_checkbox.grid(row=1, column=3, sticky="nsew")
 
-        #option menu to select dynamic bucketing mode (if enabled)
+        #masked training
+        self.masked_training_var = tk.IntVar()
+        self.masked_training_label = ctk.CTkLabel(self.dataset_frame_subframe, text="Masked Training")
+        masked_training_label_ttp = CreateToolTip(self.masked_training_label, "Enable training on masked areas of the dataset.")
+        self.masked_training_checkbox = ctk.CTkSwitch(self.dataset_frame_subframe, variable=self.masked_training_var)
+        self.masked_training_var.set(self.masked_training)
+        self.masked_training_label.grid(row=2, column=2, sticky="nsew")
+        self.masked_training_checkbox.grid(row=2, column=3, sticky="nsew")
+
+        #normalize masked area loss
+        self.normalize_masked_area_loss_var = tk.IntVar()
+        self.normalize_masked_area_loss_label = ctk.CTkLabel(self.dataset_frame_subframe, text="Normalize Masked Area Loss")
+        normalize_masked_area_loss_label_ttp = CreateToolTip(self.normalize_masked_area_loss_label, "Normalize loss values based on the masked area of images.")
+        self.normalize_masked_area_loss_checkbox = ctk.CTkSwitch(self.dataset_frame_subframe, variable=self.normalize_masked_area_loss_var)
+        self.normalize_masked_area_loss_var.set(self.normalize_masked_area_loss)
+        self.normalize_masked_area_loss_label.grid(row=3, column=2, sticky="nsew")
+        self.normalize_masked_area_loss_checkbox.grid(row=3, column=3, sticky="nsew")
+
+        #unmasked probability
+        self.unmasked_probability_var = tk.StringVar()
+        self.unmasked_probability_label = ctk.CTkLabel(self.dataset_frame_subframe, text="Unmasked Steps")
+        unmasked_probability_label_ttp = CreateToolTip(self.unmasked_probability_label, "Fraction of steps to train on unmasked images.")
+        self.unmasked_probability_var.set(self.unmasked_probability)
+        self.unmasked_probability_entry = ctk.CTkEntry(self.dataset_frame_subframe, textvariable=self.unmasked_probability_var)
+        self.unmasked_probability_label.grid(row=4, column=2, sticky="nsew")
+        self.unmasked_probability_entry.grid(row=4, column=3, sticky="nsew")
+
+        #unmasked probability
+        self.max_denoising_strength_var = tk.StringVar()
+        self.max_denoising_strength_label = ctk.CTkLabel(self.dataset_frame_subframe, text="Max Denoising Strength")
+        max_denoising_strength_label_ttp = CreateToolTip(self.max_denoising_strength_label, "Max denoising factor to train on. Set this to 70%-80% for masked training and to reduce overfitting. 100% is the default behavior for training on up to fully noisy images.")
+        self.max_denoising_strength_var.set(self.max_denoising_strength)
+        self.max_denoising_strength_entry = ctk.CTkEntry(self.dataset_frame_subframe, textvariable=self.max_denoising_strength_var)
+        self.max_denoising_strength_label.grid(row=5, column=2, sticky="nsew")
+        self.max_denoising_strength_entry.grid(row=5, column=3, sticky="nsew")
+
+        #fallback mask prompt
         self.fallback_mask_prompt_label = ctk.CTkLabel(self.dataset_frame_subframe, text="Fallback Mask Prompt")
-        fallback_mask_prompt_label_ttp = CreateToolTip(self.fallback_mask_prompt_label, "A prompt used for masking images without a mask. Only used when training inpainting models.")
+        fallback_mask_prompt_label_ttp = CreateToolTip(self.fallback_mask_prompt_label, "A prompt used for masking images without a mask.")
         self.fallback_mask_prompt_entry = ctk.CTkEntry(self.dataset_frame_subframe)
         self.fallback_mask_prompt_entry.insert(0, self.fallback_mask_prompt)
-        self.fallback_mask_prompt_label.grid(row=2, column=2, sticky="nsew")
-        self.fallback_mask_prompt_entry.grid(row=2, column=3, sticky="nsew")
+        self.fallback_mask_prompt_label.grid(row=6, column=2, sticky="nsew")
+        self.fallback_mask_prompt_entry.grid(row=6, column=3, sticky="nsew")
+
         #add download dataset entry
         #add a switch to duplicate fill bucket
         #self.duplicate_fill_buckets_var = tk.IntVar()
@@ -2232,6 +2274,12 @@ class App(ctk.CTk):
             #self.play_generate_image_button.configure(fg="red")
             self.play_generate_image_button.update()
             self.pipe = diffusers.DiffusionPipeline.from_pretrained(model,torch_dtype=torch.float16,safety_checker=None)
+            if isinstance(self.pipe, StableDiffusionPipeline):
+                self.play_model_variant = 'base'
+            if isinstance(self.pipe, StableDiffusionInpaintPipeline):
+                self.play_model_variant = 'inpainting'
+            if isinstance(self.pipe, StableDiffusionDepth2ImgPipeline):
+                self.play_model_variant = 'depth2img'
             self.pipe.to('cuda')
             self.current_model = model
             if scheduler == 'DPMSolverMultistepScheduler':
@@ -2284,7 +2332,15 @@ class App(ctk.CTk):
             #self.play_generate_image_button["text"] = "Generating, Please stand by..."
             #self.play_generate_image_button.configure(fg=self.dark_mode_title_var)
             #self.play_generate_image_button.update()
-            image = self.pipe(prompt=prompt,negative_prompt=negative_prompt,height=int(sample_height),width=int(sample_width), guidance_scale=cfg, num_inference_steps=int(steps),generator=generator).images[0]
+            if self.play_model_variant == 'base':
+                image = self.pipe(prompt=prompt, negative_prompt=negative_prompt, height=int(sample_height), width=int(sample_width), guidance_scale=cfg, num_inference_steps=int(steps), generator=generator).images[0]
+            if self.play_model_variant == 'inpainting':
+                conditioning_image = torch.zeros(1, 3, int(sample_height), int(sample_width))
+                mask = torch.ones(1, 1, int(sample_height), int(sample_width))
+                image = self.pipe(prompt, conditioning_image, mask, height=int(sample_height), width=int(sample_width), guidance_scale=cfg, num_inference_steps=int(steps), generator=generator).images[0]
+            if self.play_model_variant == 'depth2img':
+                test_image = Image.new('RGB', (int(sample_width), int(sample_height)), (255, 255, 255))
+                image = self.pipe(prompt, image=test_image, height=int(sample_height), width=int(sample_width), guidance_scale=cfg, num_inference_steps=int(steps), strength=1.0, generator=generator).images[0]
             self.play_current_image = image
             #image is PIL image
             if self.generation_window is None:
@@ -3006,6 +3062,10 @@ class App(ctk.CTk):
         configure['aspect_ratio_bucketing_mode'] = self.aspect_ratio_bucketing_mode_var.get()
         configure['dynamic_bucketing_mode'] = self.dynamic_bucketing_mode_var.get()
         configure['model_variant'] = self.model_variant_var.get()
+        configure['masked_training'] = self.masked_training_var.get()
+        configure['normalize_masked_area_loss'] = self.normalize_masked_area_loss_var.get()
+        configure['unmasked_probability'] = self.unmasked_probability_var.get()
+        configure['max_denoising_strength'] = self.max_denoising_strength_var.get()
         configure['fallback_mask_prompt'] = self.fallback_mask_prompt_entry.get()
         configure['attention'] = self.attention_var.get()
         configure['batch_prompt_sampling'] = int(self.batch_prompt_sampling_optionmenu_var.get())
@@ -3151,6 +3211,10 @@ class App(ctk.CTk):
             self.dynamic_bucketing_mode_label.configure(state='disabled')
             self.dynamic_bucketing_mode_option_menu.configure(state='disabled')
         self.model_variant_var.set(configure["model_variant"])
+        self.masked_training_var.set(configure["masked_training"])
+        self.normalize_masked_area_loss_var.set(configure["normalize_masked_area_loss"])
+        self.unmasked_probability_var.set(configure["unmasked_probability"])
+        self.max_denoising_strength_var.set(configure["max_denoising_strength"])
         self.fallback_mask_prompt_entry.delete(0, tk.END)
         self.fallback_mask_prompt_entry.insert(0, configure["fallback_mask_prompt"])
         self.aspect_ratio_bucketing_mode_var.set(configure["aspect_ratio_bucketing_mode"])
@@ -3219,6 +3283,10 @@ class App(ctk.CTk):
         self.aspect_ratio_bucketing_mode = self.aspect_ratio_bucketing_mode_var.get()
         self.dynamic_bucketing_mode = self.dynamic_bucketing_mode_var.get()
         self.model_variant = self.model_variant_var.get()
+        self.masked_training = self.masked_training_var.get()
+        self.normalize_masked_area_loss = self.normalize_masked_area_loss_var.get()
+        self.unmasked_probability = self.unmasked_probability_var.get()
+        self.max_denoising_strength = self.max_denoising_strength_var.get()
         self.fallback_mask_prompt = self.fallback_mask_prompt_entry.get()
         self.attention = self.attention_var.get()
         self.batch_prompt_sampling = int(self.batch_prompt_sampling_optionmenu_var.get())
@@ -3267,7 +3335,7 @@ class App(ctk.CTk):
                         #check if resolution is the same
                         try:
                             #try because I keep adding stuff to the json file and it may error out for peeps
-                            if self.last_run["resolution"] != self.resolution or self.use_text_files_as_captions != self.last_run['use_text_files_as_captions'] or self.last_run['dataset_repeats'] != self.dataset_repeats or self.last_run["batch_size"] != self.batch_size or self.last_run["train_text_encoder"] != self.train_text_encoder or self.last_run["use_image_names_as_captions"] != self.use_image_names_as_captions or self.last_run["auto_balance_concept_datasets"] != self.auto_balance_concept_datasets or self.last_run["add_class_images_to_dataset"] != self.add_class_images_to_dataset or self.last_run["number_of_class_images"] != self.number_of_class_images or self.last_run["aspect_ratio_bucketing"] != self.use_aspect_ratio_bucketing:
+                            if self.last_run["resolution"] != self.resolution or self.use_text_files_as_captions != self.last_run['use_text_files_as_captions'] or self.last_run['dataset_repeats'] != self.dataset_repeats or self.last_run["batch_size"] != self.batch_size or self.last_run["train_text_encoder"] != self.train_text_encoder or self.last_run["use_image_names_as_captions"] != self.use_image_names_as_captions or self.last_run["auto_balance_concept_datasets"] != self.auto_balance_concept_datasets or self.last_run["add_class_images_to_dataset"] != self.add_class_images_to_dataset or self.last_run["number_of_class_images"] != self.number_of_class_images or self.last_run["aspect_ratio_bucketing"] != self.use_aspect_ratio_bucketing or self.last_run["masked_training"] != self.masked_training:
                                 self.regenerate_latent_cache = True
                                 #show message
                                 
@@ -3338,6 +3406,52 @@ class App(ctk.CTk):
             else:
                 batBase += ' "--model_variant=depth2img" '
 
+        if self.masked_training == True:
+            if export == 'Linux':
+                batBase += ' --masked_training '
+            else:
+                batBase += ' "--masked_training" '
+
+        if self.normalize_masked_area_loss == True:
+            if export == 'Linux':
+                batBase += ' --normalize_masked_area_loss '
+            else:
+                batBase += ' "--normalize_masked_area_loss" '
+
+        try:
+            # if unmasked_probability is a percentage calculate what epoch to stop at
+            if '%' in self.unmasked_probability:
+                percent = float(self.unmasked_probability.replace('%', ''))
+                fraction = percent / 100
+                if export == 'Linux':
+                    batBase += f' --unmasked_probability={fraction}'
+                else:
+                    batBase += f' "--unmasked_probability={fraction}" '
+            elif '%' not in self.unmasked_probability and self.unmasked_probability.strip() != '' and self.unmasked_probability != '0':
+                if export == 'Linux':
+                    batBase += f' --unmasked_probability={self.unmasked_probability}'
+                else:
+                    batBase += f' "--unmasked_probability={self.unmasked_probability}" '
+        except:
+            pass
+
+        try:
+            # if max_denoising_strength is a percentage calculate what epoch to stop at
+            if '%' in self.max_denoising_strength:
+                percent = float(self.max_denoising_strength.replace('%', ''))
+                fraction = percent / 100
+                if export == 'Linux':
+                    batBase += f' --max_denoising_strength={fraction}'
+                else:
+                    batBase += f' "--max_denoising_strength={fraction}" '
+            elif '%' not in self.max_denoising_strength and self.max_denoising_strength.strip() != '' and self.max_denoising_strength != '0':
+                if export == 'Linux':
+                    batBase += f' --max_denoising_strength={self.max_denoising_strength}'
+                else:
+                    batBase += f' "--max_denoising_strength={self.max_denoising_strength}" '
+        except:
+            pass
+
         if self.fallback_mask_prompt != '':
             if export == 'Linux':
                 batBase += f' --add_mask_prompt="{self.fallback_mask_prompt}"'
@@ -3368,7 +3482,7 @@ class App(ctk.CTk):
                     batBase += f' --stop_text_encoder_training={stop_epoch}'
                 else:
                     batBase += f' "--stop_text_encoder_training={stop_epoch}" '
-            elif '%' not in self.limit_text_encoder and self.limit_text_encoder != '' and self.limit_text_encoder != ' ' and self.limit_text_encoder != '0':
+            elif '%' not in self.limit_text_encoder and self.limit_text_encoder.strip() != '' and self.limit_text_encoder != '0':
                 if export == 'Linux':
                     batBase += f' --stop_text_encoder_training={self.limit_text_encoder}'
                 else:

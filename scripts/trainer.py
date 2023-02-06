@@ -385,7 +385,11 @@ def parse_args():
     parser.add_argument('--append_sample_controlled_seed_action', action='append')
     parser.add_argument('--add_sample_prompt', type=str, action='append')
     parser.add_argument('--use_image_names_as_captions', default=False, action="store_true")
-    parser.add_argument('--add_mask_prompt', type=str, default=None, action="append", dest="mask_prompts")
+    parser.add_argument("--masked_training", default=False, required=False, action='store_true', help="Whether to mask parts of the image during training")
+    parser.add_argument("--normalize_masked_area_loss", default=False, required=False, action='store_true', help="Normalize the loss, to make it independent of the size of the masked area")
+    parser.add_argument("--unmasked_probability", type=float, default=1, required=False, help="Probability of training a step without a mask")
+    parser.add_argument("--max_denoising_strength", type=float, default=1, required=False, help="Max denoising steps to train on")
+    parser.add_argument('--add_mask_prompt', type=str, default=None, action="append", dest="mask_prompts", help="Prompt for automatic mask creation")
     args = parser.parse_args()
     env_local_rank = int(os.environ.get("LOCAL_RANK", -1))
     if env_local_rank != -1 and env_local_rank != args.local_rank:
@@ -703,6 +707,7 @@ class AutoBucketing(Dataset):
                     model_variant='base',
                     extra_module=None,
                     mask_prompts=None,
+                    load_mask=False,
                     ):
         
         self.debug_level = debug_level
@@ -761,6 +766,7 @@ class AutoBucketing(Dataset):
          model_variant=self.model_variant,
          extra_module=self.extra_module,
          mask_prompts=mask_prompts,
+         load_mask=load_mask,
         )
 
         #print(self.image_train_items)
@@ -817,8 +823,8 @@ class AutoBucketing(Dataset):
             image_train_tmp_image = Image.fromarray(self.normalize8(image_train_tmp.image)).convert("RGB")
             
             example["instance_images"] = self.image_transforms(image_train_tmp_image)
-            if self.model_variant == 'inpainting':
-                image_train_tmp_mask = Image.fromarray(self.normalize8(image_train_tmp.extra)).convert("L")
+            if image_train_tmp.mask is not None:
+                image_train_tmp_mask = Image.fromarray(self.normalize8(image_train_tmp.mask)).convert("L")
                 example["mask"] = self.mask_transforms(image_train_tmp_mask)
             if self.model_variant == 'depth2img':
                 image_train_tmp_depth = Image.fromarray(self.normalize8(image_train_tmp.extra)).convert("L")
@@ -854,12 +860,13 @@ class ImageTrainItem():
     """
     image: Image
     mask: Image
+    extra: Image
     identifier: caption,
     target_aspect: (width, height), 
     pathname: path to image file
     flip_p: probability of flipping image (0.0 to 1.0)
     """    
-    def __init__(self, image: Image, extra: Image, caption: str, target_wh: list, pathname: str, flip_p=0.0, model_variant='base'):
+    def __init__(self, image: Image, mask: Image, extra: Image, caption: str, target_wh: list, pathname: str, flip_p=0.0, model_variant='base', load_mask=False):
         self.caption = caption
         self.target_wh = target_wh
         self.pathname = pathname
@@ -869,30 +876,24 @@ class ImageTrainItem():
         self.flip = transforms.RandomHorizontalFlip(p=flip_p)
         self.cropped_img = None
         self.model_variant = model_variant
+        self.load_mask=load_mask
         self.is_dupe = []
         self.variant_warning = False
 
-        if image is None:
-            self.image = []
-        else:
-            self.image = image
-
-        if extra is None:
-            self.extra = []
-        else:
-            self.extra = extra
+        self.image = image
+        self.mask = mask
+        self.extra = extra
 
     def self_destruct(self):
-        self.image = []
-        self.extra = []
+        self.image = None
+        self.mask = None
+        self.extra = None
         self.cropped_img = None
         self.is_dupe.append(1)
 
-    def load_image(self, pathname, crop, crop_jitter):
+    def load_image(self, pathname, crop, jitter_amount, flip):
         if len(self.is_dupe) > 0:
-            chance = float(len(self.is_dupe)) / 10.0
-            self.flip = transforms.RandomHorizontalFlip(p=self.flip_p + chance if chance < 1.0 else 1.0)
-            self.crop_jitter = crop_jitter + (len(self.is_dupe) * 10) if crop_jitter < 50 else 50
+            self.flip = transforms.RandomHorizontalFlip(p=1.0 if flip else 0.0)
         image = Image.open(pathname).convert('RGB')
 
         width, height = image.size
@@ -901,7 +902,6 @@ class ImageTrainItem():
             image = cropped_img.resize((512, 512), resample=Image.Resampling.LANCZOS)
         else:
             width, height = image.size
-            jitter_amount = random.randint(0, crop_jitter)
 
             if self.target_wh[0] == self.target_wh[1]:
                 if width > height:
@@ -953,19 +953,31 @@ class ImageTrainItem():
         crop_jitter: randomly shift cropp by N pixels when using multiple aspect ratios to improve training quality
         """
 
-        if not hasattr(self, 'image') or len(self.image) == 0:
-            self.image = self.load_image(self.pathname, crop, crop_jitter)
-            if self.model_variant == "inpainting":
-                if os.path.exists(self.mask_pathname):
-                    self.extra = self.load_image(self.mask_pathname, crop, crop_jitter)
+        if self.image is None:
+            chance = float(len(self.is_dupe)) / 10.0
+            
+            flip_p = self.flip_p + chance if chance < 1.0 else 1.0
+            flip = random.uniform(0, 1) < flip_p
+
+            if len(self.is_dupe) > 0:
+                crop_jitter = crop_jitter + (len(self.is_dupe) * 10) if crop_jitter < 50 else 50
+                
+            jitter_amount = random.randint(0, crop_jitter)
+
+            self.image = self.load_image(self.pathname, crop, jitter_amount, flip)
+
+            if self.model_variant == "inpainting" or self.load_mask:
+                if os.path.exists(self.mask_pathname) and self.load_mask:
+                    self.mask = self.load_image(self.mask_pathname, crop, jitter_amount, flip)
                 else:
                     if self.variant_warning == False:
                         print(f" {bcolors.FAIL} ** Warning: No mask found for an image, using an empty mask but make sure you're training the right model variant.{bcolors.ENDC}")
                         self.variant_warning = True
-                    self.extra = Image.new('RGB', self.image.size, color="white").convert("L")
+                    self.mask = Image.new('RGB', self.image.size, color="white").convert("L")
+
             if self.model_variant == "depth2img":
                 if os.path.exists(self.depth_pathname):
-                    self.extra = self.load_image(self.depth_pathname, crop, crop_jitter)
+                    self.extra = self.load_image(self.depth_pathname, crop, jitter_amount, flip)
                 else:
                     if self.variant_warning == False:
                         print(f" {bcolors.FAIL} ** Warning: No depth found for an image, using an empty depth but make sure you're training the right model variant.{bcolors.ENDC}")
@@ -981,11 +993,14 @@ class ImageTrainItem():
             self.image = np.array(self.image).astype(np.uint8)
 
             self.image = (self.image / 127.5 - 1.0).astype(np.float32)
-        if self.model_variant != "base":
-            if type(self.extra) is not np.ndarray:
-                self.extra = np.array(self.extra).astype(np.uint8)
+        if self.mask is not None and type(self.mask) is not np.ndarray:
+            self.mask = np.array(self.mask).astype(np.uint8)
 
-                self.extra = (self.extra / 255.0).astype(np.float32)
+            self.mask = (self.mask / 255.0).astype(np.float32)
+        if self.extra is not None and type(self.extra) is not np.ndarray:
+            self.extra = np.array(self.extra).astype(np.uint8)
+
+            self.extra = (self.extra / 255.0).astype(np.float32)
 
         #print(self.image.shape)
 
@@ -1016,6 +1031,7 @@ class DataLoaderMultiAspect():
             model_variant='base',
             extra_module=None,
             mask_prompts=None,
+            load_mask=False,
     ):
         self.resolution = resolution
         self.debug_level = debug_level
@@ -1030,6 +1046,7 @@ class DataLoaderMultiAspect():
         self.seed = seed
         self.model_variant = model_variant
         self.extra_module = extra_module
+        self.load_mask = load_mask
         prepared_train_data = []
         
         self.aspects = get_aspect_buckets(resolution)
@@ -1129,7 +1146,7 @@ class DataLoaderMultiAspect():
                 use_image_names_as_captions = False
                 self.class_image_caption_pairs.extend(self.__prescan_images(debug_level, self.class_images_path, flip_p,use_image_names_as_captions,concept_class_prompt,use_text_files_as_captions=self.use_text_files_as_captions))
             self.class_image_caption_pairs = self.__bucketize_images(self.class_image_caption_pairs, batch_size=batch_size, debug_level=debug_level,aspect_mode=self.aspect_mode,action_preference=self.action_preference)
-        if self.model_variant == "inpainting" and mask_prompts is not None:
+        if mask_prompts is not None:
             print(f" {bcolors.WARNING} Checking and generating missing masks...{bcolors.ENDC}")
             clip_seg = ClipSeg()
             clip_seg.mask_images(self.image_paths, mask_prompts)
@@ -1178,7 +1195,7 @@ class DataLoaderMultiAspect():
 
             target_wh = min(self.aspects, key=lambda aspects:abs(aspects[0]/aspects[1] - image_aspect))
 
-            image_train_item = ImageTrainItem(image=None, extra=None, caption=identifier, target_wh=target_wh, pathname=pathname, flip_p=flip_p,model_variant=self.model_variant)
+            image_train_item = ImageTrainItem(image=None, mask=None, extra=None, caption=identifier, target_wh=target_wh, pathname=pathname, flip_p=flip_p,model_variant=self.model_variant, load_mask=self.load_mask)
 
             decorated_image_train_items.append(image_train_item)
         return decorated_image_train_items
@@ -1323,6 +1340,7 @@ class NormalDataset(Dataset):
         model_variant='base',
         extra_module=None,
         mask_prompts=None,
+        load_mask=None,
     ):
         self.use_image_names_as_captions = use_image_names_as_captions
         self.size = size
@@ -1336,6 +1354,7 @@ class NormalDataset(Dataset):
         self.model_variant = model_variant
         self.variant_warning = False
         self.vae_scale_factor = None
+        self.load_mask = load_mask
         for concept in concepts_list:
             if 'use_sub_dirs' in concept:
                 if concept['use_sub_dirs'] == True:
@@ -1351,7 +1370,7 @@ class NormalDataset(Dataset):
             if with_prior_preservation:
                 for i in range(repeats):
                     self.__recurse_data_root(self, concept,use_sub_dirs=False,class_images=True)
-        if self.model_variant == "inpainting" and mask_prompts is not None:
+        if mask_prompts is not None:
             print(f" {bcolors.WARNING} Checking and generating missing masks{bcolors.ENDC}")
             clip_seg = ClipSeg()
             clip_seg.mask_images(self.image_paths, mask_prompts)
@@ -1418,7 +1437,7 @@ class NormalDataset(Dataset):
                 if '-depth' in f or '-masklabel' in f:
                     continue
                 ext = os.path.splitext(f)[1].lower()
-                if ext in ['.jpg', '.jpeg', '.png', '.bmp', '.webp'] and '-masklabel.png' not in f:
+                if ext in ['.jpg', '.jpeg', '.png', '.bmp', '.webp']:
                     try:
                         img = Image.open(current)
                     except:
@@ -1453,10 +1472,10 @@ class NormalDataset(Dataset):
         instance_path, instance_prompt = self.image_paths[index % self.num_instance_images]
         og_prompt = instance_prompt
         instance_image = Image.open(instance_path)
-        if self.model_variant == "inpainting":
+        if self.model_variant == "inpainting" or self.load_mask:
 
             mask_pathname = os.path.splitext(instance_path)[0] + "-masklabel.png"
-            if os.path.exists(mask_pathname):
+            if os.path.exists(mask_pathname) and self.load_mask:
                 mask = Image.open(mask_pathname).convert("L")
             else:
                 if self.variant_warning == False:
@@ -1616,17 +1635,21 @@ class CachedLatentsDataset(Dataset):
         self.cache = torch.load(self.cache_paths[index])
         self.latents = self.cache.latents_cache[0]
         self.tokens = self.cache.tokens_cache[0]
-        self.conditioning_latent_cache = None
         self.extra_cache = None
+        self.mask_cache = None
+        if self.cache.mask_cache is not None:
+            self.mask_cache = self.cache.mask_cache[0]
+        self.mask_mean_cache = None
+        if self.cache.mask_mean_cache is not None:
+            self.mask_mean_cache = self.cache.mask_mean_cache[0]
         if index in self.conditional_indexes:
             self.text_encoder = self.empty_tokens
         else:
             self.text_encoder = self.cache.text_encoder_cache[0]
         if self.model_variant != 'base':
-            self.conditioning_latent_cache = self.cache.conditioning_latent_cache[0]
             self.extra_cache = self.cache.extra_cache[0]
         del self.cache
-        return self.latents, self.text_encoder, self.conditioning_latent_cache, self.extra_cache, self.tokens
+        return self.latents, self.text_encoder, self.mask_cache, self.mask_mean_cache, self.extra_cache, self.tokens
 
     def add_pt_cache(self, cache_path):
         if len(self.cache_paths) == 0:
@@ -1635,22 +1658,24 @@ class CachedLatentsDataset(Dataset):
             self.cache_paths += (cache_path,)
 
 class LatentsDataset(Dataset):
-    def __init__(self, latents_cache=None, text_encoder_cache=None, conditioning_latent_cache=None, extra_cache=None,tokens_cache=None):
+    def __init__(self, latents_cache=None, text_encoder_cache=None, mask_cache=None, mask_mean_cache=None, extra_cache=None,tokens_cache=None):
         self.latents_cache = latents_cache
         self.text_encoder_cache = text_encoder_cache
-        self.conditioning_latent_cache = conditioning_latent_cache
+        self.mask_cache = mask_cache
+        self.mask_mean_cache = mask_mean_cache
         self.extra_cache = extra_cache
         self.tokens_cache = tokens_cache
-    def add_latent(self, latent, text_encoder, cached_conditioning_latent, cached_extra, tokens_cache):
+    def add_latent(self, latent, text_encoder, cached_mask, cached_extra, tokens_cache):
         self.latents_cache.append(latent)
         self.text_encoder_cache.append(text_encoder)
-        self.conditioning_latent_cache.append(cached_conditioning_latent)
+        self.mask_cache.append(cached_mask)
+        self.mask_mean_cache.append(None if cached_mask is None else cached_mask.mean())
         self.extra_cache.append(cached_extra)
         self.tokens_cache.append(tokens_cache)
     def __len__(self):
         return len(self.latents_cache)
     def __getitem__(self, index):
-        return self.latents_cache[index], self.text_encoder_cache[index], self.conditioning_latent_cache[index], self.extra_cache[index], self.tokens_cache[index]
+        return self.latents_cache[index], self.text_encoder_cache[index], self.mask_cache[index], self.mask_mean_cache[index], self.extra_cache[index], self.tokens_cache[index]
 class AverageMeter:
     def __init__(self, name=None):
         self.name = name
@@ -1931,6 +1956,7 @@ def main():
             model_variant=args.model_variant,
             extra_module=None if args.model_variant != "depth2img" else d2i,
             mask_prompts=args.mask_prompts,
+            load_mask=args.masked_training,
         )
     else:
         train_dataset = NormalDataset(
@@ -1947,6 +1973,7 @@ def main():
         model_variant=args.model_variant,
         extra_module=None if args.model_variant != "depth2img" else d2i,
         mask_prompts=args.mask_prompts,
+        load_mask=args.masked_training,
     )
     def collate_fn(examples):
         #print(examples)
@@ -1954,7 +1981,8 @@ def main():
         input_ids = [example["instance_prompt_ids"] for example in examples]
         tokens = input_ids
         pixel_values = [example["instance_images"] for example in examples]
-        if args.model_variant == 'inpainting':
+        mask = None
+        if "mask" in examples[0]:
             mask = [example["mask"] for example in examples]
         if args.model_variant == 'depth2img':
             depth = [example["instance_depth_images"] for example in examples]
@@ -1965,11 +1993,12 @@ def main():
         if args.with_prior_preservation:
             input_ids += [example["class_prompt_ids"] for example in examples]
             pixel_values += [example["class_images"] for example in examples]
-            if args.model_variant == 'inpainting':
+            if "mask" in examples[0]:
                 mask += [example["class_mask"] for example in examples]
             if args.model_variant == 'depth2img':
                 depth = [example["class_depth_images"] for example in examples]
-        if args.model_variant == 'inpainting':
+        mask_values = None
+        if mask is not None:
             mask_values = torch.stack(mask)
             mask_values = mask_values.to(memory_format=torch.contiguous_format).float()
         if args.model_variant == 'depth2img':
@@ -1993,25 +2022,17 @@ def main():
             return_tensors="pt",\
             ).input_ids
 
-        if args.model_variant == 'base':
-            batch = {
-                "input_ids": input_ids,
-                "pixel_values": pixel_values,
-                "extra_values": None,
-                "tokens" : tokens
-            }
-        else:
-            if args.model_variant == 'depth2img':
-                extra_values = depth_values
-            elif args.model_variant == 'inpainting':
-                extra_values = mask_values
-            batch = {
-                "input_ids": input_ids,
-                "pixel_values": pixel_values,
-                "extra_values": extra_values,
-                "tokens" : tokens
-            }
-        return batch
+        extra_values = None
+        if args.model_variant == 'depth2img':
+            extra_values = depth_values
+
+        return {
+            "input_ids": input_ids,
+            "pixel_values": pixel_values,
+            "extra_values": extra_values,
+            "mask_values": mask_values,
+            "tokens": tokens
+        }
 
     train_dataloader = torch.utils.data.DataLoader(
         train_dataset, batch_size=args.train_batch_size, shuffle=False, collate_fn=collate_fn, pin_memory=True
@@ -2067,12 +2088,11 @@ def main():
     if not args.train_text_encoder:
         text_encoder.to(accelerator.device, dtype=weight_dtype)
 
-    if args.model_variant == 'inpainting':
-        if args.use_bucketing:
-            wh = set([tuple(x.target_wh) for x in train_dataset.image_train_items])
-        else:
-            wh = set([tuple([args.resolution, args.resolution]) for x in train_dataset.image_paths])
-        extra_latent = {shape: vae.encode(torch.zeros(1, 3, shape[1], shape[0]).to(accelerator.device, dtype=weight_dtype)).latent_dist.mean * 0.18215 for shape in wh}
+    if args.use_bucketing:
+        wh = set([tuple(x.target_wh) for x in train_dataset.image_train_items])
+    else:
+        wh = set([tuple([args.resolution, args.resolution]) for x in train_dataset.image_paths])
+    full_mask_by_aspect = {shape: vae.encode(torch.zeros(1, 3, shape[1], shape[0]).to(accelerator.device, dtype=weight_dtype)).latent_dist.mean * 0.18215 for shape in wh}
 
     cached_dataset = CachedLatentsDataset(batch_size=args.train_batch_size,
     text_encoder=text_encoder,
@@ -2111,38 +2131,38 @@ def main():
     if gen_cache == True:
         #delete all the cached latents if they exist to avoid problems
         print(f" {bcolors.WARNING}Generating latents cache...{bcolors.ENDC}")
-        train_dataset = LatentsDataset([], [], [], [], [])
+        train_dataset = LatentsDataset([], [], [], [], [], [])
         counter = 0
         ImageFile.LOAD_TRUNCATED_IMAGES = True
         with torch.no_grad():
             for batch in tqdm(train_dataloader, desc="Caching latents", bar_format='%s{l_bar}%s%s{bar}%s%s{r_bar}%s'%(bcolors.OKBLUE,bcolors.ENDC, bcolors.OKBLUE, bcolors.ENDC,bcolors.OKBLUE,bcolors.ENDC,)):
-                cached_conditioning_latent = None
                 cached_extra = None
+                cached_mask = None
                 batch["pixel_values"] = batch["pixel_values"].to(accelerator.device, non_blocking=True, dtype=weight_dtype)
                 batch["input_ids"] = batch["input_ids"].to(accelerator.device, non_blocking=True)
-                if args.model_variant == "inpainting":
-                    batch["extra_values"] = batch["extra_values"].to(accelerator.device, non_blocking=True, dtype=weight_dtype)
-                    cached_conditioning_latent = vae.encode(batch["pixel_values"] * (1 - batch["extra_values"])).latent_dist
-                    cached_extra = functional.resize(batch["extra_values"], size=cached_conditioning_latent.mean.shape[2:])
+                cached_latent = vae.encode(batch["pixel_values"]).latent_dist
+                if batch["mask_values"] is not None:
+                    cached_mask = functional.resize(batch["mask_values"], size=cached_latent.mean.shape[2:])
+                if batch["mask_values"] is not None and args.model_variant == "inpainting":
+                    batch["mask_values"] = batch["mask_values"].to(accelerator.device, non_blocking=True, dtype=weight_dtype)
+                    cached_extra = vae.encode(batch["pixel_values"] * (1 - batch["mask_values"])).latent_dist
                 if args.model_variant == "depth2img":
                     batch["extra_values"] = batch["extra_values"].to(accelerator.device, non_blocking=True, dtype=weight_dtype)
-                    cached_conditioning_latent = vae.encode(batch["pixel_values"] * (1 - batch["extra_values"])).latent_dist
-                    cached_extra = functional.resize(batch["extra_values"], size=cached_conditioning_latent.mean.shape[2:])
-                cached_latent = vae.encode(batch["pixel_values"]).latent_dist
+                    cached_extra = functional.resize(batch["extra_values"], size=cached_latent.mean.shape[2:])
                 if args.train_text_encoder:
                     cached_text_enc = batch["input_ids"]
                 else:
                     cached_text_enc = text_encoder(batch["input_ids"])[0]
-                train_dataset.add_latent(cached_latent, cached_text_enc, cached_conditioning_latent, cached_extra, batch["tokens"])
+                train_dataset.add_latent(cached_latent, cached_text_enc, cached_mask, cached_extra, batch["tokens"])
                 del batch
                 del cached_latent
                 del cached_text_enc
-                del cached_conditioning_latent
+                del cached_mask
                 del cached_extra
                 torch.save(train_dataset, os.path.join(latent_cache_dir,f"latents_cache_{counter}.pt"))
                 cached_dataset.add_pt_cache(os.path.join(latent_cache_dir,f"latents_cache_{counter}.pt"))
                 counter += 1
-                train_dataset = LatentsDataset([], [], [], [], [])
+                train_dataset = LatentsDataset([], [], [], [], [], [])
                 #if counter % 300 == 0:
                     #train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=1, collate_fn=lambda x: x, shuffle=False)
                 #    gc.collect()
@@ -2481,8 +2501,8 @@ def main():
                                 os.makedirs(os.path.join(sample_dir,sampleName), exist_ok=True)
                             
                             if args.model_variant == 'inpainting':
-                                conditioning_image = torch.zeros(1, 3, width, height)
-                                mask = torch.ones(1, 1, width, height)
+                                conditioning_image = torch.zeros(1, 3, height, width)
+                                mask = torch.ones(1, 1, height, width)
                             if args.model_variant == 'depth2img':
                                 #pil new white image
                                 test_image = Image.new('RGB', (width, height), (255, 255, 255))
@@ -2497,7 +2517,7 @@ def main():
                                     if args.model_variant == 'inpainting':
                                         images = pipeline(samplePrompt, conditioning_image, mask, height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps).images
                                     if args.model_variant == 'depth2img':
-                                        images = pipeline(samplePrompt,image=test_image, height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps,strength=1.0).images
+                                        images = pipeline(samplePrompt,image=test_image, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps,strength=1.0).images
                                     elif args.model_variant == 'base':
                                         images = pipeline(samplePrompt,height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps).images
                                     
@@ -2512,7 +2532,7 @@ def main():
                                     if args.model_variant == 'inpainting':
                                         images = pipeline(samplePrompt,conditioning_image, mask,height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps, generator=generator).images
                                     if args.model_variant == 'depth2img':
-                                        images = pipeline(samplePrompt,image=test_image, height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps,generator=generator,strength=1.0).images
+                                        images = pipeline(samplePrompt,image=test_image, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps,generator=generator,strength=1.0).images
                                     elif args.model_variant == 'base':
                                         images = pipeline(samplePrompt,height=height,width=width, guidance_scale=args.save_guidance_scale, num_inference_steps=args.save_infer_steps, generator=generator).images
                                     
@@ -2698,19 +2718,20 @@ def main():
 
                         latent_dist = batch[0][0]
                         latents = latent_dist.sample() * 0.18215
+                        mask = batch[0][2]
+                        mask_mean = batch[0][3]
                         if args.model_variant == 'inpainting':
-                            conditioning_latent_dist = batch[0][2]
-                            mask = batch[0][3]
+                            conditioning_latent_dist = batch[0][4]
                             conditioning_latents = conditioning_latent_dist.sample() * 0.18215
                         if args.model_variant == 'depth2img':
-                            depth = batch[0][3]
+                            depth = batch[0][4]
                     if args.sample_from_batch > 0:
-                        args.batch_tokens = batch[0][4]
+                        args.batch_tokens = batch[0][5]
                     # Sample noise that we'll add to the latents
                     noise = torch.randn_like(latents)
                     bsz = latents.shape[0]
                     # Sample a random timestep for each image
-                    timesteps = torch.randint(0, noise_scheduler.config.num_train_timesteps, (bsz,), device=latents.device)
+                    timesteps = torch.randint(0, int(noise_scheduler.config.num_train_timesteps * args.max_denoising_strength), (bsz,), device=latents.device)
                     timesteps = timesteps.long()
 
                     # Add noise to the latents according to the noise magnitude at each timestep
@@ -2728,18 +2749,18 @@ def main():
                         else:
                             encoder_hidden_states = batch[0][1]
 
+                    if mask is not None and random.uniform(0, 1) < args.unmasked_probability:
+                        # for some steps, predict the unmasked image
+                        conditioning_latents = torch.stack([full_mask_by_aspect[tuple([latents.shape[3]*8, latents.shape[2]*8])].squeeze()] * bsz)
+                        mask = torch.ones(bsz, 1, latents.shape[2], latents.shape[3]).to(accelerator.device, dtype=weight_dtype)
                     # Predict the noise residual
                     if args.model_variant == 'inpainting':
-                        if random.uniform(0, 1) < 0.25:
-                            # for some steps, predict the unmasked image
-                            conditioning_latents = torch.stack([extra_latent[tuple([latents.shape[3]*8, latents.shape[2]*8])].squeeze()] * bsz)
-                            mask = torch.ones(bsz, 1, latents.shape[2], latents.shape[3]).to(accelerator.device, dtype=weight_dtype)
 
                         noisy_inpaint_latents = torch.concat([noisy_latents, mask, conditioning_latents], 1)
                         model_pred = unet(noisy_inpaint_latents, timesteps, encoder_hidden_states).sample
                     elif args.model_variant == 'depth2img':
-                        noisy_latents = torch.cat([noisy_latents, depth], dim=1)
-                        model_pred = unet(noisy_latents, timesteps, encoder_hidden_states, depth).sample
+                        noisy_depth_latents = torch.cat([noisy_latents, depth], dim=1)
+                        model_pred = unet(noisy_depth_latents, timesteps, encoder_hidden_states, depth).sample
                     elif args.model_variant == "base":
                         model_pred = unet(noisy_latents, timesteps, encoder_hidden_states).sample
                     
@@ -2753,6 +2774,8 @@ def main():
                         raise ValueError(f"Unknown prediction type {noise_scheduler.config.prediction_type}")
                     if args.model_variant == "inpainting":
                         del timesteps, noise, latents, noisy_latents,noisy_inpaint_latents, encoder_hidden_states
+                    elif args.model_variant == "depth2img":
+                        del timesteps, noise, latents, noisy_latents,noisy_depth_latents, encoder_hidden_states
                     elif args.model_variant == "base":
                         del timesteps, noise, latents, noisy_latents, encoder_hidden_states
                     if args.with_prior_preservation:
@@ -2773,12 +2796,28 @@ def main():
                         # Chunk the noise and model_pred into two parts and compute the loss on each part separately.
                         model_pred, model_pred_prior = torch.chunk(model_pred, 2, dim=0)
                         target, target_prior = torch.chunk(target, 2, dim=0)
-                        loss = F.mse_loss(model_pred.float(), target.float(), reduction="none").mean([1, 2, 3]).mean()
-                        prior_loss = F.mse_loss(model_pred_prior.float(), target_prior.float(), reduction="mean")
+                        if mask is not None and args.model_variant != "inpainting":
+                            loss = tu.masked_mse_loss(model_pred.float(), target.float(), mask, reduction="none").mean([1, 2, 3]).mean()
+                            prior_loss = tu.masked_mse_loss(model_pred_prior.float(), target_prior.float(), mask, reduction="mean")
+                        else:
+                            loss = F.mse_loss(model_pred.float(), target.float(), reduction="none").mean([1, 2, 3]).mean()
+                            prior_loss = F.mse_loss(model_pred_prior.float(), target_prior.float(), reduction="mean")
+
                         # Add the prior loss to the instance loss.
                         loss = loss + args.prior_loss_weight * prior_loss
+
+                        if mask is not None and args.normalize_masked_area_loss:
+                            loss = loss / mask_mean
+
                     else:
-                        loss = F.mse_loss(model_pred.float(), target.float(), reduction="mean")
+                        if mask is not None and args.model_variant != "inpainting":
+                            loss = tu.masked_mse_loss(model_pred.float(), target.float(), mask, reduction="none").mean([1, 2, 3])
+                            loss = loss.mean()
+                        else:
+                            loss = F.mse_loss(model_pred.float(), target.float(), reduction="mean")
+
+                        if mask is not None and args.normalize_masked_area_loss:
+                            loss = loss / mask_mean
                     accelerator.backward(loss)
                     if accelerator.sync_gradients:
                         params_to_clip = (
