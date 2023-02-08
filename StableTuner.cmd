@@ -23,9 +23,9 @@ set v_conda_env_name="ST"
 
 echo Environment name is set as %v_conda_env_name% as per environment.yaml
 
-:: Put the path to conda directory in a file called "custom-conda-path.txt" if it's installed at non-standard path
-IF EXIST custom-conda-path.txt (
-  FOR /F %%i IN (custom-conda-path.txt) DO set v_custom_path=%%i
+:: Put the path to conda directory in a file called "custom_conda_path.txt" if it's installed at non-standard path
+IF EXIST custom_conda_path.txt (
+  FOR /F %%i IN (custom_conda_path.txt) DO set v_custom_path=%%i
 )
 
 set INSTALL_ENV_DIR=%cd%\installer_files\env
