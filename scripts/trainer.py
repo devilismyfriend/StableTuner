@@ -2721,7 +2721,8 @@ def main():
                     if args.sample_from_batch > 0:
                         args.batch_tokens = batch[0][5]
                     # Sample noise that we'll add to the latents
-                    noise = torch.randn_like(latents)
+                    # and some extra bits to allow better learning of strong contrasts
+                    noise = torch.randn_like(latents) + (0.1 * torch.randn(latents.shape[0], latents.shape[1], 1, 1).to(accelerator.device))
                     bsz = latents.shape[0]
                     # Sample a random timestep for each image
                     timesteps = torch.randint(0, int(noise_scheduler.config.num_train_timesteps * args.max_denoising_strength), (bsz,), device=latents.device)
