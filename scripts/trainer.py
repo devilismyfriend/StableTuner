@@ -284,6 +284,8 @@ def parse_args():
     )
     parser.add_argument("--train_text_encoder", action="store_true", help="Whether to train the text encoder")
     parser.add_argument(
+        "--shuffle_after_nth_comma", type=int, help="Shuffle comma separated sections of the prompt after then nth comma, use 0 to shuffle the entire prompt")
+    parser.add_argument(
         "--train_batch_size", type=int, default=4, help="Batch size (per device) for the training dataloader."
     )
     parser.add_argument(
@@ -2142,7 +2144,7 @@ def main():
                 if args.model_variant == "depth2img":
                     batch["extra_values"] = batch["extra_values"].to(accelerator.device, non_blocking=True, dtype=weight_dtype)
                     cached_extra = functional.resize(batch["extra_values"], size=cached_latent.mean.shape[2:])
-                if args.train_text_encoder:
+                if args.train_text_encoder or args.shuffle_after_nth_comma:
                     cached_text_enc = batch["input_ids"]
                 else:
                     cached_text_enc = text_encoder(batch["input_ids"])[0]
@@ -2164,7 +2166,7 @@ def main():
 
         #clear vram after caching latents
         del vae
-        if not args.train_text_encoder:
+        if not args.train_text_encoder and not args.shuffle_after_nth_comma:
             del text_encoder
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
@@ -2731,15 +2733,58 @@ def main():
                     # (this is the forward diffusion process)
                     noisy_latents = noise_scheduler.add_noise(latents, noise, timesteps)
 
+                    def shuffle_input_ids(encoded_prompt, leading_skip):
+                        # input ids look like [49406, 35, 267, 67, 540, 280, 67, 285, 267, 49407, 49407, ...]]
+                        comma_indexes = (encoded_prompt[0] == 267).nonzero(as_tuple=True)[0]
+                        # skip if the encoded prompt does not have enough commas
+                        if len(comma_indexes < leading_skip):
+                            return encoded_prompt
+                        # find the start of the first comma delimited section after skipping the requested number of sections 
+                        start_index = comma_indexes[leading_skip-1] + 1
+                        # find the start of the 49407 end padding to avoid shuffling it. Always present.
+                        end_index = (encoded_prompt[0] == 49407).nonzero(as_tuple=True)[0][0]
+                        # split out the part of the encoding we want to shuffle with respect to single commas (267)
+                        shuffle_section = encoded_prompt[0][start_index:end_index]
+                        shuffle_section = split_shuffle_join(shuffle_section, 267)
+                        # combine the unsuffled suffix, shuffled middle, unsuffled end padding
+                        suffled_encoded_prompt = torch.cat([encoded_prompt[0][0:start_index],shuffle_section,encoded_prompt[0][end_index:]])
+                        return suffled_encoded_prompt
+
+                    def split_tensor_on(tensor, split_value):
+                        split_indices = (tensor == split_value).nonzero().squeeze()
+                        split_indices = split_indices.tolist()
+                        split_indices.append(len(tensor))
+                        start = 0
+                        splits = []
+                        for end in split_indices:
+                            splits.append(tensor[start:end])
+                            start = end + 1
+                        return splits
+
+                    def split_shuffle_join(tensor, delimiter):
+                        split_tensor = split_tensor_on(tensor, delimiter)
+                        # "shuffle" our newly split tensor
+                        shuffled_indexes = torch.randperm(len(split_tensor))
+                        # join the split tensor using  the delimiter
+                        delimiter_tensor = torch.tensor([delimiter]).to(accelerator.device)
+                        shuffled_tensor = split_tensor[shuffled_indexes[0]]
+                        for i in range(1, len(split_tensor)):
+                            shuffled_tensor = torch.cat([shuffled_tensor, delimiter_tensor, split_tensor[shuffled_indexes[i]]])
+                        return shuffled_tensor
+
                     # Get the text embedding for conditioning
                     with text_enc_context:
-                        if args.train_text_encoder:
-                            if args.clip_penultimate == True:
-                                encoder_hidden_states = text_encoder(batch[0][1],output_hidden_states=True)
+                        if args.train_text_encoder or args.shuffle_after_nth_comma:
+                            input_ids = batch[0][1]
+                            if args.shuffle_after_nth_comma:
+                                input_ids = shuffle_input_ids(input_ids,leading_skip=args.shuffle_after_nth_comma)
+                            if args.train_text_encoder and args.clip_penultimate == True:
+                                encoder_hidden_states = text_encoder(input_ids,output_hidden_states=True)
                                 encoder_hidden_states = text_encoder.text_model.final_layer_norm(encoder_hidden_states['hidden_states'][-2])
                             else:
-                                encoder_hidden_states = text_encoder(batch[0][1])[0]
+                                encoder_hidden_states = text_encoder(input_ids)[0]
                         else:
+                            # not training encoder/shuffling already encoded earlier
                             encoder_hidden_states = batch[0][1]
 
                     if mask is not None and random.uniform(0, 1) < args.unmasked_probability:

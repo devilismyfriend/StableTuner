@@ -880,6 +880,7 @@ class App(ctk.CTk):
         self.concept_list_json_path = "concept_list.json"
         self.save_and_sample_every_x_epochs = 5
         self.train_text_encoder = True
+        self.shuffle_after_nth_comma = 2
         self.use_8bit_adam = True
         self.use_gradient_checkpointing = True
         self.num_class_images = 200
@@ -3565,6 +3566,11 @@ class App(ctk.CTk):
                 batBase += ' --train_text_encoder'
             else:
                 batBase += f' "--train_text_encoder" '
+        if self.shuffle_after_nth_comma:
+            if export == 'Linux':
+                batBase += f' --shuffle_after_nth_comma={self.shuffle_after_nth_comma}'
+            else:
+                batBase += f' "--shuffle_after_nth_comma={self.shuffle_after_nth_comma}" '
         if self.with_prior_loss_preservation == True and self.use_aspect_ratio_bucketing == False:
             if export == 'Linux':
                 batBase += ' --with_prior_preservation'
