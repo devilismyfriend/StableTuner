@@ -368,7 +368,7 @@ class ImageBrowser(ctk.CTkToplevel):
         self.caption_file_name = os.path.basename(batch_input_dir)
         self.image_list = []
         for file in os.listdir(batch_input_dir):
-            if (file.endswith(".jpg") or file.endswith(".png") or file.endswith(".jpeg")) and not file.endswith('-masklabel.png'):
+            if (file.endswith(".jpg") or file.endswith(".png") or file.endswith(".jpeg") or file.endswith(".webp")) and not file.endswith('-masklabel.png'):
                 self.image_list.append(os.path.join(batch_input_dir, file))
         self.image_index = 0
         #use progress bar class
@@ -539,7 +539,7 @@ class ImageBrowser(ctk.CTkToplevel):
         if self.folder == '':
             return
         self.output_folder = self.folder
-        self.image_list = [os.path.join(self.folder, f) for f in os.listdir(self.folder) if (f.endswith('.jpg') or f.endswith('.png') or f.endswith('.jpeg')) and not f.endswith('-masklabel.png') and not f.endswith('-depth.png')]
+        self.image_list = [os.path.join(self.folder, f) for f in os.listdir(self.folder) if (f.endswith('.jpg') or f.endswith('.png') or f.endswith('.jpeg') or file.endswith(".webp")) and not f.endswith('-masklabel.png') and not f.endswith('-depth.png')]
         #self.image_list.sort()
         #sort the image list alphabetically so that the images are in the same order every time
         self.image_list.sort(key=lambda x: x.lower())
