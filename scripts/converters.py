@@ -101,7 +101,7 @@ class Convert_Diffusers_to_SD():
             #print(output_path)
             global_step = None
             epoch = None
-            dtype = torch.float16
+            dtype = torch.float32
             pipe = DiffusionPipeline.from_pretrained(model_path, torch_dtype=dtype, tokenizer=None, safety_checker=None)
             text_encoder = pipe.text_encoder
             vae = pipe.vae
