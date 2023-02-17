@@ -888,6 +888,8 @@ class App(ctk.CTk):
         self.save_sample_controlled_seed = []
         self.delete_checkpoints_when_full_drive = True
         self.use_image_names_as_captions = True
+        self.use_offset_noise = False
+        self.offset_noise_weight = 0.1
         self.num_samples_to_generate = 1
         self.auto_balance_concept_datasets = False
         self.sample_width = 512
@@ -1571,6 +1573,24 @@ class App(ctk.CTk):
         self.prior_loss_preservation_weight_entry = ctk.CTkEntry(self.training_frame_subframe)
         self.prior_loss_preservation_weight_entry.grid(row=19, column=3, sticky="w")
         self.prior_loss_preservation_weight_entry.insert(0, self.prior_loss_weight)
+
+        #create contrasting light and color checkbox
+        self.use_offset_noise_var = tk.IntVar()
+        self.use_offset_noise_var.set(self.use_offset_noise)
+        #create label
+        self.offset_noise_label = ctk.CTkLabel(self.training_frame_subframe, text="With Offset Noise")
+        offset_noise_label_ttp = CreateToolTip(self.offset_noise_label, "Apply offset noise to latents to learn image contrast.")
+        self.offset_noise_label.grid(row=20, column=0, sticky="nsew")
+        #create checkbox
+        self.offset_noise_checkbox = ctk.CTkSwitch(self.training_frame_subframe, variable=self.use_offset_noise_var)
+        self.offset_noise_checkbox.grid(row=20, column=1, sticky="nsew")
+        #create prior loss preservation weight entry
+        self.offset_noise_weight_label = ctk.CTkLabel(self.training_frame_subframe, text="Offset Noise Weight")
+        offset_noise_weight_label_ttp = CreateToolTip(self.offset_noise_weight_label, "The weight of the offset noise.")
+        self.offset_noise_weight_label.grid(row=20, column=1, sticky="e")
+        self.offset_noise_weight_entry = ctk.CTkEntry(self.training_frame_subframe)
+        self.offset_noise_weight_entry.grid(row=20, column=3, sticky="w")
+        self.offset_noise_weight_entry.insert(0, self.offset_noise_weight)
         
 
     def create_dataset_settings_widgets(self):
@@ -1957,7 +1977,7 @@ class App(ctk.CTk):
         self.play_negative_prompt_entry.bind("<Return>", lambda event: self.play_generate_image(self.play_model_entry.get(), self.play_prompt_entry.get(), self.play_negative_prompt_entry.get(), self.play_seed_entry.get(), self.play_scheduler_variable.get(), int(self.play_resolution_slider_height.get()), int(self.play_resolution_slider_width.get()), self.play_cfg_slider.get(), self.play_steps_slider.get()))
         
         #add convert to ckpt button
-        self.play_convert_to_ckpt_button = ctk.CTkButton(self.playground_frame_subframe, text="Convert To CKPT", command=lambda:self.convert_to_ckpt(model_path=self.play_model_entry.get()))
+        self.play_convert_to_ckpt_button = ctk.CTkButton(self.playground_frame_subframe, text="Convert To CKPT", command=lambda:self.convert_to_safetensors(model_path=self.play_model_entry.get()))
         #add interative generation button to act as a toggle
         #convert to safetensors button
         
@@ -3070,6 +3090,8 @@ class App(ctk.CTk):
         configure['attention'] = self.attention_var.get()
         configure['batch_prompt_sampling'] = int(self.batch_prompt_sampling_optionmenu_var.get())
         configure['shuffle_dataset_per_epoch'] = self.shuffle_dataset_per_epoch_var.get()
+        configure['use_offset_noise'] = self.use_offset_noise_var.get()
+        configure['offset_noise_weight'] = self.offset_noise_weight_entry.get()
         #save the configure file
         #if the file exists, delete it
         if os.path.exists(file_name):
@@ -3222,6 +3244,9 @@ class App(ctk.CTk):
         self.attention_var.set(configure["attention"])
         self.batch_prompt_sampling_optionmenu_var.set(str(configure['batch_prompt_sampling']))
         self.shuffle_dataset_per_epoch_var.set(configure["shuffle_dataset_per_epoch"])
+        self.use_offset_noise_var.set(configure["use_offset_noise"])
+        self.offset_noise_weight_entry.delete(0, tk.END)
+        self.offset_noise_weight_entry.insert(0, configure["offset_noise_weight"])
         self.update()
     
     def process_inputs(self,export=None):
@@ -3291,6 +3316,9 @@ class App(ctk.CTk):
         self.attention = self.attention_var.get()
         self.batch_prompt_sampling = int(self.batch_prompt_sampling_optionmenu_var.get())
         self.shuffle_dataset_per_epoch = self.shuffle_dataset_per_epoch_var.get()
+        self.use_offset_noise = self.use_offset_noise_var.get()
+        self.offset_noise_weight = self.offset_noise_weight_entry.get()
+
         mode = 'normal'
         if self.cloud_mode == False and export == None:
             #check if output path exists
@@ -3579,6 +3607,13 @@ class App(ctk.CTk):
                 batBase += ' --use_image_names_as_captions'
             else:
                 batBase += f' "--use_image_names_as_captions" '
+        if self.use_offset_noise == True:
+            if export == 'Linux':
+                batBase += f' --with_offset_noise'
+                batBase += f' --offset_noise_weight={self.offset_noise_weight}'
+            else:
+                batBase += f' "--with_offset_noise" '
+                batBase += f' "--offset_noise_weight={self.offset_noise_weight}" '
         if self.auto_balance_concept_datasets == True:
             if export == 'Linux':
                 batBase += ' --auto_balance_concept_datasets'
