@@ -246,6 +246,14 @@ def parse_args():
     )
     parser.add_argument("--prior_loss_weight", type=float, default=1.0, help="The weight of prior preservation loss.")
     parser.add_argument(
+        "--with_offset_noise",
+        default=False,
+        action="store_true",
+        help="Flag to offset noise applied to latents.",
+    )
+
+    parser.add_argument("--offset_noise_weight", type=float, default=0.1, help="The weight of offset noise applied during training.")
+    parser.add_argument(
         "--num_class_images",
         type=int,
         default=100,
@@ -1369,8 +1377,13 @@ def main():
                     if args.sample_from_batch > 0:
                         args.batch_tokens = batch[0][5]
                     # Sample noise that we'll add to the latents
-                    # and some extra bits to allow better learning of strong contrasts
-                    noise = torch.randn_like(latents) + (0.1 * torch.randn(latents.shape[0], latents.shape[1], 1, 1).to(accelerator.device))
+                    # and some extra bits to make it so that the model learns to change the zero-frequency of the component freely
+                    # https://www.crosslabs.org/blog/diffusion-with-offset-noise
+                    if (args.with_offset_noise == True):
+                        noise = torch.randn_like(latents) + (args.offset_noise_weight * torch.randn(latents.shape[0], latents.shape[1], 1, 1).to(accelerator.device))
+                    else:
+                        noise = torch.randn_like(latents)
+
                     bsz = latents.shape[0]
                     # Sample a random timestep for each image
                     timesteps = torch.randint(0, int(noise_scheduler.config.num_train_timesteps * args.max_denoising_strength), (bsz,), device=latents.device)
