@@ -745,15 +745,15 @@ class App(ctk.CTk):
         self.create_general_settings_widgets()   
         self.apply_general_style_to_widgets(self.general_frame_subframe)
         self.override_general_style_widgets()
-        self.training_frame = ctk.CTkFrame(self, width=400, corner_radius=0,fg_color='transparent')
-        self.training_frame.grid_columnconfigure(0, weight=1)
-        self.training_frame_subframe = ctk.CTkFrame(self.training_frame,width=400, corner_radius=20)
-        self.training_frame_subframe.grid_columnconfigure(0, weight=1)
-        self.training_frame_subframe.grid_columnconfigure(1, weight=1)
-        self.training_frame_subframe.grid(row=2, column=0,sticky="nsew", padx=20, pady=20)
+        self.training_frame_finetune = ctk.CTkFrame(self, width=400, corner_radius=0,fg_color='transparent')
+        self.training_frame_finetune.grid_columnconfigure(0, weight=1)
+        self.training_frame_finetune_subframe = ctk.CTkFrame(self.training_frame_finetune,width=400, corner_radius=20)
+        self.training_frame_finetune_subframe.grid_columnconfigure(0, weight=1)
+        self.training_frame_finetune_subframe.grid_columnconfigure(1, weight=1)
+        self.training_frame_finetune_subframe.grid(row=2, column=0,sticky="nsew", padx=20, pady=20)
         self.create_trainer_settings_widgets()
         self.grid_train_settings()
-        self.apply_general_style_to_widgets(self.training_frame_subframe)
+        self.apply_general_style_to_widgets(self.training_frame_finetune_subframe)
         self.override_training_style_widgets()
         self.dataset_frame = ctk.CTkFrame(self, width=140, corner_radius=0,fg_color='transparent')
         self.dataset_frame.grid_columnconfigure(0, weight=1)        
@@ -944,9 +944,9 @@ class App(ctk.CTk):
         else:
             self.general_frame.grid_forget()
         if name == "training":
-            self.training_frame.grid(row=0, column=1, sticky="nsew")
+            self.training_frame_finetune.grid(row=0, column=1, sticky="nsew")
         else:
-            self.training_frame.grid_forget()
+            self.training_frame_finetune.grid_forget()
         if name == "dataset":
             self.dataset_frame.grid(row=0, column=1, sticky="nsew")
         else:
@@ -1081,7 +1081,7 @@ class App(ctk.CTk):
                 self.sample_width_entry.insert(0,"768")
                 self.model_variant_var.set("Regular")
     def override_training_style_widgets(self):
-        for i in self.training_frame_subframe.children.values():
+        for i in self.training_frame_finetune_subframe.children.values():
             if 'ctkbutton' in str(i):
                 i.grid(padx=5, pady=5,sticky="w")
             if 'ctkoptionmenu' in str(i):
@@ -1142,14 +1142,14 @@ class App(ctk.CTk):
 
     def grid_train_settings(self):
         #define grid row and column
-        self.training_frame_subframe.grid_columnconfigure(0, weight=2)
-        self.training_frame_subframe.grid_columnconfigure(1, weight=1)
-        self.training_frame_subframe.grid_columnconfigure(2, weight=2)
-        self.training_frame_subframe.grid_columnconfigure(3, weight=1)
+        self.training_frame_finetune_subframe.grid_columnconfigure(0, weight=2)
+        self.training_frame_finetune_subframe.grid_columnconfigure(1, weight=1)
+        self.training_frame_finetune_subframe.grid_columnconfigure(2, weight=2)
+        self.training_frame_finetune_subframe.grid_columnconfigure(3, weight=1)
         
         rows = 12
         columns = 4
-        widgets = self.training_frame_subframe.children.values()
+        widgets = self.training_frame_finetune_subframe.children.values()
         #organize widgets in grid
         curRow = 0
         curColumn = 0
@@ -1356,219 +1356,219 @@ class App(ctk.CTk):
         
     
     def create_trainer_settings_widgets(self):
-        self.training_frame_title = ctk.CTkLabel(self.training_frame, text="Training Settings", font=ctk.CTkFont(size=20, weight="bold"))
-        self.training_frame_title.grid(row=0, column=0, padx=20, pady=20)   
+        self.training_frame_finetune_title = ctk.CTkLabel(self.training_frame_finetune, text="Training Settings", font=ctk.CTkFont(size=20, weight="bold"))
+        self.training_frame_finetune_title.grid(row=0, column=0, padx=20, pady=20)   
         
         #add a model variant dropdown
-        self.model_variant_label = ctk.CTkLabel(self.training_frame_subframe, text="Model Variant")
+        self.model_variant_label = ctk.CTkLabel(self.training_frame_finetune_subframe, text="Model Variant")
         model_variant_label_ttp = CreateToolTip(self.model_variant_label, "The model type you're training.")
         self.model_variant_label.grid(row=0, column=0, sticky="nsew")
         self.model_variant_var = tk.StringVar()
         self.model_variant_var.set(self.model_variant)
-        self.model_variant_dropdown = ctk.CTkOptionMenu(self.training_frame_subframe, values=self.model_variants, variable=self.model_variant_var)
+        self.model_variant_dropdown = ctk.CTkOptionMenu(self.training_frame_finetune_subframe, values=self.model_variants, variable=self.model_variant_var)
         #add attention optionMenu
-        self.attention_label = ctk.CTkLabel(self.training_frame_subframe, text="Attention")
+        self.attention_label = ctk.CTkLabel(self.training_frame_finetune_subframe, text="Attention")
         attention_label_ttp = CreateToolTip(self.attention_label, "The attention type to use. Flash Attention may enable lower VRAM training but Xformers will be faster and better for bigger batch sizes.")
         self.attention_label.grid(row=1, column=0, sticky="nsew")
         self.attention_var = tk.StringVar()
         self.attention_var.set(self.attention)
-        self.attention_dropdown = ctk.CTkOptionMenu(self.training_frame_subframe, values=self.attention_types, variable=self.attention_var)
+        self.attention_dropdown = ctk.CTkOptionMenu(self.training_frame_finetune_subframe, values=self.attention_types, variable=self.attention_var)
         #add a batch size entry
 
         #add a seed entry
-        self.seed_label = ctk.CTkLabel(self.training_frame_subframe, text="Seed")
+        self.seed_label = ctk.CTkLabel(self.training_frame_finetune_subframe, text="Seed")
         seed_label_ttp = CreateToolTip(self.seed_label, "The seed to use for training.")
         #self.seed_label.grid(row=1, column=0, sticky="nsew")
-        self.seed_entry = ctk.CTkEntry(self.training_frame_subframe)
+        self.seed_entry = ctk.CTkEntry(self.training_frame_finetune_subframe)
         #self.seed_entry.grid(row=1, column=1, sticky="nsew")
         self.seed_entry.insert(0, self.seed_number)
         #create resolution dark mode dropdown
-        self.resolution_label = ctk.CTkLabel(self.training_frame_subframe, text="Resolution")
+        self.resolution_label = ctk.CTkLabel(self.training_frame_finetune_subframe, text="Resolution")
         resolution_label_ttp = CreateToolTip(self.resolution_label, "The resolution of the images to train on.")
         #self.resolution_label.grid(row=2, column=0, sticky="nsew")
         self.resolution_var = tk.StringVar()
         self.resolution_var.set(self.resolution)
-        self.resolution_dropdown = ctk.CTkOptionMenu(self.training_frame_subframe, variable=self.resolution_var, values=self.possible_resolutions)
+        self.resolution_dropdown = ctk.CTkOptionMenu(self.training_frame_finetune_subframe, variable=self.resolution_var, values=self.possible_resolutions)
         #self.resolution_dropdown.grid(row=2, column=1, sticky="nsew")
         
         #create train batch size dark mode dropdown with values from 1 to 60
-        self.train_batch_size_label = ctk.CTkLabel(self.training_frame_subframe, text="Train Batch Size")
+        self.train_batch_size_label = ctk.CTkLabel(self.training_frame_finetune_subframe, text="Train Batch Size")
         train_batch_size_label_ttp = CreateToolTip(self.train_batch_size_label, "The batch size to use for training.")
         #self.train_batch_size_label.grid(row=3, column=0, sticky="nsew")
         self.train_batch_size_var = tk.StringVar()
         self.train_batch_size_var.set(self.batch_size)
         #make a list of values from 1 to 60 that are strings
         #train_batch_size_values = 
-        self.train_batch_size_dropdown = ctk.CTkOptionMenu(self.training_frame_subframe, variable=self.train_batch_size_var, values=[str(i) for i in range(1,61)])
+        self.train_batch_size_dropdown = ctk.CTkOptionMenu(self.training_frame_finetune_subframe, variable=self.train_batch_size_var, values=[str(i) for i in range(1,61)])
         #self.train_batch_size_dropdown.grid(row=3, column=1, sticky="nsew")
 
         #create train epochs dark mode 
-        self.train_epochs_label = ctk.CTkLabel(self.training_frame_subframe, text="Train Epochs")
+        self.train_epochs_label = ctk.CTkLabel(self.training_frame_finetune_subframe, text="Train Epochs")
         train_epochs_label_ttp = CreateToolTip(self.train_epochs_label, "The number of epochs to train for. An epoch is one pass through the entire dataset.")
         #self.train_epochs_label.grid(row=4, column=0, sticky="nsew")
-        self.train_epochs_entry = ctk.CTkEntry(self.training_frame_subframe)
+        self.train_epochs_entry = ctk.CTkEntry(self.training_frame_finetune_subframe)
         #self.train_epochs_entry.grid(row=4, column=1, sticky="nsew")
         self.train_epochs_entry.insert(0, self.num_train_epochs)
         
         #create mixed precision dark mode dropdown
-        self.mixed_precision_label = ctk.CTkLabel(self.training_frame_subframe, text="Mixed Precision")
+        self.mixed_precision_label = ctk.CTkLabel(self.training_frame_finetune_subframe, text="Mixed Precision")
         mixed_precision_label_ttp = CreateToolTip(self.mixed_precision_label, "Use mixed precision training to speed up training, FP16 is recommended but requires a GPU with Tensor Cores. TF32 is recommended for RTX 30 series GPUs and newer.")
         #self.mixed_precision_label.grid(row=5, column=0, sticky="nsew")
         self.mixed_precision_var = tk.StringVar()
         self.mixed_precision_var.set(self.mixed_precision)
-        self.mixed_precision_dropdown = ctk.CTkOptionMenu(self.training_frame_subframe, variable=self.mixed_precision_var,values=["bf16","fp16","fp32","tf32"])
+        self.mixed_precision_dropdown = ctk.CTkOptionMenu(self.training_frame_finetune_subframe, variable=self.mixed_precision_var,values=["bf16","fp16","fp32","tf32"])
         #self.mixed_precision_dropdown.grid(row=5, column=1, sticky="nsew")
 
         #create use 8bit adam checkbox
         self.use_8bit_adam_var = tk.IntVar()
         self.use_8bit_adam_var.set(self.use_8bit_adam)
         #create label
-        self.use_8bit_adam_label = ctk.CTkLabel(self.training_frame_subframe, text="Use 8bit Adam")
+        self.use_8bit_adam_label = ctk.CTkLabel(self.training_frame_finetune_subframe, text="Use 8bit Adam")
         use_8bit_adam_label_ttp = CreateToolTip(self.use_8bit_adam_label, "Use 8bit Adam to speed up training, requires bytsandbytes.")
         #self.use_8bit_adam_label.grid(row=6, column=0, sticky="nsew")
         #create checkbox
-        self.use_8bit_adam_checkbox = ctk.CTkSwitch(self.training_frame_subframe, variable=self.use_8bit_adam_var,text='')
+        self.use_8bit_adam_checkbox = ctk.CTkSwitch(self.training_frame_finetune_subframe, variable=self.use_8bit_adam_var,text='')
         #self.use_8bit_adam_checkbox.grid(row=6, column=1, sticky="nsew")
         #create use gradient checkpointing checkbox
         self.use_gradient_checkpointing_var = tk.IntVar()
         self.use_gradient_checkpointing_var.set(self.use_gradient_checkpointing)
         #create label
-        self.use_gradient_checkpointing_label = ctk.CTkLabel(self.training_frame_subframe, text="Use Gradient Checkpointing")
+        self.use_gradient_checkpointing_label = ctk.CTkLabel(self.training_frame_finetune_subframe, text="Use Gradient Checkpointing")
         use_gradient_checkpointing_label_ttp = CreateToolTip(self.use_gradient_checkpointing_label, "Use gradient checkpointing to reduce RAM usage.")
         #self.use_gradient_checkpointing_label.grid(row=7, column=0, sticky="nsew")
         #create checkbox
-        self.use_gradient_checkpointing_checkbox = ctk.CTkSwitch(self.training_frame_subframe, variable=self.use_gradient_checkpointing_var)
+        self.use_gradient_checkpointing_checkbox = ctk.CTkSwitch(self.training_frame_finetune_subframe, variable=self.use_gradient_checkpointing_var)
         #self.use_gradient_checkpointing_checkbox.grid(row=7, column=1, sticky="nsew")
         #create gradient accumulation steps dark mode dropdown with values from 1 to 60
-        self.gradient_accumulation_steps_label = ctk.CTkLabel(self.training_frame_subframe, text="Gradient Accumulation Steps")
+        self.gradient_accumulation_steps_label = ctk.CTkLabel(self.training_frame_finetune_subframe, text="Gradient Accumulation Steps")
         gradient_accumulation_steps_label_ttp = CreateToolTip(self.gradient_accumulation_steps_label, "The number of gradient accumulation steps to use, this is useful for training with limited GPU memory.")
         #self.gradient_accumulation_steps_label.grid(row=8, column=0, sticky="nsew")
         self.gradient_accumulation_steps_var = tk.StringVar()
         self.gradient_accumulation_steps_var.set(self.accumulation_steps)
-        self.gradient_accumulation_steps_dropdown = ctk.CTkOptionMenu(self.training_frame_subframe, variable=self.gradient_accumulation_steps_var, values=['1','2','3','4','5','6','7','8','9','10'])
+        self.gradient_accumulation_steps_dropdown = ctk.CTkOptionMenu(self.training_frame_finetune_subframe, variable=self.gradient_accumulation_steps_var, values=['1','2','3','4','5','6','7','8','9','10'])
         #self.gradient_accumulation_steps_dropdown.grid(row=8, column=1, sticky="nsew")
         #create learning rate dark mode entry
-        self.learning_rate_label = ctk.CTkLabel(self.training_frame_subframe, text="Learning Rate")
+        self.learning_rate_label = ctk.CTkLabel(self.training_frame_finetune_subframe, text="Learning Rate")
         learning_rate_label_ttp = CreateToolTip(self.learning_rate_label, "The learning rate to use for training.")
         #self.learning_rate_label.grid(row=9, column=0, sticky="nsew")
-        self.learning_rate_entry = ctk.CTkEntry(self.training_frame_subframe)
+        self.learning_rate_entry = ctk.CTkEntry(self.training_frame_finetune_subframe)
         #self.learning_rate_entry.grid(row=9, column=1, sticky="nsew")
         self.learning_rate_entry.insert(0, self.learning_rate)
         #create learning rate scheduler dropdown
-        self.learning_rate_scheduler_label = ctk.CTkLabel(self.training_frame_subframe, text="Learning Rate Scheduler")
+        self.learning_rate_scheduler_label = ctk.CTkLabel(self.training_frame_finetune_subframe, text="Learning Rate Scheduler")
         learning_rate_scheduler_label_ttp = CreateToolTip(self.learning_rate_scheduler_label, "The learning rate scheduler to use for training.")
         #self.learning_rate_scheduler_label.grid(row=10, column=0, sticky="nsew")
         self.learning_rate_scheduler_var = tk.StringVar()
         self.learning_rate_scheduler_var.set(self.learning_rate_schedule)
-        self.learning_rate_scheduler_dropdown = ctk.CTkOptionMenu(self.training_frame_subframe, variable=self.learning_rate_scheduler_var, values=["linear", "cosine", "cosine_with_restarts", "polynomial", "constant", "constant_with_warmup"])
+        self.learning_rate_scheduler_dropdown = ctk.CTkOptionMenu(self.training_frame_finetune_subframe, variable=self.learning_rate_scheduler_var, values=["linear", "cosine", "cosine_with_restarts", "polynomial", "constant", "constant_with_warmup"])
         #self.learning_rate_scheduler_dropdown.grid(row=10, column=1, sticky="nsew")
         #create num warmup steps dark mode entry
-        self.num_warmup_steps_label = ctk.CTkLabel(self.training_frame_subframe, text="LR Warmup Steps")
+        self.num_warmup_steps_label = ctk.CTkLabel(self.training_frame_finetune_subframe, text="LR Warmup Steps")
         num_warmup_steps_label_ttp = CreateToolTip(self.num_warmup_steps_label, "The number of warmup steps to use for the learning rate scheduler.")
         #self.num_warmup_steps_label.grid(row=11, column=0, sticky="nsew")
-        self.num_warmup_steps_entry = ctk.CTkEntry(self.training_frame_subframe)
+        self.num_warmup_steps_entry = ctk.CTkEntry(self.training_frame_finetune_subframe)
         #self.num_warmup_steps_entry.grid(row=11, column=1, sticky="nsew")
         self.num_warmup_steps_entry.insert(0, self.learning_rate_warmup_steps)
         #create use latent cache checkbox
         #self.use_latent_cache_var = tk.IntVar()
         #self.use_latent_cache_var.set(self.do_not_use_latents_cache)
         #create label
-        #self.use_latent_cache_label = ctk.CTkLabel(self.training_frame_subframe, text="Use Latent Cache")
+        #self.use_latent_cache_label = ctk.CTkLabel(self.training_frame_finetune_subframe, text="Use Latent Cache")
         #use_latent_cache_label_ttp = CreateToolTip(self.use_latent_cache_label, "Cache the latents to speed up training.")
         #self.use_latent_cache_label.grid(row=12, column=0, sticky="nsew")
         #create checkbox
-        #self.use_latent_cache_checkbox = ctk.CTkSwitch(self.training_frame_subframe, variable=self.use_latent_cache_var)
+        #self.use_latent_cache_checkbox = ctk.CTkSwitch(self.training_frame_finetune_subframe, variable=self.use_latent_cache_var)
         #self.use_latent_cache_checkbox.grid(row=12, column=1, sticky="nsew")
         #create save latent cache checkbox
         #self.save_latent_cache_var = tk.IntVar()
         #self.save_latent_cache_var.set(self.save_latents_cache)
         #create label
-        #self.save_latent_cache_label = ctk.CTkLabel(self.training_frame_subframe, text="Save Latent Cache")
+        #self.save_latent_cache_label = ctk.CTkLabel(self.training_frame_finetune_subframe, text="Save Latent Cache")
         #save_latent_cache_label_ttp = CreateToolTip(self.save_latent_cache_label, "Save the latents cache to disk after generation, will be remade if batch size changes.")
         #self.save_latent_cache_label.grid(row=13, column=0, sticky="nsew")
         #create checkbox
-        #self.save_latent_cache_checkbox = ctk.CTkSwitch(self.training_frame_subframe, variable=self.save_latent_cache_var)
+        #self.save_latent_cache_checkbox = ctk.CTkSwitch(self.training_frame_finetune_subframe, variable=self.save_latent_cache_var)
         #self.save_latent_cache_checkbox.grid(row=13, column=1, sticky="nsew")
         #create regnerate latent cache checkbox
         self.regenerate_latent_cache_var = tk.IntVar()
         self.regenerate_latent_cache_var.set(self.regenerate_latents_cache)
         #create label
-        self.regenerate_latent_cache_label = ctk.CTkLabel(self.training_frame_subframe, text="Regenerate Latent Cache")
+        self.regenerate_latent_cache_label = ctk.CTkLabel(self.training_frame_finetune_subframe, text="Regenerate Latent Cache")
         regenerate_latent_cache_label_ttp = CreateToolTip(self.regenerate_latent_cache_label, "Force the latents cache to be regenerated.")
         #self.regenerate_latent_cache_label.grid(row=14, column=0, sticky="nsew")
         #create checkbox
-        self.regenerate_latent_cache_checkbox = ctk.CTkSwitch(self.training_frame_subframe, variable=self.regenerate_latent_cache_var)
+        self.regenerate_latent_cache_checkbox = ctk.CTkSwitch(self.training_frame_finetune_subframe, variable=self.regenerate_latent_cache_var)
         #self.regenerate_latent_cache_checkbox.grid(row=14, column=1, sticky="nsew")
         #create train text encoder checkbox
         self.train_text_encoder_var = tk.IntVar()
         self.train_text_encoder_var.set(self.train_text_encoder)
         #create label
-        self.train_text_encoder_label = ctk.CTkLabel(self.training_frame_subframe, text="Train Text Encoder")
+        self.train_text_encoder_label = ctk.CTkLabel(self.training_frame_finetune_subframe, text="Train Text Encoder")
         train_text_encoder_label_ttp = CreateToolTip(self.train_text_encoder_label, "Train the text encoder along with the UNET.")
         #self.train_text_encoder_label.grid(row=15, column=0, sticky="nsew")
         #create checkbox
-        self.train_text_encoder_checkbox = ctk.CTkSwitch(self.training_frame_subframe, variable=self.train_text_encoder_var)
+        self.train_text_encoder_checkbox = ctk.CTkSwitch(self.training_frame_finetune_subframe, variable=self.train_text_encoder_var)
         #self.train_text_encoder_checkbox.grid(row=15, column=1, sticky="nsew")
         #create limit text encoder encoder entry
         self.clip_penultimate_var = tk.IntVar()
         self.clip_penultimate_var.set(self.clip_penultimate)
         #create label
-        self.clip_penultimate_label = ctk.CTkLabel(self.training_frame_subframe, text="Clip Penultimate")
+        self.clip_penultimate_label = ctk.CTkLabel(self.training_frame_finetune_subframe, text="Clip Penultimate")
         clip_penultimate_label_ttp = CreateToolTip(self.clip_penultimate_label, "Train using the Penultimate layer of the text encoder.")
         #create checkbox
-        self.clip_penultimate_checkbox = ctk.CTkSwitch(self.training_frame_subframe, variable=self.clip_penultimate_var)
+        self.clip_penultimate_checkbox = ctk.CTkSwitch(self.training_frame_finetune_subframe, variable=self.clip_penultimate_var)
         
 
         self.limit_text_encoder_var = tk.StringVar()
         self.limit_text_encoder_var.set(self.limit_text_encoder)
         #create label
-        self.limit_text_encoder_label = ctk.CTkLabel(self.training_frame_subframe, text="Limit Text Encoder")
+        self.limit_text_encoder_label = ctk.CTkLabel(self.training_frame_finetune_subframe, text="Limit Text Encoder")
         limit_text_encoder_label_ttp = CreateToolTip(self.limit_text_encoder_label, "Stop training the text encoder after this many epochs, use % to train for a percentage of the total epochs.")
         #self.limit_text_encoder_label.grid(row=16, column=0, sticky="nsew")
         #create entry
-        self.limit_text_encoder_entry = ctk.CTkEntry(self.training_frame_subframe, textvariable=self.limit_text_encoder_var)
+        self.limit_text_encoder_entry = ctk.CTkEntry(self.training_frame_finetune_subframe, textvariable=self.limit_text_encoder_var)
         #self.limit_text_encoder_entry.grid(row=16, column=1, sticky="nsew")
         
         #create checkbox disable cudnn benchmark
         self.disable_cudnn_benchmark_var = tk.IntVar()
         self.disable_cudnn_benchmark_var.set(self.disable_cudnn_benchmark)
         #create label for checkbox
-        self.disable_cudnn_benchmark_label = ctk.CTkLabel(self.training_frame_subframe, text="EXPERIMENTAL: Disable cuDNN Benchmark")
+        self.disable_cudnn_benchmark_label = ctk.CTkLabel(self.training_frame_finetune_subframe, text="EXPERIMENTAL: Disable cuDNN Benchmark")
         disable_cudnn_benchmark_label_ttp = CreateToolTip(self.disable_cudnn_benchmark_label, "Disable cuDNN benchmarking, may offer 2x performance on some systems and stop OOM errors.")
         #self.disable_cudnn_benchmark_label.grid(row=17, column=0, sticky="nsew")
         #create checkbox
-        self.disable_cudnn_benchmark_checkbox = ctk.CTkSwitch(self.training_frame_subframe, variable=self.disable_cudnn_benchmark_var)
+        self.disable_cudnn_benchmark_checkbox = ctk.CTkSwitch(self.training_frame_finetune_subframe, variable=self.disable_cudnn_benchmark_var)
         #self.disable_cudnn_benchmark_checkbox.grid(row=17, column=1, sticky="nsew")
         #add conditional dropout entry
-        self.conditional_dropout_label = ctk.CTkLabel(self.training_frame_subframe, text="Conditional Dropout")
+        self.conditional_dropout_label = ctk.CTkLabel(self.training_frame_finetune_subframe, text="Conditional Dropout")
         conditional_dropout_label_ttp = CreateToolTip(self.conditional_dropout_label, "Precentage of probability to drop out a caption token to train the model to be more robust to missing words.")
-        self.conditional_dropout_entry = ctk.CTkEntry(self.training_frame_subframe)
+        self.conditional_dropout_entry = ctk.CTkEntry(self.training_frame_finetune_subframe)
         self.conditional_dropout_entry.insert(0, self.conditional_dropout)
         #create use EMA switch
         self.use_ema_var = tk.IntVar()
         self.use_ema_var.set(self.use_ema)
         #create label
-        self.use_ema_label = ctk.CTkLabel(self.training_frame_subframe, text="Use EMA")
+        self.use_ema_label = ctk.CTkLabel(self.training_frame_finetune_subframe, text="Use EMA")
         use_ema_label_ttp = CreateToolTip(self.use_ema_label, "Use Exponential Moving Average to smooth the training paramaters. Will increase VRAM usage.")
         #self.use_ema_label.grid(row=18, column=0, sticky="nsew")
         #create checkbox
-        self.use_ema_checkbox = ctk.CTkSwitch(self.training_frame_subframe, variable=self.use_ema_var)
+        self.use_ema_checkbox = ctk.CTkSwitch(self.training_frame_finetune_subframe, variable=self.use_ema_var)
 
         #create with prior loss preservation checkbox
         self.with_prior_loss_preservation_var = tk.IntVar()
         self.with_prior_loss_preservation_var.set(self.with_prior_reservation)
         #create label
-        self.with_prior_loss_preservation_label = ctk.CTkLabel(self.training_frame_subframe, text="With Prior Loss Preservation")
+        self.with_prior_loss_preservation_label = ctk.CTkLabel(self.training_frame_finetune_subframe, text="With Prior Loss Preservation")
         with_prior_loss_preservation_label_ttp = CreateToolTip(self.with_prior_loss_preservation_label, "Use the prior loss preservation method. part of Dreambooth.")
         self.with_prior_loss_preservation_label.grid(row=19, column=0, sticky="nsew")
         #create checkbox
-        self.with_prior_loss_preservation_checkbox = ctk.CTkSwitch(self.training_frame_subframe, variable=self.with_prior_loss_preservation_var)
+        self.with_prior_loss_preservation_checkbox = ctk.CTkSwitch(self.training_frame_finetune_subframe, variable=self.with_prior_loss_preservation_var)
         self.with_prior_loss_preservation_checkbox.grid(row=19, column=1, sticky="nsew")
         #create prior loss preservation weight entry
-        self.prior_loss_preservation_weight_label = ctk.CTkLabel(self.training_frame_subframe, text="Weight")
+        self.prior_loss_preservation_weight_label = ctk.CTkLabel(self.training_frame_finetune_subframe, text="Weight")
         prior_loss_preservation_weight_label_ttp = CreateToolTip(self.prior_loss_preservation_weight_label, "The weight of the prior loss preservation loss.")
         self.prior_loss_preservation_weight_label.grid(row=19, column=1, sticky="e")
-        self.prior_loss_preservation_weight_entry = ctk.CTkEntry(self.training_frame_subframe)
+        self.prior_loss_preservation_weight_entry = ctk.CTkEntry(self.training_frame_finetune_subframe)
         self.prior_loss_preservation_weight_entry.grid(row=19, column=3, sticky="w")
         self.prior_loss_preservation_weight_entry.insert(0, self.prior_loss_weight)
         

@@ -71,7 +71,7 @@ def check_versions():
             status = "[!]"
             print(f"{status} {check} NOT installed.")
             if check == 'xformers':
-                x_cmd = "-U -I --no-deps https://github.com/C43H66N12O12S2/stable-diffusion-webui/releases/download/f/xformers-0.0.14.dev0-cp310-cp310-win_amd64.whl"
+                x_cmd = "xformers==0.0.17.dev442"
                 print(f"Installing xformers with: pip install {x_cmd}")
                 run(f"pip install {x_cmd}", desc="Installing xformers")
 
@@ -91,7 +91,7 @@ if not dreambooth_skip_install:
     if os.name == "nt":
         torch_cmd = os.environ.get('TORCH_COMMAND', None)
         if torch_cmd is None:
-            torch_cmd = 'pip install torch==1.12.1+cu116 torchvision==0.13.1+cu116 --extra-index-url "https://download.pytorch.org/whl/cu116"'
+            torch_cmd = 'pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu117 --upgrade"'
                         
         run(f'"{sys.executable}" -m {torch_cmd}', "Checking/upgrading existing torch/torchvision installation", "Couldn't install torch")
         
@@ -196,11 +196,11 @@ if os.name == "nt":
                     status = shutil.copy2(src_file, cudnn_dest)
             if status:
                 print("Copied CUDNN 8.6 files to destination")
-    d_commit = 'f7bb9ca'
+    d_commit = '8178c84'
     diffusers_cmd = f"git+https://github.com/huggingface/diffusers.git@{d_commit}#egg=diffusers --force-reinstall"
     run(f'"{python}" -m pip install {diffusers_cmd}', f"Installing Diffusers {d_commit} commit", "Couldn't install diffusers")
     #install requirements file
-    t_commit = '491a33d'
+    t_commit = 'cc84075'
     trasn_cmd = f"git+https://github.com/huggingface/transformers.git@{t_commit}#egg=transformers --force-reinstall"
     run(f'"{python}" -m pip install {trasn_cmd}', f"Installing Transformers {t_commit} commit", "Couldn't install transformers")
 
