@@ -127,8 +127,7 @@ class BatchMaskWindow(ctk.CTkToplevel):
 
 
 def _check_file_type(f: str) -> bool:
-    f = f.lower()
-    return (f.endswith('.jpg') or f.endswith('.png') or f.endswith('.jpeg') or f.endswith(".webp"))
+    return f.lower().endswith(('.jpg', '.jpeg', '.png', '.webp', ".bmp", ".tiff"))
 
 
 class ImageBrowser(ctk.CTkToplevel):
