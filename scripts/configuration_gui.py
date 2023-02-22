@@ -1992,7 +1992,7 @@ class App(ctk.CTk):
         self.play_negative_prompt_entry.bind("<Return>", lambda event: self.play_generate_image(self.play_model_entry.get(), self.play_prompt_entry.get(), self.play_negative_prompt_entry.get(), self.play_seed_entry.get(), self.play_scheduler_variable.get(), int(self.play_resolution_slider_height.get()), int(self.play_resolution_slider_width.get()), self.play_cfg_slider.get(), self.play_steps_slider.get()))
         
         #add convert to ckpt button
-        self.play_convert_to_ckpt_button = ctk.CTkButton(self.playground_frame_subframe, text="Convert To CKPT", command=lambda:self.convert_to_safetensors(model_path=self.play_model_entry.get()))
+        self.play_convert_to_ckpt_button = ctk.CTkButton(self.playground_frame_subframe, text="Convert To CKPT", command=lambda:self.convert_to_ckpt(model_path=self.play_model_entry.get()))
         #add interative generation button to act as a toggle
         #convert to safetensors button
         
