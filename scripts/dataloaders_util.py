@@ -333,6 +333,7 @@ class AutoBucketing(Dataset):
                     extra_module=None,
                     mask_prompts=None,
                     load_mask=False,
+                    repeat_concept=1,
                     ):
         
         self.debug_level = debug_level
@@ -392,6 +393,7 @@ class AutoBucketing(Dataset):
          extra_module=self.extra_module,
          mask_prompts=mask_prompts,
          load_mask=load_mask,
+         repeat_concept=repeat_concept,
         )
 
         #print(self.image_train_items)
