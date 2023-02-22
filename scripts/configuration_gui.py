@@ -75,8 +75,9 @@ class ConceptWidget(ctk.CTkFrame):
             self.concept_do_not_balance = False
             self.process_sub_dirs = False
             self.image_preview = self.default_image_preview
+            self.repeat_concept = '1'
             #create concept
-            self.concept = Concept(self.concept_name, self.concept_data_path, self.concept_class_name, self.concept_class_path,self.flip_p, self.concept_do_not_balance,self.process_sub_dirs, self.image_preview, None)
+            self.concept = Concept(self.concept_name, self.concept_data_path, self.concept_class_name, self.concept_class_path,self.flip_p, self.concept_do_not_balance,self.process_sub_dirs, self.image_preview, None, self.repeat_concept)
         else:
             self.concept = concept
             self.concept.image_preview = self.make_image_preview()
@@ -274,6 +275,14 @@ class ConceptWindow(ctk.CTkToplevel):
         if self.concept.flip_p != '':
             self.flip_probability_entry.insert(0, self.concept.flip_p)
         #self.flip_probability_entry.bind("<button-3>", self.create_right_click_menu)
+		
+		#entry and label for concept repeats
+        self.repeat_concept_label = ctk.CTkLabel(self.concept_frame_subframe, text="Repeat Concept:")
+        self.repeat_concept_label.grid(row=4, column=0, sticky="nsew",padx=5,pady=5)
+        self.repeat_concept_entry = ctk.CTkEntry(self.concept_frame_subframe,width=200,placeholder_text="1")
+        self.repeat_concept_entry.grid(row=4, column=1, sticky="e",padx=5,pady=5)
+        if self.concept.repeat_concept != '':
+            self.repeat_concept_entry.insert(1, self.concept.repeat_concept)
         
         #make a label for dataset balancingprocess_sub_dirs
         self.balance_dataset_label = ctk.CTkLabel(self.concept_frame_subframe, text="Don't Balance Dataset")
@@ -452,6 +461,8 @@ class ConceptWindow(ctk.CTkToplevel):
         flip_p = self.flip_probability_entry.get()
         #get the dataset balancing
         balance_dataset = self.balance_dataset_switch.get()
+		#get concept repeats
+        repeat_concept = self.repeat_concept_entry.get()
         #create the concept
         process_sub_dirs = self.process_sub_dirs_switch.get()
         #image preview
@@ -459,14 +470,14 @@ class ConceptWindow(ctk.CTkToplevel):
         #get the main window
         image_preview_label = self.image_preview_label
         #update the concept
-        self.concept.update(concept_name, concept_path, class_name, class_path,flip_p,balance_dataset,process_sub_dirs,image_preview,image_preview_label)
+        self.concept.update(concept_name, concept_path, class_name, class_path,flip_p,balance_dataset,process_sub_dirs,image_preview,image_preview_label,repeat_concept)
         self.conceptWidget.update_button()
         #close the window
         self.destroy()
 
 #class of the concept
 class Concept:
-    def __init__(self, concept_name, concept_path, class_name, class_path,flip_p, balance_dataset=None,process_sub_dirs=None,image_preview=None, image_container=None):
+    def __init__(self, concept_name, concept_path, class_name, class_path,flip_p, balance_dataset=None,process_sub_dirs=None,image_preview=None, image_container=None,repeat_concept=1):
         if concept_name == None:
             concept_name = ""
         if concept_path == None:
@@ -477,6 +488,8 @@ class Concept:
             class_path = ""
         if flip_p == None:
             flip_p = ""
+        if repeat_concept == None:
+            repeat_concept = "1"	
         if balance_dataset == None:
             balance_dataset = False
         if process_sub_dirs == None:
@@ -496,8 +509,9 @@ class Concept:
         self.image_preview = image_preview
         self.image_container = image_container
         self.process_sub_dirs = process_sub_dirs
+        self.repeat_concept = repeat_concept
     #update the concept
-    def update(self, concept_name, concept_path, class_name, class_path,flip_p,balance_dataset,process_sub_dirs, image_preview, image_container):
+    def update(self, concept_name, concept_path, class_name, class_path,flip_p,balance_dataset,process_sub_dirs, image_preview, image_container,repeat_concept):
         self.concept_name = concept_name
         self.concept_path = concept_path
         self.concept_class_name = class_name
@@ -509,9 +523,10 @@ class Concept:
         self.image_preview = image_preview
         self.image_container = image_container
         self.process_sub_dirs = process_sub_dirs
+        self.repeat_concept = repeat_concept
     #get the cocept details
     def get_details(self):
-        return self.concept_name, self.concept_path, self.concept_class_name, self.concept_class_path,self.flip_p, self.concept_do_not_balance,self.process_sub_dirs, self.image_preview, self.image_container
+        return self.concept_name, self.concept_path, self.concept_class_name, self.concept_class_path,self.flip_p, self.concept_do_not_balance,self.process_sub_dirs, self.image_preview, self.image_container, self.repeat_concept
 #class to make popup right click menu with select all, copy, paste, cut, and delete when right clicked on an entry box
 class DynamicGrid(ctk.CTkFrame):
     def __init__(self, parent, *args, **kwargs):
@@ -1578,17 +1593,17 @@ class App(ctk.CTk):
         self.use_offset_noise_var = tk.IntVar()
         self.use_offset_noise_var.set(self.use_offset_noise)
         #create label
-        self.offset_noise_label = ctk.CTkLabel(self.training_frame_subframe, text="With Offset Noise")
+        self.offset_noise_label = ctk.CTkLabel(self.training_frame_finetune_subframe, text="With Offset Noise")
         offset_noise_label_ttp = CreateToolTip(self.offset_noise_label, "Apply offset noise to latents to learn image contrast.")
         self.offset_noise_label.grid(row=20, column=0, sticky="nsew")
         #create checkbox
-        self.offset_noise_checkbox = ctk.CTkSwitch(self.training_frame_subframe, variable=self.use_offset_noise_var)
+        self.offset_noise_checkbox = ctk.CTkSwitch(self.training_frame_finetune_subframe, variable=self.use_offset_noise_var)
         self.offset_noise_checkbox.grid(row=20, column=1, sticky="nsew")
         #create prior loss preservation weight entry
-        self.offset_noise_weight_label = ctk.CTkLabel(self.training_frame_subframe, text="Offset Noise Weight")
+        self.offset_noise_weight_label = ctk.CTkLabel(self.training_frame_finetune_subframe, text="Offset Noise Weight")
         offset_noise_weight_label_ttp = CreateToolTip(self.offset_noise_weight_label, "The weight of the offset noise.")
         self.offset_noise_weight_label.grid(row=20, column=1, sticky="e")
-        self.offset_noise_weight_entry = ctk.CTkEntry(self.training_frame_subframe)
+        self.offset_noise_weight_entry = ctk.CTkEntry(self.training_frame_finetune_subframe)
         self.offset_noise_weight_entry.grid(row=20, column=3, sticky="w")
         self.offset_noise_weight_entry.insert(0, self.offset_noise_weight)
         
@@ -2188,6 +2203,7 @@ class App(ctk.CTk):
             new_concept['class_data_dir'] = 'datasets' + '/' + concept_class_name if concept_class_name != '' else ''
             new_concept['do_not_balance'] = concept['do_not_balance']
             new_concept['use_sub_dirs'] = concept['use_sub_dirs']
+            new_concept['repeat_concept'] = concept['repeat_concept']
             new_concepts.append(new_concept)
         #make scripts folder
         self.save_concept_to_json(filename=self.full_export_path + os.sep + 'stabletune_concept_list.json', preMadeConcepts=new_concepts)
@@ -2843,7 +2859,7 @@ class App(ctk.CTk):
                 concepts = []
                 for widget in self.concept_widgets:
                     concept = widget.concept
-                    concept_dict = {'instance_prompt' : concept.concept_name, 'class_prompt' : concept.concept_class_name, 'instance_data_dir' : concept.concept_path, 'class_data_dir' : concept.concept_class_path,'flip_p' : concept.flip_p, 'do_not_balance' : concept.concept_do_not_balance, 'use_sub_dirs' : concept.process_sub_dirs}
+                    concept_dict = {'instance_prompt' : concept.concept_name, 'class_prompt' : concept.concept_class_name, 'instance_data_dir' : concept.concept_path, 'class_data_dir' : concept.concept_class_path,'flip_p' : concept.flip_p, 'do_not_balance' : concept.concept_do_not_balance, 'use_sub_dirs' : concept.process_sub_dirs, 'repeat_concept' : concept.repeat_concept}
                     concepts.append(concept_dict)
                 if file != None:
                     #write the json to the file
@@ -2869,7 +2885,9 @@ class App(ctk.CTk):
             #print(concept)
             if 'flip_p' not in concept:
                 concept['flip_p'] = ''
-            concept = Concept(concept_name=concept["instance_prompt"], class_name=concept["class_prompt"], concept_path=concept["instance_data_dir"], class_path=concept["class_data_dir"],flip_p=concept['flip_p'],balance_dataset=concept["do_not_balance"], process_sub_dirs=concept["use_sub_dirs"])
+            if 'repeat_concept' not in concept:
+                concept['repeat_concept'] = '1'	
+            concept = Concept(concept_name=concept["instance_prompt"], class_name=concept["class_prompt"], concept_path=concept["instance_data_dir"], class_path=concept["class_data_dir"],flip_p=concept['flip_p'],balance_dataset=concept["do_not_balance"], process_sub_dirs=concept["use_sub_dirs"], repeat_concept=concept["repeat_concept"])
             self.add_new_concept(concept)        #self.canvas.configure(scrollregion=self.canvas.bbox("all"))
         self.update()
         return concept_json
@@ -3012,7 +3030,7 @@ class App(ctk.CTk):
         self.concepts = []
         for i in range(len(self.concept_widgets)):
             concept = self.concept_widgets[i].concept
-            self.concepts.append({'instance_prompt' : concept.concept_name, 'class_prompt' : concept.concept_class_name, 'instance_data_dir' : concept.concept_path, 'class_data_dir' : concept.concept_class_path,'flip_p' : concept.flip_p, 'do_not_balance' : concept.concept_do_not_balance, 'use_sub_dirs' : concept.process_sub_dirs})
+            self.concepts.append({'instance_prompt' : concept.concept_name, 'class_prompt' : concept.concept_class_name, 'instance_data_dir' : concept.concept_path, 'class_data_dir' : concept.concept_class_path,'flip_p' : concept.flip_p, 'do_not_balance' : concept.concept_do_not_balance, 'use_sub_dirs' : concept.process_sub_dirs, 'repeat_concept' : concept.repeat_concept})
     def save_config(self, config_file=None):
         #save the configure file
         import json
@@ -3128,7 +3146,11 @@ class App(ctk.CTk):
                 flip_p = configure["concepts"][i]["flip_p"]
                 balance_dataset = configure["concepts"][i]["do_not_balance"]
                 process_sub_dirs = configure["concepts"][i]["use_sub_dirs"]
-                concept = Concept(concept_name=inst_prompt, class_name=class_prompt, concept_path=inst_data_dir, class_path=class_data_dir,flip_p=flip_p,balance_dataset=balance_dataset,process_sub_dirs=process_sub_dirs)
+                if 'repeat_concept' not in configure["concepts"][i]:
+                    print(configure["concepts"][i].keys())
+                    configure["concepts"][i]['repeat_concept'] = '1'
+                repeat_concept = configure["concepts"][i]["repeat_concept"]
+                concept = Concept(concept_name=inst_prompt, class_name=class_prompt, concept_path=inst_data_dir, class_path=class_data_dir,flip_p=flip_p,balance_dataset=balance_dataset,process_sub_dirs=process_sub_dirs,repeat_concept=repeat_concept)
                 self.add_new_concept(concept)
         except Exception as e:
             print(e)
