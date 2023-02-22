@@ -71,7 +71,8 @@ def check_versions():
             status = "[!]"
             print(f"{status} {check} NOT installed.")
             if check == 'xformers':
-                x_cmd = "xformers==0.0.17.dev442"
+                #if windows, install xformers from prebuilt wheel
+                x_cmd = r"https://huggingface.co/r4ziel/xformers_pre_built/resolve/main/xformers-0.0.17.dev464-cp310-cp310-win_amd64.whl" 
                 print(f"Installing xformers with: pip install {x_cmd}")
                 run(f"pip install {x_cmd}", desc="Installing xformers")
 
