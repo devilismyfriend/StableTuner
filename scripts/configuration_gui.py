@@ -204,7 +204,7 @@ class ConceptWindow(ctk.CTkToplevel):
         self.parent = parent
         self.conceptWidget = conceptWidget
         self.concept = concept
-        self.geometry("576x297")
+        self.geometry("576x327")
         self.resizable(False, False)
         #self.protocol("WM_DELETE_WINDOW", self.on_close)
         self.wait_visibility()
@@ -214,9 +214,9 @@ class ConceptWindow(ctk.CTkToplevel):
         #self.default_image_preview = ImageTk.PhotoImage(self.default_image_preview)
         
         #make a frame for the concept window
-        self.concept_frame = ctk.CTkFrame(self, width=600, height=300)
+        self.concept_frame = ctk.CTkFrame(self, width=600, height=320)
         self.concept_frame.grid(row=0, column=0, sticky="nsew",padx=10,pady=10)
-        self.concept_frame_subframe=ctk.CTkFrame(self.concept_frame, width=600, height=300)
+        self.concept_frame_subframe=ctk.CTkFrame(self.concept_frame, width=600, height=320)
         #4 column grid
         #self.concept_frame.grid_columnconfigure(0, weight=1)
         #self.concept_frame.grid_columnconfigure(1, weight=5)
@@ -278,32 +278,32 @@ class ConceptWindow(ctk.CTkToplevel):
 		
 		#entry and label for concept repeats
         self.repeat_concept_label = ctk.CTkLabel(self.concept_frame_subframe, text="Repeat Concept:")
-        self.repeat_concept_label.grid(row=4, column=0, sticky="nsew",padx=5,pady=5)
+        self.repeat_concept_label.grid(row=5, column=0, sticky="nsew",padx=5,pady=5)
         self.repeat_concept_entry = ctk.CTkEntry(self.concept_frame_subframe,width=200,placeholder_text="1")
-        self.repeat_concept_entry.grid(row=4, column=1, sticky="e",padx=5,pady=5)
+        self.repeat_concept_entry.grid(row=5, column=1, sticky="e",padx=5,pady=5)
         if self.concept.repeat_concept != '':
             self.repeat_concept_entry.insert(1, self.concept.repeat_concept)
         
         #make a label for dataset balancingprocess_sub_dirs
         self.balance_dataset_label = ctk.CTkLabel(self.concept_frame_subframe, text="Don't Balance Dataset")
-        self.balance_dataset_label.grid(row=5, column=0, sticky="nsew",padx=5,pady=5)
+        self.balance_dataset_label.grid(row=6, column=0, sticky="nsew",padx=5,pady=5)
         #make a switch to enable or disable dataset balancing
         self.balance_dataset_switch = ctk.CTkSwitch(self.concept_frame_subframe, text="", variable=tk.BooleanVar())
-        self.balance_dataset_switch.grid(row=5, column=1, sticky="e",padx=5,pady=5)
+        self.balance_dataset_switch.grid(row=6, column=1, sticky="e",padx=5,pady=5)
         if self.concept.concept_do_not_balance == True:
             self.balance_dataset_switch.toggle()
 
         self.process_sub_dirs = ctk.CTkLabel(self.concept_frame_subframe, text="Search Sub-Directories")
-        self.process_sub_dirs.grid(row=6, column=0, sticky="nsew",padx=5,pady=5)
+        self.process_sub_dirs.grid(row=7, column=0, sticky="nsew",padx=5,pady=5)
         #make a switch to enable or disable dataset balancing
         self.process_sub_dirs_switch = ctk.CTkSwitch(self.concept_frame_subframe, text="", variable=tk.BooleanVar())
-        self.process_sub_dirs_switch.grid(row=6, column=1, sticky="e",padx=5,pady=5)
+        self.process_sub_dirs_switch.grid(row=7, column=1, sticky="e",padx=5,pady=5)
         if self.concept.process_sub_dirs == True:
             self.process_sub_dirs_switch.toggle()
         #self.balance_dataset_switch.set(self.concept.concept_do_not_balance)
         #add image preview 
         self.image_preview_label = ctk.CTkLabel(self.concept_frame_subframe,text='', width=150, height=150,image=ctk.CTkImage(self.default_image_preview,size=(150,150)))
-        self.image_preview_label.grid(row=0, column=4,rowspan=5, sticky="nsew",padx=5,pady=5)
+        self.image_preview_label.grid(row=0, column=4,rowspan=6, sticky="nsew",padx=5,pady=5)
         if self.concept.image_preview != None or self.concept.image_preview != "":
             #print(self.concept.image_preview)
             self.update_preview_image(entry=None,path=None,pil_image=self.concept.image_preview)
