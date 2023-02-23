@@ -334,6 +334,7 @@ class AutoBucketing(Dataset):
                     mask_prompts=None,
                     load_mask=False,
                     repeat_concept=1,
+                    separate_bucket=False,
                     ):
         
         self.debug_level = debug_level
@@ -394,6 +395,7 @@ class AutoBucketing(Dataset):
          mask_prompts=mask_prompts,
          load_mask=load_mask,
          repeat_concept=repeat_concept,
+         separate_bucket=separate_bucket,
         )
 
         #print(self.image_train_items)
@@ -493,7 +495,7 @@ class ImageTrainItem():
     pathname: path to image file
     flip_p: probability of flipping image (0.0 to 1.0)
     """    
-    def __init__(self, image: Image, mask: Image, extra: Image, caption: str, target_wh: list, pathname: str, flip_p=0.0, model_variant='base', load_mask=False):
+    def __init__(self, image: Image, mask: Image, extra: Image, caption: str, target_wh: list, pathname: str, flip_p=0.0, model_variant='base', load_mask=False, separate_bucket_count=0):
         self.caption = caption
         self.target_wh = target_wh
         self.pathname = pathname
@@ -506,7 +508,8 @@ class ImageTrainItem():
         self.load_mask=load_mask
         self.is_dupe = []
         self.variant_warning = False
-
+        self.separate_bucket_count = separate_bucket_count
+        
         self.image = image
         self.mask = mask
         self.extra = extra
@@ -760,6 +763,7 @@ class DataLoaderMultiAspect():
             mask_prompts=None,
             load_mask=False,
             repeat_concept=1,
+            separate_bucket=False,
     ):
         self.resolution = resolution
         self.debug_level = debug_level
@@ -775,7 +779,11 @@ class DataLoaderMultiAspect():
         self.model_variant = model_variant
         self.extra_module = extra_module
         self.load_mask = load_mask
+        self.repeat_concept = repeat_concept
+        self.separate_bucket=separate_bucket,
+        separate_bucket_count = 0
         prepared_train_data = []
+        
         
         self.aspects = get_aspect_buckets(resolution)
         #print(f"* DLMA resolution {resolution}, buckets: {self.aspects}")
@@ -793,6 +801,7 @@ class DataLoaderMultiAspect():
                     repeat_concept = int(repeat_concept)
             if repeat_concept > 1:
                     print(f" {bcolors.WARNING} Repeating concept {concept['instance_data_dir']} {repeat_concept} times...{bcolors.ENDC}")
+            
 
         if balance_datasets:
             print(f" {bcolors.WARNING} Balancing datasets...{bcolors.ENDC}") 
@@ -834,6 +843,9 @@ class DataLoaderMultiAspect():
                         balance_concept_list.append(min_concept_num_images)
                 else:
                         balance_concept_list.append(min_concept_num_images)
+                        
+        total_separate_bucket_count = 0
+                        
         for concept in concept_list:
             if 'use_sub_dirs' in concept:
                 if concept['use_sub_dirs'] == True:
@@ -864,20 +876,33 @@ class DataLoaderMultiAspect():
                     repeat_concept = 1
                 else:
                     repeat_concept = int(repeat_concept)
+            
+            
+            
+            if concept['separate_bucket'] == True: 
+                total_separate_bucket_count += 1
+                separate_bucket_count = total_separate_bucket_count
+            else:
+                separate_bucket_count = 0
+                
                             
             self.__recurse_data_root(self=self, recurse_root=data_root,use_sub_dirs=use_sub_dirs)
             random.Random(self.seed).shuffle(self.image_paths)
             if self.model_variant == 'depth2img':
                 print(f" {bcolors.WARNING} ** Loading Depth2Img Pipeline To Process Dataset{bcolors.ENDC}")
                 self.vae_scale_factor = self.extra_module.depth_images(self.image_paths)
-            prepared_train_data.extend(self.__prescan_images(debug_level, self.image_paths, flip_p,use_image_names_as_captions,concept_prompt,repeat_concept,use_text_files_as_captions=self.use_text_files_as_captions)[0:min_concept_num_images]) # ImageTrainItem[]
+            prepared_train_data.extend(self.__prescan_images(debug_level, self.image_paths, flip_p,use_image_names_as_captions,concept_prompt,repeat_concept,separate_bucket_count,use_text_files_as_captions=self.use_text_files_as_captions)[0:min_concept_num_images]) # ImageTrainItem[]
             if add_class_images_to_dataset:
                 self.image_paths = []
                 self.__recurse_data_root(self=self, recurse_root=data_root_class,use_sub_dirs=use_sub_dirs)
                 random.Random(self.seed).shuffle(self.image_paths)
                 use_image_names_as_captions = False
-                prepared_train_data.extend(self.__prescan_images(debug_level, self.image_paths, flip_p,use_image_names_as_captions,concept_class_prompt,repeat_concept,use_text_files_as_captions=self.use_text_files_as_captions)) # ImageTrainItem[]
-            
+                prepared_train_data.extend(self.__prescan_images(debug_level, self.image_paths, flip_p,use_image_names_as_captions,concept_class_prompt,repeat_concept,separate_bucket_count,use_text_files_as_captions=self.use_text_files_as_captions)) # ImageTrainItem[]
+          
+          
+        if total_separate_bucket_count > 0:
+            print(f" {bcolors.WARNING} There are {total_separate_bucket_count} concepts using separate buckets...{bcolors.ENDC}")
+                    
         self.image_caption_pairs = self.__bucketize_images(prepared_train_data, batch_size=batch_size, debug_level=debug_level,aspect_mode=self.aspect_mode,action_preference=self.action_preference)
         if self.with_prior_loss and add_class_images_to_dataset == False:
             self.class_image_caption_pairs = []
@@ -891,7 +916,7 @@ class DataLoaderMultiAspect():
                     print(f" {bcolors.WARNING} ** Depth2Img To Process Class Dataset{bcolors.ENDC}")
                     self.vae_scale_factor = self.extra_module.depth_images(self.image_paths)
                 use_image_names_as_captions = False
-                self.class_image_caption_pairs.extend(self.__prescan_images(debug_level, self.class_images_path, flip_p,use_image_names_as_captions,concept_class_prompt,repeat_concept,use_text_files_as_captions=self.use_text_files_as_captions))
+                self.class_image_caption_pairs.extend(self.__prescan_images(debug_level, self.class_images_path, flip_p,use_image_names_as_captions,concept_class_prompt,repeat_concept,separate_bucket_count,use_text_files_as_captions=self.use_text_files_as_captions))
             self.class_image_caption_pairs = self.__bucketize_images(self.class_image_caption_pairs, batch_size=batch_size, debug_level=debug_level,aspect_mode=self.aspect_mode,action_preference=self.action_preference)
         if mask_prompts is not None:
             print(f" {bcolors.WARNING} Checking and generating missing masks...{bcolors.ENDC}")
@@ -908,7 +933,7 @@ class DataLoaderMultiAspect():
             return self.image_caption_pairs
         else:
             return self.image_caption_pairs, self.class_image_caption_pairs
-    def __prescan_images(self,debug_level: int, image_paths: list, flip_p=0.0,use_image_names_as_captions=True,concept=None,repeat_concept=1,use_text_files_as_captions=False):
+    def __prescan_images(self,debug_level: int, image_paths: list, flip_p=0.0,use_image_names_as_captions=True,concept=None,repeat_concept=1,separate_bucket_count=0,use_text_files_as_captions=False):
         """
         Create ImageTrainItem objects with metadata for hydration later 
         """
@@ -942,7 +967,7 @@ class DataLoaderMultiAspect():
 
                 target_wh = min(self.aspects, key=lambda aspects:abs(aspects[0]/aspects[1] - image_aspect))
 
-                image_train_item = ImageTrainItem(image=None, mask=None, extra=None, caption=identifier, target_wh=target_wh, pathname=pathname, flip_p=flip_p,model_variant=self.model_variant, load_mask=self.load_mask)
+                image_train_item = ImageTrainItem(image=None, mask=None, extra=None, caption=identifier, target_wh=target_wh, pathname=pathname, flip_p=flip_p,model_variant=self.model_variant, load_mask=self.load_mask,separate_bucket_count=separate_bucket_count)
 
                 decorated_image_train_items.append(image_train_item)
         return decorated_image_train_items
@@ -957,10 +982,12 @@ class DataLoaderMultiAspect():
         buckets = {}
         for image_caption_pair in prepared_train_data:
             target_wh = image_caption_pair.target_wh
+            separate_bucket_count = image_caption_pair.separate_bucket_count
 
-            if (target_wh[0],target_wh[1]) not in buckets:
-                buckets[(target_wh[0],target_wh[1])] = []
-            buckets[(target_wh[0],target_wh[1])].append(image_caption_pair)
+            #concept_bucket = image_caption_pair.concept_bucket
+            if (target_wh[0],target_wh[1],separate_bucket_count) not in buckets:
+                buckets[(target_wh[0],target_wh[1],separate_bucket_count)] = []
+            buckets[(target_wh[0],target_wh[1],separate_bucket_count)].append(image_caption_pair)
         print(f" ** Number of buckets: {len(buckets)}")
         for bucket in buckets:
             bucket_len = len(buckets[bucket])
