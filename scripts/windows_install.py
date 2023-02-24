@@ -142,6 +142,7 @@ check_versions()
 # Check for "different" B&B Files and copy only if necessary
 if os.name == "nt":
     python = sys.executable
+    run(f'"{python}" -m pip install https://huggingface.co/r4ziel/xformers_pre_built/resolve/main/triton-2.0.0-cp310-cp310-win_amd64.whl', "Installing Triton", "Couldn't install triton")
     bnb_src = os.path.join(os.getcwd(), "resources/bitsandbytes_windows")
     bnb_dest = os.path.join(sysconfig.get_paths()["purelib"], "bitsandbytes")
     cudnn_src = os.path.join(os.getcwd(), "resources/cudnn_windows")

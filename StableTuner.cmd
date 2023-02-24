@@ -18,7 +18,7 @@
 cd %~dp0
 
 :: copy over the first line from environment.yaml, e.g. name: ldm, and take the second word after splitting by ":" delimiter
-set v_conda_env_name="ST"
+set v_conda_env_name="STT"
 
 
 echo Environment name is set as %v_conda_env_name% as per environment.yaml

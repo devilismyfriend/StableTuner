@@ -695,7 +695,7 @@ class App(ctk.CTk):
         self.grid_columnconfigure(1, weight=1)
         self.grid_columnconfigure((2, 3), weight=0)
         self.grid_rowconfigure((0, 1, 2), weight=1)
-        self.geometry(f"{1100}x{585}")
+        self.geometry(f"{1100}x{685}")
         self.stableTune_icon =PhotoImage(master=self,file = "resources/stableTuner_icon.png")
         self.iconphoto(False, self.stableTune_icon)
         self.dark_mode_var = "#1e2124"
@@ -779,7 +779,7 @@ class App(ctk.CTk):
         self.override_general_style_widgets()
         self.training_frame_finetune = ctk.CTkFrame(self, width=400, corner_radius=0,fg_color='transparent')
         self.training_frame_finetune.grid_columnconfigure(0, weight=1)
-        self.training_frame_finetune_subframe = ctk.CTkFrame(self.training_frame_finetune,width=400, corner_radius=20)
+        self.training_frame_finetune_subframe = ctk.CTkFrame(self.training_frame_finetune,width=400,height=1500, corner_radius=20)
         self.training_frame_finetune_subframe.grid_columnconfigure(0, weight=1)
         self.training_frame_finetune_subframe.grid_columnconfigure(1, weight=1)
         self.training_frame_finetune_subframe.grid(row=2, column=0,sticky="nsew", padx=20, pady=20)
@@ -961,6 +961,7 @@ class App(ctk.CTk):
         self.preview_images = []
         self.disable_cudnn_benchmark = True
         self.sample_step_interval = 500
+        self.use_lion = False
     def select_frame_by_name(self, name):
         # set button color for selected button
         self.sidebar_button_1.configure(fg_color=("gray75", "gray25") if name == "general" else "transparent")
@@ -1181,7 +1182,7 @@ class App(ctk.CTk):
         self.training_frame_finetune_subframe.grid_columnconfigure(2, weight=2)
         self.training_frame_finetune_subframe.grid_columnconfigure(3, weight=1)
         
-        rows = 12
+        rows = 14
         columns = 4
         widgets = self.training_frame_finetune_subframe.children.values()
         #organize widgets in grid
@@ -1462,6 +1463,16 @@ class App(ctk.CTk):
         #self.use_8bit_adam_label.grid(row=6, column=0, sticky="nsew")
         #create checkbox
         self.use_8bit_adam_checkbox = ctk.CTkSwitch(self.training_frame_finetune_subframe, variable=self.use_8bit_adam_var,text='')
+        #create use LION optimizer checkbox
+        self.use_lion_var = tk.IntVar()
+        self.use_lion_var.set(self.use_lion)
+        #create label
+        self.use_lion_label = ctk.CTkLabel(self.training_frame_finetune_subframe, text="Use LION")
+        use_lion_label_ttp = CreateToolTip(self.use_lion_label, "Use LION optimizer to speed up training, requires triton.")
+        #self.use_lion_label.grid(row=7, column=0, sticky="nsew")
+        #create checkbox
+        self.use_lion_checkbox = ctk.CTkSwitch(self.training_frame_finetune_subframe, variable=self.use_lion_var,text='Use LION Optimizer')
+
         #self.use_8bit_adam_checkbox.grid(row=6, column=1, sticky="nsew")
         #create use gradient checkpointing checkbox
         self.use_gradient_checkpointing_var = tk.IntVar()
@@ -3128,6 +3139,7 @@ class App(ctk.CTk):
         configure['shuffle_dataset_per_epoch'] = self.shuffle_dataset_per_epoch_var.get()
         configure['use_offset_noise'] = self.use_offset_noise_var.get()
         configure['offset_noise_weight'] = self.offset_noise_weight_entry.get()
+        configure['use_lion'] = self.use_lion_var.get()
         #save the configure file
         #if the file exists, delete it
         if os.path.exists(file_name):
@@ -3292,6 +3304,7 @@ class App(ctk.CTk):
         self.use_offset_noise_var.set(configure["use_offset_noise"])
         self.offset_noise_weight_entry.delete(0, tk.END)
         self.offset_noise_weight_entry.insert(0, configure["offset_noise_weight"])
+        self.use_lion_var.set(configure["use_lion"])
         self.update()
     
     def process_inputs(self,export=None):
@@ -3363,7 +3376,7 @@ class App(ctk.CTk):
         self.shuffle_dataset_per_epoch = self.shuffle_dataset_per_epoch_var.get()
         self.use_offset_noise = self.use_offset_noise_var.get()
         self.offset_noise_weight = self.offset_noise_weight_entry.get()
-
+        self.use_lion = self.use_lion_var.get()
         mode = 'normal'
         if self.cloud_mode == False and export == None:
             #check if output path exists
@@ -3617,7 +3630,11 @@ class App(ctk.CTk):
                 batBase += ' --gradient_checkpointing'
             else:
                 batBase += f' "--gradient_checkpointing" '
-        
+        if self.use_lion == True:
+            if export == 'Linux':
+                batBase += ' --use_lion'
+            else:
+                batBase += f' "--use_lion" '
         if export == 'Linux':
             batBase += f' --gradient_accumulation_steps={self.accumulation_steps}'
             batBase += f' --learning_rate={self.learning_rate}'
