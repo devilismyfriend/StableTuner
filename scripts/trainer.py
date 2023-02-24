@@ -42,6 +42,7 @@ from PIL import Image, ImageFile
 from diffusers.utils.import_utils import is_xformers_available
 from trainer_util import *
 from dataloaders_util import *
+from lion_pytorch import Lion
 logger = get_logger(__name__)
 def parse_args():
     parser = argparse.ArgumentParser(description="Simple example of a training script.")
@@ -86,6 +87,7 @@ def parse_args():
         required=False,
         help="Path to pretrained model or model identifier from huggingface.co/models.",
     )
+    parser.add_argument('--use_lion',default=False,action="store_true", help='Use the new LION optimizer')
     parser.add_argument('--use_ema',default=False,action="store_true", help='Use EMA for finetuning')
     parser.add_argument('--clip_penultimate',default=False,action="store_true", help='Use penultimate CLIP layer for text embedding')
     parser.add_argument("--conditional_dropout", type=float, default=None,required=False, help="Conditional dropout probability")
@@ -563,7 +565,7 @@ def main():
         )
 
     # Use 8-bit Adam for lower memory usage or to fine-tune the model in 16GB GPUs
-    if args.use_8bit_adam and args.use_deepspeed_adam==False:
+    if args.use_8bit_adam and args.use_deepspeed_adam==False and args.use_lion==False:
         try:
             import bitsandbytes as bnb
         except ImportError:
@@ -571,6 +573,7 @@ def main():
                 "To use 8-bit Adam, please install the bitsandbytes library: `pip install bitsandbytes`."
             )
         optimizer_class = bnb.optim.AdamW8bit
+        print("Using 8-bit Adam")
     elif args.use_8bit_adam and args.use_deepspeed_adam==True:
         try:
             from deepspeed.ops.adam import DeepSpeedCPUAdam
@@ -578,21 +581,31 @@ def main():
             raise ImportError(
                 "To use 8-bit DeepSpeed Adam, try updating your cuda and deepspeed integrations."
             )
-        
         optimizer_class = DeepSpeedCPUAdam
-    else:
+    elif args.use_lion == True:
+        print("Using LION optimizer")
+        optimizer_class = Lion
+    elif args.use_deepspeed_adam==False and args.use_lion==False and args.use_8bit_adam==False:
         optimizer_class = torch.optim.AdamW
-
     params_to_optimize = (
         itertools.chain(unet.parameters(), text_encoder.parameters()) if args.train_text_encoder else unet.parameters()
     )
-    optimizer = optimizer_class(
-        params_to_optimize,
-        lr=args.learning_rate,
-        betas=(args.adam_beta1, args.adam_beta2),
-        weight_decay=args.adam_weight_decay,
-        eps=args.adam_epsilon,
-    )
+    if args.use_lion == False:
+        optimizer = optimizer_class(
+            params_to_optimize,
+            lr=args.learning_rate,
+            betas=(args.adam_beta1, args.adam_beta2),
+            weight_decay=args.adam_weight_decay,
+            eps=args.adam_epsilon,
+        )
+    else:
+        optimizer = optimizer_class(
+            params_to_optimize,
+            lr=args.learning_rate,
+            betas=(args.adam_beta1, args.adam_beta2),
+            weight_decay=args.adam_weight_decay,
+            #eps=args.adam_epsilon,
+        )
     noise_scheduler = DDPMScheduler.from_config(args.pretrained_model_name_or_path, subfolder="scheduler")
 
     if args.use_bucketing:
