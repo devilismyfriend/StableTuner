@@ -565,7 +565,7 @@ def main():
         )
 
     # Use 8-bit Adam for lower memory usage or to fine-tune the model in 16GB GPUs
-    if args.use_8bit_adam and args.use_deepspeed_adam==False:
+    if args.use_8bit_adam and args.use_deepspeed_adam==False and args.use_lion==False:
         try:
             import bitsandbytes as bnb
         except ImportError:
@@ -573,6 +573,7 @@ def main():
                 "To use 8-bit Adam, please install the bitsandbytes library: `pip install bitsandbytes`."
             )
         optimizer_class = bnb.optim.AdamW8bit
+        print("Using 8-bit Adam")
     elif args.use_8bit_adam and args.use_deepspeed_adam==True:
         try:
             from deepspeed.ops.adam import DeepSpeedCPUAdam
@@ -582,6 +583,7 @@ def main():
             )
         optimizer_class = DeepSpeedCPUAdam
     elif args.use_lion == True:
+        print("Using LION optimizer")
         optimizer_class = Lion
     elif args.use_deepspeed_adam==False and args.use_lion==False and args.use_8bit_adam==False:
         optimizer_class = torch.optim.AdamW
