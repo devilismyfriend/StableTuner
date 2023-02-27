@@ -1,4 +1,5 @@
-
+out/
+training/
 cudnn_windows/cudnn64_8.dll
 cudnn_windows/cudnn_adv_infer64_8.dll
 cudnn_windows/cudnn_adv_train64_8.dll
