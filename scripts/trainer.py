@@ -386,6 +386,7 @@ def parse_args():
     parser.add_argument('--append_sample_controlled_seed_action', action='append')
     parser.add_argument('--add_sample_prompt', type=str, action='append')
     parser.add_argument('--use_image_names_as_captions', default=False, action="store_true")
+    parser.add_argument('--shuffle_captions', default=False, action="store_true")
     parser.add_argument("--masked_training", default=False, required=False, action='store_true', help="Whether to mask parts of the image during training")
     parser.add_argument("--normalize_masked_area_loss", default=False, required=False, action='store_true', help="Normalize the loss, to make it independent of the size of the masked area")
     parser.add_argument("--unmasked_probability", type=float, default=1, required=False, help="Probability of training a step without a mask")
@@ -612,6 +613,7 @@ def main():
         train_dataset = AutoBucketing(
             concepts_list=args.concepts_list,
             use_image_names_as_captions=args.use_image_names_as_captions,
+            shuffle_captions=args.shuffle_captions,
             batch_size=args.train_batch_size,
             tokenizer=tokenizer,
             add_class_images_to_dataset=args.add_class_images_to_dataset,
@@ -637,6 +639,7 @@ def main():
         center_crop=args.center_crop,
         num_class_images=args.num_class_images,
         use_image_names_as_captions=args.use_image_names_as_captions,
+        shuffle_captions=args.shuffle_captions,
         repeats=args.dataset_repeats,
         use_text_files_as_captions=args.use_text_files_as_captions,
         seed = args.seed,
