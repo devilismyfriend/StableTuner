@@ -888,6 +888,7 @@ class App(ctk.CTk):
         self.save_sample_controlled_seed = []
         self.delete_checkpoints_when_full_drive = True
         self.use_image_names_as_captions = True
+        self.shuffle_captions = False
         self.use_offset_noise = False
         self.offset_noise_weight = 0.1
         self.num_samples_to_generate = 1
@@ -1201,6 +1202,10 @@ class App(ctk.CTk):
         self.use_image_names_as_captions_checkbox.configure(state='disabled')
         self.use_image_names_as_captions_var.set(0)
         #self.use_image_names_as_captions_checkbox.set(0)
+        self.shuffle_captions_label.configure(state='disabled')
+        self.shuffle_captions_checkbox.configure(state='disabled')
+        self.shuffle_captions_var.set(0)
+        #self.shuffle_captions_checkbox.set(0)
         self.add_class_images_to_dataset_checkbox.configure(state='disabled')
         self.add_class_images_to_dataset_label.configure(state='disabled')
         self.add_class_images_to_dataset_var.set(0)
@@ -1215,10 +1220,13 @@ class App(ctk.CTk):
                 self.use_text_files_as_captions_label.configure(state='normal')
                 self.use_image_names_as_captions_label.configure(state='normal')
                 self.use_image_names_as_captions_checkbox.configure(state='normal')
+                self.shuffle_captions_label.configure(state='normal')
+                self.shuffle_captions_checkbox.configure(state='normal')
                 self.add_class_images_to_dataset_checkbox.configure(state='normal')
                 self.add_class_images_to_dataset_label.configure(state='normal')
                 self.use_text_files_as_captions_var.set(1)
                 self.use_image_names_as_captions_var.set(1)
+                self.shuffle_captions_var.set(0)
                 self.add_class_images_to_dataset_var.set(0)
         except:
             pass
@@ -1629,39 +1637,49 @@ class App(ctk.CTk):
         # create checkbox
         self.use_image_names_as_captions_checkbox = ctk.CTkSwitch(self.dataset_frame_subframe, variable=self.use_image_names_as_captions_var)
         self.use_image_names_as_captions_checkbox.grid(row=2, column=1, sticky="nsew")
+        # create shuffle captions checkbox
+        self.shuffle_captions_var = tk.IntVar()
+        self.shuffle_captions_var.set(self.shuffle_captions)
+        # create label
+        self.shuffle_captions_label = ctk.CTkLabel(self.dataset_frame_subframe, text="Shuffle Captions")
+        shuffle_captions_label_ttp = CreateToolTip(self.shuffle_captions_label, "Randomize the order of tags in a caption. Tags are separated by ','. Used for training with booru-style captions.")
+        self.shuffle_captions_label.grid(row=3, column=0, sticky="nsew")
+        # create checkbox
+        self.shuffle_captions_checkbox = ctk.CTkSwitch(self.dataset_frame_subframe, variable=self.shuffle_captions_var)
+        self.shuffle_captions_checkbox.grid(row=3, column=1, sticky="nsew")
         # create auto balance dataset checkbox
         self.auto_balance_dataset_var = tk.IntVar()
         self.auto_balance_dataset_var.set(self.auto_balance_concept_datasets)
         # create label
         self.auto_balance_dataset_label = ctk.CTkLabel(self.dataset_frame_subframe, text="Auto Balance Dataset")
         auto_balance_dataset_label_ttp = CreateToolTip(self.auto_balance_dataset_label, "Will use the concept with the least amount of images to balance the dataset by removing images from the other concepts.")
-        self.auto_balance_dataset_label.grid(row=3, column=0, sticky="nsew")
+        self.auto_balance_dataset_label.grid(row=4, column=0, sticky="nsew")
         # create checkbox
         self.auto_balance_dataset_checkbox = ctk.CTkSwitch(self.dataset_frame_subframe, variable=self.auto_balance_dataset_var)
-        self.auto_balance_dataset_checkbox.grid(row=3, column=1, sticky="nsew")
+        self.auto_balance_dataset_checkbox.grid(row=4, column=1, sticky="nsew")
         #create add class images to dataset checkbox
         self.add_class_images_to_dataset_var = tk.IntVar()
         self.add_class_images_to_dataset_var.set(self.add_class_images_to_training)
         #create label
         self.add_class_images_to_dataset_label = ctk.CTkLabel(self.dataset_frame_subframe, text="Add Class Images to Dataset")
         add_class_images_to_dataset_label_ttp = CreateToolTip(self.add_class_images_to_dataset_label, "Will add class images without prior preservation to the dataset.")
-        self.add_class_images_to_dataset_label.grid(row=4, column=0, sticky="nsew")
+        self.add_class_images_to_dataset_label.grid(row=5, column=0, sticky="nsew")
         #create checkbox
         self.add_class_images_to_dataset_checkbox = ctk.CTkSwitch(self.dataset_frame_subframe, variable=self.add_class_images_to_dataset_var)
-        self.add_class_images_to_dataset_checkbox.grid(row=4, column=1, sticky="nsew")
+        self.add_class_images_to_dataset_checkbox.grid(row=5, column=1, sticky="nsew")
         #create number of class images entry
         self.number_of_class_images_label = ctk.CTkLabel(self.dataset_frame_subframe, text="Number of Class Images")
         number_of_class_images_label_ttp = CreateToolTip(self.number_of_class_images_label, "The number of class images to add to the dataset, if they don't exist in the class directory they will be generated.")
-        self.number_of_class_images_label.grid(row=5, column=0, sticky="nsew")
+        self.number_of_class_images_label.grid(row=6, column=0, sticky="nsew")
         self.number_of_class_images_entry = ctk.CTkEntry(self.dataset_frame_subframe)
-        self.number_of_class_images_entry.grid(row=5, column=1, sticky="nsew")
+        self.number_of_class_images_entry.grid(row=6, column=1, sticky="nsew")
         self.number_of_class_images_entry.insert(0, self.num_class_images)
         #create dataset repeat entry
         self.dataset_repeats_label = ctk.CTkLabel(self.dataset_frame_subframe, text="Dataset Repeats")
         dataset_repeat_label_ttp = CreateToolTip(self.dataset_repeats_label, "The number of times to repeat the dataset, this will increase the number of images in the dataset.")
-        self.dataset_repeats_label.grid(row=6, column=0, sticky="nsew")
+        self.dataset_repeats_label.grid(row=7, column=0, sticky="nsew")
         self.dataset_repeats_entry = ctk.CTkEntry(self.dataset_frame_subframe)
-        self.dataset_repeats_entry.grid(row=6, column=1, sticky="nsew")
+        self.dataset_repeats_entry.grid(row=7, column=1, sticky="nsew")
         self.dataset_repeats_entry.insert(0, self.dataset_repeats)
 
         #add use_aspect_ratio_bucketing checkbox
@@ -1670,10 +1688,10 @@ class App(ctk.CTk):
         #create label
         self.use_aspect_ratio_bucketing_label = ctk.CTkLabel(self.dataset_frame_subframe, text="Use Aspect Ratio Bucketing")
         use_aspect_ratio_bucketing_label_ttp = CreateToolTip(self.use_aspect_ratio_bucketing_label, "Will use aspect ratio bucketing, may improve aspect ratio generations.")
-        self.use_aspect_ratio_bucketing_label.grid(row=7, column=0, sticky="nsew")
+        self.use_aspect_ratio_bucketing_label.grid(row=8, column=0, sticky="nsew")
         #create checkbox
         self.use_aspect_ratio_bucketing_checkbox = ctk.CTkSwitch(self.dataset_frame_subframe, variable=self.use_aspect_ratio_bucketing_var)
-        self.use_aspect_ratio_bucketing_checkbox.grid(row=7, column=1, sticky="nsew")
+        self.use_aspect_ratio_bucketing_checkbox.grid(row=8, column=1, sticky="nsew")
         #do something on checkbox click
         self.use_aspect_ratio_bucketing_checkbox.bind("<Button-1>", self.aspect_ratio_mode_toggles)
         
@@ -1682,17 +1700,17 @@ class App(ctk.CTk):
         self.aspect_ratio_bucketing_mode_var.set(self.aspect_ratio_bucketing_mode)
         self.aspect_ratio_bucketing_mode_label = ctk.CTkLabel(self.dataset_frame_subframe, text="Aspect Ratio Bucketing Mode")
         aspect_ratio_bucketing_mode_label_ttp = CreateToolTip(self.aspect_ratio_bucketing_mode_label, "Select what the Auto Bucketing will do in case the bucket doesn't match the batch size, dynamic will choose the least amount of adding/removing of images per bucket.")
-        self.aspect_ratio_bucketing_mode_label.grid(row=8, column=0, sticky="nsew")
+        self.aspect_ratio_bucketing_mode_label.grid(row=9, column=0, sticky="nsew")
         self.aspect_ratio_bucketing_mode_option_menu = ctk.CTkOptionMenu(self.dataset_frame_subframe, variable=self.aspect_ratio_bucketing_mode_var, values=['Dynamic Fill', 'Drop Fill', 'Duplicate Fill'])
-        self.aspect_ratio_bucketing_mode_option_menu.grid(row=8, column=1, sticky="nsew")
+        self.aspect_ratio_bucketing_mode_option_menu.grid(row=9, column=1, sticky="nsew")
         #option menu to select dynamic bucketing mode (if enabled)
         self.dynamic_bucketing_mode_var = tk.StringVar()
         self.dynamic_bucketing_mode_var.set(self.dynamic_bucketing_mode)
         self.dynamic_bucketing_mode_label = ctk.CTkLabel(self.dataset_frame_subframe, text="Dynamic Preference")
         dynamic_bucketing_mode_label_ttp = CreateToolTip(self.dynamic_bucketing_mode_label, "If you're using dynamic mode, choose what you prefer in the case that dropping and duplicating are the same amount of images.")
-        self.dynamic_bucketing_mode_label.grid(row=9, column=0, sticky="nsew")
+        self.dynamic_bucketing_mode_label.grid(row=10, column=0, sticky="nsew")
         self.dynamic_bucketing_mode_option_menu = ctk.CTkOptionMenu(self.dataset_frame_subframe, variable=self.dynamic_bucketing_mode_var, values=['Duplicate', 'Drop'])
-        self.dynamic_bucketing_mode_option_menu.grid(row=9, column=1, sticky="nsew")
+        self.dynamic_bucketing_mode_option_menu.grid(row=10, column=1, sticky="nsew")
         #add shuffle dataset per epoch checkbox
         self.shuffle_dataset_per_epoch_var = tk.IntVar()
         self.shuffle_dataset_per_epoch_var.set(self.shuffle_dataset_per_epoch)
@@ -3067,6 +3085,7 @@ class App(ctk.CTk):
         configure["with_prior_loss_preservation"] = self.with_prior_loss_preservation_var.get()
         configure["prior_loss_preservation_weight"] = self.prior_loss_preservation_weight_entry.get()
         configure["use_image_names_as_captions"] = self.use_image_names_as_captions_var.get()
+        configure["shuffle_captions"] = self.shuffle_captions_var.get()
         configure["auto_balance_concept_datasets"] = self.auto_balance_dataset_var.get()
         configure["add_class_images_to_dataset"] = self.add_class_images_to_dataset_var.get()
         configure["number_of_class_images"] = self.number_of_class_images_entry.get()
@@ -3201,6 +3220,7 @@ class App(ctk.CTk):
         self.prior_loss_preservation_weight_entry.delete(0, tk.END)
         self.prior_loss_preservation_weight_entry.insert(0, configure["prior_loss_preservation_weight"])
         self.use_image_names_as_captions_var.set(configure["use_image_names_as_captions"])
+        self.shuffle_captions_var.set(configure["shuffle_captions"])
         self.auto_balance_dataset_var.set(configure["auto_balance_concept_datasets"])
         self.add_class_images_to_dataset_var.set(configure["add_class_images_to_dataset"])
         self.number_of_class_images_entry.delete(0, tk.END)
@@ -3296,6 +3316,7 @@ class App(ctk.CTk):
         self.with_prior_loss_preservation = self.with_prior_loss_preservation_var.get()
         self.prior_loss_preservation_weight = self.prior_loss_preservation_weight_entry.get()
         self.use_image_names_as_captions = self.use_image_names_as_captions_var.get()
+        self.shuffle_captions = self.shuffle_captions_var.get()
         self.auto_balance_concept_datasets = self.auto_balance_dataset_var.get()
         self.add_class_images_to_dataset = self.add_class_images_to_dataset_var.get()
         self.number_of_class_images = self.number_of_class_images_entry.get()
@@ -3376,7 +3397,7 @@ class App(ctk.CTk):
                         #check if resolution is the same
                         try:
                             #try because I keep adding stuff to the json file and it may error out for peeps
-                            if self.last_run["resolution"] != self.resolution or self.use_text_files_as_captions != self.last_run['use_text_files_as_captions'] or self.last_run['dataset_repeats'] != self.dataset_repeats or self.last_run["batch_size"] != self.batch_size or self.last_run["train_text_encoder"] != self.train_text_encoder or self.last_run["use_image_names_as_captions"] != self.use_image_names_as_captions or self.last_run["auto_balance_concept_datasets"] != self.auto_balance_concept_datasets or self.last_run["add_class_images_to_dataset"] != self.add_class_images_to_dataset or self.last_run["number_of_class_images"] != self.number_of_class_images or self.last_run["aspect_ratio_bucketing"] != self.use_aspect_ratio_bucketing or self.last_run["masked_training"] != self.masked_training:
+                            if self.last_run["resolution"] != self.resolution or self.use_text_files_as_captions != self.last_run['use_text_files_as_captions'] or self.last_run['dataset_repeats'] != self.dataset_repeats or self.last_run["batch_size"] != self.batch_size or self.last_run["train_text_encoder"] != self.train_text_encoder or self.last_run["use_image_names_as_captions"] != self.use_image_names_as_captions or self.last_run["shuffle_captions"] != self.shuffle_captions or self.last_run["auto_balance_concept_datasets"] != self.auto_balance_concept_datasets or self.last_run["add_class_images_to_dataset"] != self.add_class_images_to_dataset or self.last_run["number_of_class_images"] != self.number_of_class_images or self.last_run["aspect_ratio_bucketing"] != self.use_aspect_ratio_bucketing or self.last_run["masked_training"] != self.masked_training:
                                 self.regenerate_latent_cache = True
                                 #show message
                                 
@@ -3624,6 +3645,11 @@ class App(ctk.CTk):
                 batBase += ' --use_image_names_as_captions'
             else:
                 batBase += f' "--use_image_names_as_captions" '
+        if self.shuffle_captions == True:
+            if export == 'Linux':
+                batBase += ' --shuffle_captions'
+            else:
+                batBase += f' "--shuffle_captions" '
         if self.use_offset_noise == True:
             if export == 'Linux':
                 batBase += f' --with_offset_noise'

@@ -321,6 +321,7 @@ class AutoBucketing(Dataset):
                     resolution=512,
                     center_crop=False,
                     use_image_names_as_captions=True,
+                    shuffle_captions=False,
                     add_class_images_to_dataset=None,
                     balance_datasets=False,
                     crop_jitter=20,
@@ -342,6 +343,7 @@ class AutoBucketing(Dataset):
         self.batch_size = batch_size
         self.concepts_list = concepts_list
         self.use_image_names_as_captions = use_image_names_as_captions
+        self.shuffle_captions = shuffle_captions
         self.num_train_images = 0
         self.num_reg_images = 0
         self.image_train_items = []
@@ -447,6 +449,12 @@ class AutoBucketing(Dataset):
             image_train_tmp = image_train_item.hydrate(crop=False, save=0, crop_jitter=self.crop_jitter)
             image_train_tmp_image = Image.fromarray(self.normalize8(image_train_tmp.image)).convert("RGB")
             
+            instance_prompt = image_train_tmp.caption
+            if self.shuffle_captions:
+                caption_parts = instance_prompt.split(",")
+                random.shuffle(caption_parts)
+                instance_prompt = ",".join(caption_parts)
+            
             example["instance_images"] = self.image_transforms(image_train_tmp_image)
             if image_train_tmp.mask is not None:
                 image_train_tmp_mask = Image.fromarray(self.normalize8(image_train_tmp.mask)).convert("L")
@@ -454,9 +462,9 @@ class AutoBucketing(Dataset):
             if self.model_variant == 'depth2img':
                 image_train_tmp_depth = Image.fromarray(self.normalize8(image_train_tmp.extra)).convert("L")
                 example["instance_depth_images"] = self.depth_image_transforms(image_train_tmp_depth)
-            #print(image_train_tmp.caption)
+            #print(instance_prompt)
             example["instance_prompt_ids"] = self.tokenizer(
-                image_train_tmp.caption,
+                instance_prompt,
                 padding="do_not_pad",
                 truncation=True,
                 max_length=self.tokenizer.model_max_length,
@@ -1051,6 +1059,7 @@ class NormalDataset(Dataset):
         center_crop=False,
         num_class_images=None,
         use_image_names_as_captions=False,
+        shuffle_captions=False,
         repeats=1,
         use_text_files_as_captions=False,
         seed=555,
@@ -1060,6 +1069,7 @@ class NormalDataset(Dataset):
         load_mask=None,
     ):
         self.use_image_names_as_captions = use_image_names_as_captions
+        self.shuffle_captions = shuffle_captions
         self.size = size
         self.center_crop = center_crop
         self.tokenizer = tokenizer
@@ -1229,6 +1239,10 @@ class NormalDataset(Dataset):
                     instance_prompt = f.readline().rstrip()
                     f.close()
                 
+        if self.shuffle_captions:
+            caption_parts = instance_prompt.split(",")
+            random.shuffle(caption_parts)
+            instance_prompt = ",".join(caption_parts)
             
         #print('identifier: ' + instance_prompt)
         instance_image = instance_image.convert("RGB")
