@@ -276,7 +276,7 @@ ASPECT_576 = [[576,576],     # 331776 1:1
     [1280,256],[256,1280], # 327680 5:1
 ]
 
-ASPECTS_512 = [[512,512],      # 262144 1:1
+ASPECT_512 = [[512,512],     # 262144 1:1
     [576,448],[448,576],   # 258048 1.29:1
     [640,384],[384,640],   # 245760 1.667:1
     [768,320],[320,768],   # 245760 2.4:1
@@ -285,11 +285,33 @@ ASPECTS_512 = [[512,512],      # 262144 1:1
     [960,256],[256,960],   # 245760 3.75:1
     [1024,256],[256,1024], # 245760 4:1
     ]
+    
+ASPECT_448 = [[448,448],   # 200704 1:1
+    [512,384],[384,512],   # 196608 1.33:1
+    [576,320],[320,576],   # 184320 1.8:1
+    [768,256],[256,768],   # 196608 3:1
+    ]
+
+ASPECT_384 = [[384,384],   # 147456 1:1
+    [448,320],[320,448],   # 143360 1.4:1
+    [576,256],[256,576],   # 147456 2.25:1
+    [768,192],[192,768],   # 147456 4:1
+    ]
+    
+ASPECT_320 = [[320,320],   # 102400 1:1
+    [384,256],[256,384],   # 98304 1.5:1
+    [512,192],[192,512],   # 98304 2.67:1
+    ]
+    
+ASPECT_256 = [[256,256],   # 65536 1:1
+    [320,192],[192,320],   # 61440 1.67:1
+    [512,128],[128,512],   # 65536 4:1
+    ]
 
 #failsafe aspects
-ASPECTS = ASPECTS_512
+ASPECTS = ASPECT_512
 def get_aspect_buckets(resolution,mode=''):
-    if resolution < 512:
+    if resolution < 256:
         raise ValueError("Resolution must be at least 512")
     try: 
         rounded_resolution = int(resolution / 64) * 64
@@ -308,7 +330,7 @@ def get_aspect_buckets(resolution,mode=''):
         raise e
 
 def __get_all_aspects():
-    return [ASPECTS_512, ASPECT_576, ASPECT_640, ASPECT_704, ASPECT_768,ASPECT_832,ASPECT_896,ASPECT_960,ASPECT_1024,ASPECT_1088,ASPECT_1152,ASPECT_1216,ASPECT_1280,ASPECT_1344,ASPECT_1408,ASPECT_1472,ASPECT_1536,ASPECT_1600,ASPECT_1664,ASPECT_1728,ASPECT_1792,ASPECT_1856,ASPECT_1920,ASPECT_1984,ASPECT_2048]
+    return [ASPECT_256, ASPECT_320, ASPECT_384, ASPECT_448, ASPECT_512, ASPECT_576, ASPECT_640, ASPECT_704, ASPECT_768,ASPECT_832,ASPECT_896,ASPECT_960,ASPECT_1024,ASPECT_1088,ASPECT_1152,ASPECT_1216,ASPECT_1280,ASPECT_1344,ASPECT_1408,ASPECT_1472,ASPECT_1536,ASPECT_1600,ASPECT_1664,ASPECT_1728,ASPECT_1792,ASPECT_1856,ASPECT_1920,ASPECT_1984,ASPECT_2048]
 class AutoBucketing(Dataset):
     def __init__(self,
                     concepts_list,
