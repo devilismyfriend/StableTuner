@@ -1108,16 +1108,15 @@ def main():
                 
                 if args.stop_text_encoder_training == True:
                     save_dir = frozen_directory
-                if step != 0:
-                    if save_model:
-                        pipeline.save_pretrained(save_dir,safe_serialization=True)
-                        with open(os.path.join(save_dir, "args.json"), "w") as f:
-                                json.dump(args.__dict__, f, indent=2)
-                    if args.stop_text_encoder_training == True:
-                        #delete every folder in frozen_directory but the text encoder
-                        for folder in os.listdir(save_dir):
-                            if folder != "text_encoder" and os.path.isdir(os.path.join(save_dir, folder)):
-                                shutil.rmtree(os.path.join(save_dir, folder))
+                if save_model:
+                    pipeline.save_pretrained(save_dir,safe_serialization=True)
+                    with open(os.path.join(save_dir, "args.json"), "w") as f:
+                            json.dump(args.__dict__, f, indent=2)
+                if args.stop_text_encoder_training == True:
+                    #delete every folder in frozen_directory but the text encoder
+                    for folder in os.listdir(save_dir):
+                        if folder != "text_encoder" and os.path.isdir(os.path.join(save_dir, folder)):
+                            shutil.rmtree(os.path.join(save_dir, folder))
                 imgs = []
                 if args.add_sample_prompt is not None or batch_prompts != [] and args.stop_text_encoder_training != True:
                     prompts = []
