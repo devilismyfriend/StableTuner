@@ -472,7 +472,7 @@ def main():
                         safety_checker=None,
                         vae=AutoencoderKL.from_pretrained(args.pretrained_vae_name_or_path or args.pretrained_model_name_or_path,subfolder=None if args.pretrained_vae_name_or_path else "vae" ,safe_serialization=True),
                         torch_dtype=torch_dtype,
-                         
+                        requires_safety_checker=False,
                     )
                     pipeline.set_progress_bar_config(disable=True)
                     pipeline.to(accelerator.device)
@@ -934,6 +934,7 @@ def main():
             safety_checker=None,
             torch_dtype=weight_dtype,
             local_files_only=False,
+            requires_safety_checker=False,
         )
         pipeline.scheduler = scheduler
         if is_xformers_available() and args.attention=='xformers':
@@ -1087,6 +1088,7 @@ def main():
                     safety_checker=None,
                     torch_dtype=weight_dtype,
                     local_files_only=False,
+                    requires_safety_checker=False,
                 )
                 pipeline.scheduler = scheduler
                 if is_xformers_available() and args.attention=='xformers':
